@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}ALHAM | اكتشف كتابك القادم{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section
+  style="position: relative; overflow: hidden; padding: 6rem 0 4rem; min-height: 90vh; display: flex; align-items: center;">
+  <!-- Animated Gradient Orbs -->
+  <div class="hero-orbs">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
+  </div>
+
+  <div class="container" style="position: relative; z-index: 10;">
+    <div class="text-center" style="max-width: 900px; margin: 0 auto;">
+      <div class="animate-on-scroll fade-up">
+        <!-- Badge -->
+        <span
+          style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 9999px; font-size: 0.875rem; color: var(--accent-cyan); font-weight: 600; margin-bottom: 2rem;">
+          <i class="ph-fill ph-sparkle"></i>
+          مكتبة الإلهام الذكية
+        </span>
+
+        <!-- Main Heading -->
+        <h1 style="margin-bottom: 1.5rem; line-height: 1.1;">
+          رحلتك لاكتشاف
+          <br>
+          <span class="text-gradient">المعرفة تبدأ هنا</span>
+        </h1>
+
+        <p
+          style="font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 2.5rem; line-height: 1.8; max-width: 600px; margin-left: auto; margin-right: auto;">
+          اكتشف كتباً تناسب ذوقك تماماً باستخدام تقنيات الذكاء الاصطناعي.
+          <br>
+          انضم لآلاف القراء في تجربة فريدة.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="d-flex justify-center gap-3 flex-wrap">
+          <a href="{{ url_for('public.list_books') }}" class="btn btn-primary"
+            style="padding: 1rem 2rem; font-size: 1.1rem;">
+            <i class="ph ph-compass"></i>
+            ابدأ الاستكشاف
+          </a>
+          <a href="#trending" class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+            <i class="ph ph-fire"></i>
+            الكتب الرائجة
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D Book Carousel -->
+    <div class="mt-5 animate-on-scroll fade-up" style="margin-top: 5rem;">
+      <div class="book-carousel-3d">
+        <div class="carousel-container" id="bookCarousel">
+          {% for i in range(7) %}
+          {% set covers = [
+          'https://covers.openlibrary.org/b/id/8296291-L.jpg',
+          'https://covers.openlibrary.org/b/id/12696660-L.jpg',
+          'https://covers.openlibrary.org/b/id/10603706-L.jpg',
+          'https://covers.openlibrary.org/b/id/10524419-L.jpg',
+          'https://covers.openlibrary.org/b/id/8091016-L.jpg',
+          'https://covers.openlibrary.org/b/id/7222246-L.jpg',
+          'https://covers.openlibrary.org/b/id/8231990-L.jpg'
+          ] %}
+          <div class="carousel-book {{ 'active' if i == 3 else '' }}" data-index="{{ i }}">
+            <img src="{{ covers[i] }}" alt="Book Cover">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5"
+  style="border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+  <div class="container">
+    <div class="grid-4" style="text-align: center;">
+      <div class="animate-on-scroll fade-up">
+        <h3 class="text-gradient mb-1" style="font-size: 2.5rem;">5M+</h3>
+        <p class="text-secondary small mb-0">كتاب متوفر</p>
+      </div>
+      <div class="animate-on-scroll fade-up delay-1">
+        <h3 class="text-gradient mb-1" style="font-size: 2.5rem;">AI</h3>
+        <p class="text-secondary small mb-0">توصيات دقيقة</p>
+      </div>
+      <div class="animate-on-scroll fade-up delay-2">
+        <h3 class="text-gradient mb-1" style="font-size: 2.5rem;">24/7</h3>
+        <p class="text-secondary small mb-0">مساعدة فورية</p>
+      </div>
+      <div class="animate-on-scroll fade-up delay-3">
+        <h3 class="text-gradient mb-1" style="font-size: 2.5rem;">100%</h3>
+        <p class="text-secondary small mb-0">مجاني</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trending Section -->
+<section id="trending" class="section">
+  <div class="container">
+    <div class="d-flex justify-between align-center mb-5 flex-wrap gap-3">
+      <div>
+        <h2 class="mb-2">كتب رائجة <span class="text-gradient">هذا الأسبوع</span></h2>
+        <p class="mb-0 text-secondary">اختيارات القراء الأكثر طلباً</p>
+      </div>
+      <a href="{{ url_for('public.list_books') }}" class="btn btn-ghost">
+        عرض الكل <i class="ph ph-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="grid-4">
+      <!-- Book Card 1 -->
+      <div class="card p-0 animate-on-scroll fade-up" style="overflow: hidden;">
+        <div style="position: relative; aspect-ratio: 2/3; overflow: hidden;">
+          <img src="https://covers.openlibrary.org/b/id/8296291-L.jpg" alt="Book"
+            style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;">
+          <div class="overlay">
+            <span class="btn btn-primary btn-sm">التفاصيل</span>
+          </div>
+        </div>
+        <div class="p-4">
+          <span class="d-inline-flex align-center gap-1 mb-2"
+            style="color: var(--accent-cyan); font-size: 0.8rem; font-weight: 600;">
+            <i class="ph-fill ph-star"></i> كلاسيكي
+          </span>
+          <h4 class="mb-1" style="font-size: 1.1rem; color: var(--text-primary);">The Great Gatsby</h4>
+          <p class="small text-muted mb-0">F. Scott Fitzgerald</p>
+        </div>
+      </div>
+
+      <!-- Book Card 2 -->
+      <div class="card p-0 animate-on-scroll fade-up delay-1" style="overflow: hidden;">
+        <div style="position: relative; aspect-ratio: 2/3; overflow: hidden;">
+          <img src="https://covers.openlibrary.org/b/id/12696660-L.jpg" alt="Book"
+            style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;">
+          <div class="overlay">
+            <span class="btn btn-primary btn-sm">التفاصيل</span>
+          </div>
+        </div>
+        <div class="p-4">
+          <span class="d-inline-flex align-center gap-1 mb-2"
+            style="color: var(--accent-magenta); font-size: 0.8rem; font-weight: 600;">
+            <i class="ph-fill ph-lightning"></i> ديستوبيا
+          </span>
+          <h4 class="mb-1" style="font-size: 1.1rem; color: var(--text-primary);">1984</h4>
+          <p class="small text-muted mb-0">George Orwell</p>
+        </div>
+      </div>
+
+      <!-- Book Card 3 -->
+      <div class="card p-0 animate-on-scroll fade-up delay-2" style="overflow: hidden;">
+        <div style="position: relative; aspect-ratio: 2/3; overflow: hidden;">
+          <img src="https://covers.openlibrary.org/b/id/10603706-L.jpg" alt="Book"
+            style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;">
+          <div class="overlay">
+            <span class="btn btn-primary btn-sm">التفاصيل</span>
+          </div>
+        </div>
+        <div class="p-4">
+          <span class="d-inline-flex align-center gap-1 mb-2"
+            style="color: var(--accent-purple); font-size: 0.8rem; font-weight: 600;">
+            <i class="ph-fill ph-compass"></i> مغامرة
+          </span>
+          <h4 class="mb-1" style="font-size: 1.1rem; color: var(--text-primary);">The Alchemist</h4>
+          <p class="small text-muted mb-0">Paulo Coelho</p>
+        </div>
+      </div>
+
+      <!-- Book Card 4 -->
+      <div class="card p-0 animate-on-scroll fade-up delay-3" style="overflow: hidden;">
+        <div style="position: relative; aspect-ratio: 2/3; overflow: hidden;">
+          <img src="https://covers.openlibrary.org/b/id/10524419-L.jpg" alt="Book"
+            style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;">
+          <div class="overlay">
+            <span class="btn btn-primary btn-sm">التفاصيل</span>
+          </div>
+        </div>
+        <div class="p-4">
+          <span class="d-inline-flex align-center gap-1 mb-2"
+            style="color: var(--accent-orange); font-size: 0.8rem; font-weight: 600;">
+            <i class="ph-fill ph-heart"></i> دراما
+          </span>
+          <h4 class="mb-1" style="font-size: 1.1rem; color: var(--text-primary);">To Kill a Mockingbird</h4>
+          <p class="small text-muted mb-0">Harper Lee</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="section" style="background: var(--bg-surface);">
+  <div class="container">
+    <div class="text-center mb-5 animate-on-scroll fade-up">
+      <h2 class="mb-3">تقنيات مصممة <span class="text-gradient">لأجلك</span></h2>
+      <p style="max-width: 600px; margin: 0 auto; color: var(--text-secondary);">
+        نحن نستخدم أحدث تقنيات الذكاء الاصطناعي لضمان حصولك على أفضل تجربة قراءة ممكنة.
+      </p>
+    </div>
+
+    <div class="grid-3">
+      <!-- Feature 1 -->
+      <div class="card text-center animate-on-scroll fade-up">
+        <div
+          style="width: 70px; height: 70px; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin: 0 auto 1.5rem; color: white; box-shadow: var(--glow-primary);">
+          <i class="ph-fill ph-brain"></i>
+        </div>
+        <h4 class="mb-2" style="color: var(--text-primary);">توصيات مخصصة</h4>
+        <p class="small mb-0 text-secondary">نحلل قراءاتك السابقة لنقترح عليك كتباً ستعشقها بالتأكيد.</p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="card text-center animate-on-scroll fade-up delay-1">
+        <div
+          style="width: 70px; height: 70px; background: linear-gradient(135deg, var(--accent-magenta), var(--accent-purple)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin: 0 auto 1.5rem; color: white; box-shadow: var(--glow-magenta);">
+          <i class="ph-fill ph-chats-circle"></i>
+        </div>
+        <h4 class="mb-2" style="color: var(--text-primary);">محادثة مع الكتب</h4>
+        <p class="small mb-0 text-secondary">استخدم ميزة الشات لطرح أسئلة حول محتوى الكتاب قبل قراءته.</p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="card text-center animate-on-scroll fade-up delay-2">
+        <div
+          style="width: 70px; height: 70px; background: linear-gradient(135deg, var(--accent-cyan), var(--primary)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin: 0 auto 1.5rem; color: white; box-shadow: var(--glow-cyan);">
+          <i class="ph-fill ph-lightning"></i>
+        </div>
+        <h4 class="mb-2" style="color: var(--text-primary);">تحليلات ذكية</h4>
+        <p class="small mb-0 text-secondary">تتبع عادات قراءتك واحصل على رؤى قيمة لتحسين معدلاتك.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Call to Action -->
+<section class="py-5">
+  <div class="container">
+    <div class="card text-center animate-on-scroll scale-in"
+      style="background: linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 50%, var(--gradient-3) 100%); border: none; padding: 4rem 2rem; position: relative; overflow: hidden;">
+      <!-- Decorative circles -->
+      <div
+        style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%;">
+      </div>
+      <div
+        style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; background: rgba(255,255,255,0.08); border-radius: 50%;">
+      </div>
+
+      <div style="position: relative; z-index: 1;">
+        <h2 style="color: white; font-size: 2.5rem; margin-bottom: 1rem;">جاهز للبدء؟</h2>
+        <p style="color: rgba(255,255,255,0.9); max-width: 500px; margin: 0 auto 2rem; font-size: 1.1rem;">
+          انضم اليوم مجاناً وابدأ رحلة استكشاف لا تنتهي من المعرفة والمتعة.
+        </p>
+        <a href="{{ url_for('auth.register') }}" class="btn"
+          style="background: white; color: var(--gradient-2); font-size: 1.1rem; padding: 1rem 2.5rem; font-weight: 700;">
+          أنشئ حساب مجاني
+          <i class="ph ph-arrow-left"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Book Card Hover Effects */
+  .card:hover img {
+    transform: scale(1.1);
+  }
+</style>
+
+<script>
+  // 3D Carousel Logic
+  let currentIndex = 3;
+  const books = document.querySelectorAll('.carousel-book');
+  const count = books.length;
+
+  function updateCarousel() {
+    books.forEach((book, i) => {
+      book.classList.remove('active', 'prev-1', 'next-1', 'prev-2', 'next-2', 'prev-3', 'next-3');
+
+      let diff = (i - currentIndex);
+      if (diff > 3) diff -= count;
+      if (diff < -3) diff += count;
+
+      if (diff === 0) book.classList.add('active');
+      else if (diff === -1) book.classList.add('prev-1');
+      else if (diff === 1) book.classList.add('next-1');
+      else if (diff === -2) book.classList.add('prev-2');
+      else if (diff === 2) book.classList.add('next-2');
+      else if (diff <= -3) book.classList.add('prev-3');
+      else if (diff >= 3) book.classList.add('next-3');
+    });
+  }
+
+  books.forEach((book, i) => {
+    book.addEventListener('click', () => {
+      currentIndex = i;
+      updateCarousel();
+    });
+  });
+
+  // Auto-rotate carousel
+  setInterval(() => {
+    currentIndex = (currentIndex + 1) % count;
+    updateCarousel();
+  }, 4000);
+
+  updateCarousel();
+</script>
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}اختر اهتماماتك | مكتبة الإلهام{% endblock %}
+
+{% block head %}
+<style>
+    .onboarding-page {
+        min-height: 100vh;
+        padding: 2rem 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .onboarding-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(30px);
+        border: var(--border-glass);
+        border-radius: var(--radius-2xl);
+        padding: 2.5rem;
+        max-width: 800px;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .onboarding-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+    }
+
+    .onboarding-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .onboarding-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 30px var(--primary-glow);
+        animation: pulse-glow 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+
+        0%,
+        100% {
+            box-shadow: 0 8px 30px var(--primary-glow);
+        }
+
+        50% {
+            box-shadow: 0 8px 50px var(--primary-glow), 0 0 60px var(--primary-glow);
+        }
+    }
+
+    .onboarding-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .onboarding-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+    }
+
+    .interests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .interest-item {
+        position: relative;
+        background: rgba(255, 255, 255, 0.03);
+        border: 2px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius-xl);
+        padding: 1.25rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+
+    .interest-item:hover {
+        transform: translateY(-4px);
+        border-color: rgba(249, 115, 22, 0.3);
+        background: rgba(249, 115, 22, 0.05);
+    }
+
+    .interest-item.selected {
+        background: rgba(249, 115, 22, 0.1);
+        border-color: var(--primary);
+        box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .interest-item.selected::after {
+        content: "✓";
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 28px;
+        height: 28px;
+        background: var(--gradient-primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+        box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    .interest-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.75rem;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .interest-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+
+    .interest-checkbox {
+        display: none;
+    }
+
+    .selection-hint {
+        text-align: center;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+
+    .selection-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(249, 115, 22, 0.1);
+        border: 1px solid rgba(249, 115, 22, 0.2);
+        padding: 0.625rem 1.25rem;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        color: var(--primary-light);
+    }
+
+    .btn-start {
+        width: 100%;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: var(--radius-lg);
+        color: white;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .btn-start:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px var(--primary-glow);
+    }
+
+    .btn-start:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .skip-link {
+        display: block;
+        text-align: center;
+        margin-top: 1.25rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: color var(--transition-fast);
+    }
+
+    .skip-link:hover {
+        color: var(--text-secondary);
+    }
+
+    .progress-bar-custom {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-full);
+        margin-top: 1.5rem;
+        overflow: hidden;
+    }
+
+    .progress-bar-custom .progress-fill {
+        height: 100%;
+        background: var(--gradient-primary);
+        border-radius: inherit;
+        transition: width var(--transition-base);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onboarding-page">
+    <div class="container">
+        <div class="onboarding-card animate-on-scroll scale-in is-visible">
+            <div class="onboarding-header">
+                <div class="onboarding-icon">
+                    <i class="ph ph-sparkle"></i>
+                </div>
+                <h1 class="onboarding-title">مرحباً {{ current_user.name }}! 👋</h1>
+                <p class="onboarding-subtitle">اختر اهتماماتك لنقدم لك أفضل التوصيات</p>
+            </div>
+
+            <form method="POST" id="interestsForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="selection-hint">
+                    <span class="selection-count">
+                        <i class="ph ph-check-circle"></i>
+                        <span id="selectedCount">0</span> / 3 على الأقل
+                    </span>
+                    <div class="progress-bar-custom mt-3">
+                        <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div class="interests-grid">
+                    {% set interests = [
+                    {"id": "programming", "name": "البرمجة", "icon": "code", "color": "#3b82f6"},
+                    {"id": "artificial-intelligence", "name": "الذكاء الاصطناعي", "icon": "robot", "color": "#8b5cf6"},
+                    {"id": "novels", "name": "الروايات", "icon": "book-open", "color": "#ec4899"},
+                    {"id": "history", "name": "التاريخ", "icon": "clock-counter-clockwise", "color": "#78350f"},
+                    {"id": "science", "name": "العلوم", "icon": "atom", "color": "#06b6d4"},
+                    {"id": "psychology", "name": "علم النفس", "icon": "brain", "color": "#a855f7"},
+                    {"id": "business", "name": "الأعمال", "icon": "chart-line", "color": "#22c55e"},
+                    {"id": "philosophy", "name": "الفلسفة", "icon": "lightbulb", "color": "#f97316"},
+                    {"id": "religion", "name": "الدين", "icon": "star", "color": "#64748b"},
+                    {"id": "health", "name": "الصحة", "icon": "heart-pulse", "color": "#ef4444"},
+                    {"id": "art", "name": "الفن والتصميم", "icon": "paint-brush", "color": "#f43f5e"},
+                    {"id": "travel", "name": "السفر", "icon": "airplane", "color": "#0ea5e9"}
+                    ] %}
+
+                    {% for interest in interests %}
+                    <label class="interest-item" data-interest="{{ interest.id }}">
+                        <input type="checkbox" name="interests" value="{{ interest.id }}" class="interest-checkbox">
+                        <div class="interest-icon" style="background: {{ interest.color }};">
+                            <i class="ph ph-{{ interest.icon }}"></i>
+                        </div>
+                        <div class="interest-name">{{ interest.name }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn-start" id="startBtn" disabled>
+                    <i class="ph ph-rocket-launch me-2"></i>
+                    ابدأ الاستكشاف
+                </button>
+            </form>
+
+            <a href="{{ url_for('explore.index') }}?skip_onboarding=1" class="skip-link">
+                <i class="ph ph-arrow-left me-1"></i>
+                تخطي الآن
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const items = document.querySelectorAll('.interest-item');
+        const countDisplay = document.getElementById('selectedCount');
+        const startBtn = document.getElementById('startBtn');
+        const progressBar = document.getElementById('progressBar');
+        const minRequired = 3;
+
+        items.forEach(item => {
+            item.addEventListener('click', function () {
+                const checkbox = this.querySelector('.interest-checkbox');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('selected', checkbox.checked);
+
+                // Update counter
+                const count = document.querySelectorAll('.interest-checkbox:checked').length;
+                countDisplay.textContent = count;
+
+                // Update progress bar
+                const progress = Math.min((count / minRequired) * 100, 100);
+                progressBar.style.width = progress + '%';
+
+                // Enable/disable button
+                startBtn.disabled = count < minRequired;
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Preferences · BookRec{% endblock %}
+{% block heading %}Pick your favourite genres{% endblock %}
+
+{% block content %}
+<form method="post">
+  <div class="form-pill">
+    {% for g in genres %}
+    <label class="form-check {% if g.id in chosen %}active{% endif %}">
+      <input type="checkbox" name="genres" value="{{ g.id }}" {% if g.id in chosen %}checked{% endif %}>
+      <span>{{ g.name }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-brand">Save</button>
+  </div>
+</form>
+
+<script>
+  document.querySelectorAll('.form-pill .form-check').forEach(lbl=>{
+    lbl.addEventListener('click',e=>{
+      lbl.classList.toggle('active');
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}{{ book_title }} | القارئ{% endblock %}
+
+{% block content %}
+<style>
+  .reader-container {
+    background: var(--color-sand);
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
+  }
+
+  .reader-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .book-viewer {
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    min-height: 70vh;
+  }
+
+  .viewer-canvas {
+    width: 100%;
+    height: 70vh;
+  }
+
+  .viewer-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    min-height: 50vh;
+  }
+
+  .viewer-fallback i {
+    font-size: 5rem;
+    color: var(--color-tan);
+    margin-bottom: 1.5rem;
+  }
+
+  .viewer-fallback h3 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+  }
+
+  .viewer-fallback p {
+    color: var(--text-muted);
+    max-width: 500px;
+    margin-bottom: 2rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+  }
+</style>
+
+<div class="reader-container">
+  <div class="container">
+    <!-- الرأس -->
+    <div class="reader-header">
+      <a href="javascript:history.back()" class="btn btn-secondary">
+        <i class="ph ph-arrow-right"></i>
+        رجوع
+      </a>
+      <h4 class="mb-0">{{ book_title }}</h4>
+      <div></div>
+    </div>
+
+    <!-- منطقة العرض -->
+    <div class="book-viewer">
+      <div id="viewerCanvas" class="viewer-canvas">
+        <div class="viewer-fallback" id="loadingState">
+          <i class="ph ph-circle-notch ph-spin"></i>
+          <h3>جاري تحميل الكتاب...</h3>
+          <p>يرجى الانتظار بينما نحاول تحميل معاينة الكتاب</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- أزرار بديلة -->
+    <div class="mt-4" id="alternativeButtons" style="display: none;">
+      <div class="viewer-fallback"
+        style="background: white; border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <i class="ph ph-book-open"></i>
+        <h3>لا يمكن عرض هذا الكتاب</h3>
+        <p>
+          للأسف، هذا الكتاب غير متاح للمعاينة داخل الموقع بسبب حقوق النشر.
+          يمكنك استخدام الخيارات البديلة أدناه:
+        </p>
+        <div class="action-buttons">
+          {% if external_link %}
+          <a href="{{ external_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+            <i class="ph ph-google-logo"></i>
+            فتح في Google Books
+          </a>
+          {% endif %}
+          <a href="https://www.google.com/search?q={{ book_title }}+pdf+قراءة" target="_blank" rel="noopener"
+            class="btn btn-secondary btn-lg">
+            <i class="ph ph-magnifying-glass"></i>
+            البحث عن نسخة PDF
+          </a>
+          <a href="https://www.amazon.com/s?k={{ book_title }}" target="_blank" rel="noopener"
+            class="btn btn-gold btn-lg">
+            <i class="ph ph-amazon-logo"></i>
+            شراء من Amazon
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.google.com/books/jsapi.js"></script>
+<script>
+  google.books.load();
+
+  function initialize() {
+    const viewerEl = document.getElementById('viewerCanvas');
+    const loadingState = document.getElementById('loadingState');
+    const alternativeButtons = document.getElementById('alternativeButtons');
+
+    try {
+      const viewer = new google.books.DefaultViewer(viewerEl);
+
+      viewer.load('{{ book_id }}', function () {
+        // فشل التحميل - إظهار الخيارات البديلة
+        viewerEl.style.display = 'none';
+        alternativeButtons.style.display = 'block';
+      }, function () {
+        // نجح التحميل
+        if (loadingState) loadingState.style.display = 'none';
+      });
+    } catch (error) {
+      console.error('Viewer error:', error);
+      viewerEl.style.display = 'none';
+      alternativeButtons.style.display = 'block';
+    }
+  }
+
+  google.books.setOnLoadCallback(initialize);
+
+  // Timeout - إذا لم يتم التحميل خلال 10 ثواني
+  setTimeout(function () {
+    const loadingState = document.getElementById('loadingState');
+    if (loadingState && loadingState.style.display !== 'none') {
+      document.getElementById('viewerCanvas').style.display = 'none';
+      document.getElementById('alternativeButtons').style.display = 'block';
+    }
+  }, 10000);
+</script>
+{% endblock %}

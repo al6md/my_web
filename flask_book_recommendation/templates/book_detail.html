@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} | ALHAM{% endblock %}
+
+{% block content %}
+<style>
+  /* Immersive Backdrop */
+  .book-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60vh;
+    z-index: -1;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  }
+
+  .book-backdrop img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(60px) opacity(0.2) saturate(1.5);
+    transform: scale(1.1);
+  }
+
+  /* Detail Layout */
+  .detail-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 4rem;
+    padding-top: calc(var(--header-height) + 3rem);
+  }
+
+  @media (max-width: 900px) {
+    .detail-layout {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+
+  .cover-wrapper {
+    position: relative;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+    background: white;
+    padding: 8px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .cover-wrapper img {
+    width: 100%;
+    border-radius: 4px;
+    display: block;
+  }
+
+  /* Feature Cards */
+  .ai-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .ai-card {
+    background: white;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ai-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
+  }
+
+  /* Modals */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .modal-overlay.active {
+    display: flex;
+  }
+
+  .modal-container {
+    background: white;
+    width: 100%;
+    max-width: 700px;
+    max-height: 85vh;
+    border-radius: var(--radius-xl);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-xl);
+    animation: scale-in 0.2s ease-out;
+  }
+</style>
+
+<!-- Backdrop -->
+<div class="book-backdrop">
+  <img src="{{ book.cover_url }}" alt="" onerror="this.style.display='none'">
+</div>
+
+<div class="container pb-5">
+  <div class="detail-layout">
+    <!-- Left Column -->
+    <div class="animate-on-scroll fade-up">
+      <div class="cover-wrapper mb-4">
+        <img src="{{ book.cover_url }}" alt="{{ book.title }}"
+          onerror="this.src='https://via.placeholder.com/300x450?text=No+Cover'">
+      </div>
+
+      <div class="d-flex flex-column gap-3">
+        {% if book.file_url %}
+        <a href="{{ url_for('main.book_read', book_id=book.id) }}" class="btn btn-primary w-100 justify-center">
+          <i class="ph-bold ph-book-open"></i> قراءة
+        </a>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-secondary flex-grow-1 justify-center" onclick="alert('تعديل') /* Placeholder */">
+            <i class="ph ph-pencil-simple"></i> تعديل
+          </button>
+          <form method="post" action="{{ url_for('main.delete_book', book_id=book.id) }}"
+            onsubmit="return confirm('حذف؟')">
+            <button class="btn btn-outline text-danger border-danger justify-center">
+              <i class="ph ph-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="animate-on-scroll fade-up delay-1">
+      <h1 class="h1 mb-2 fw-bold text-primary">{{ book.title }}</h1>
+      <div class="h4 text-secondary mb-4">بقلم <strong>{{ book.author }}</strong></div>
+
+      <div class="card mb-5">
+        <h3 class="h6 text-muted text-uppercase mb-3">نبذة عن الكتاب</h3>
+        <p class="text-secondary" style="line-height: 1.8;">
+          {{ book.description or 'لا يوجد وصف.' }}
+        </p>
+      </div>
+
+      <h3 class="h4 mb-4">أدوات ذكية</h3>
+      <div class="ai-grid">
+        <div class="ai-card" onclick="openChatModal()">
+          <div class="btn-icon mb-3" style="background: var(--bg-subtle); color: var(--primary);">
+            <i class="ph-fill ph-chat-circle-text"></i>
+          </div>
+          <h4 class="h6 mb-1">تحدث مع الكتاب</h4>
+          <p class="small text-muted mb-0">اسأل وحاور الكتاب</p>
+        </div>
+
+        <div class="ai-card" onclick="alert('قريباً')">
+          <div class="btn-icon mb-3" style="background: #FAF5FF; color: var(--secondary);">
+            <i class="ph-fill ph-magic-wand"></i>
+          </div>
+          <h4 class="h6 mb-1">ملخص ذكي</h4>
+          <p class="small text-muted mb-0">ملخص شامل للنقاط الرئيسية</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Modal (Reused) -->
+<div class="modal-overlay" id="chatModal">
+  <div class="modal-container">
+    <div class="d-flex align-center justify-between p-3 border-bottom border-subtle">
+      <h5 class="mb-0">تحدث مع "{{ book.title }}"</h5>
+      <button class="btn-icon" onclick="closeChatModal()"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="flex-grow-1 p-3 overflow-y-auto" id="chatMessages" style="min-height: 300px;">
+    </div>
+    <div class="p-3 border-top border-subtle d-flex gap-2">
+      <input type="text" id="chatInput" class="form-control" placeholder="اكتب سؤالك...">
+      <button class="btn btn-primary btn-icon"><i class="ph-bold ph-paper-plane-right"></i></button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openChatModal() { document.getElementById('chatModal').classList.add('active'); }
+  function closeChatModal() { document.getElementById('chatModal').classList.remove('active'); }
+</script>
+{% endblock %}

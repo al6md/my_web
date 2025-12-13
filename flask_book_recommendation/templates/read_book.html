@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}قراءة: {{ book.title }}{% endblock %}
+
+{% block content %}
+
+<style>
+  body {
+    background: #f5f5f5;
+  }
+
+  .reader-container {
+    max-width: 900px;
+    margin: auto;
+    background: var(--bg, #ffffff);
+    color: var(--fg, #000000);
+    padding: 2rem 2.5rem;
+    border-radius: 16px;
+    line-height: 2;
+    font-size: var(--fs, 20px);
+    box-shadow: 0 8px 35px rgba(0,0,0,0.08);
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .reader-controls {
+    max-width: 900px;
+    margin: 1rem auto;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .reader-controls button {
+    border-radius: 50px;
+    padding: 8px 18px;
+  }
+
+  .dark-mode {
+    --bg: #1e1e1e;
+    --fg: #eeeeee;
+  }
+</style>
+
+
+<!-- أدوات التحكم -->
+<div class="reader-controls">
+  <button class="btn btn-outline-secondary" onclick="changeSize(2)">A+</button>
+  <button class="btn btn-outline-secondary" onclick="changeSize(-2)">A-</button>
+  <button class="btn btn-outline-dark" onclick="toggleMode()">🌓</button>
+  <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="btn btn-outline-primary">
+    العودة للتفاصيل
+  </a>
+</div>
+
+
+<!-- محتوى الكتاب -->
+<div id="reader" class="reader-container">
+  {{ content|safe }}
+</div>
+
+
+<script>
+let fontSize = 20;
+let dark = false;
+
+function changeSize(v) {
+  fontSize += v;
+  if (fontSize < 12) fontSize = 12;
+  document.getElementById("reader").style.setProperty("--fs", fontSize + "px");
+}
+
+function toggleMode() {
+  dark = !dark;
+  const r = document.getElementById("reader");
+  if (dark) {
+    r.classList.add("dark-mode");
+  } else {
+    r.classList.remove("dark-mode");
+  }
+}
+</script>
+
+{% endblock %}

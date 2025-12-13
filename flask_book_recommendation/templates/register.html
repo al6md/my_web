@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}إنشاء حساب | ALHAM{% endblock %}
+
+{% block content %}
+<style>
+  .auth-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+  }
+
+  .auth-bg::before {
+    content: '';
+    position: absolute;
+    top: 10%;
+    right: 15%;
+    width: 450px;
+    height: 450px;
+    background: rgba(102, 126, 234, 0.2);
+    border-radius: 50%;
+    filter: blur(100px);
+    animation: float 8s ease-in-out infinite;
+  }
+
+  .auth-bg::after {
+    content: '';
+    position: absolute;
+    bottom: 15%;
+    left: 10%;
+    width: 350px;
+    height: 350px;
+    background: rgba(168, 85, 247, 0.15);
+    border-radius: 50%;
+    filter: blur(80px);
+    animation: float 8s ease-in-out infinite reverse;
+  }
+
+  .features-row {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 2rem;
+  }
+
+  .feature-item {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .feature-item i {
+    display: block;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    background: var(--text-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+</style>
+
+<div class="auth-bg"></div>
+
+<section class="auth-section">
+  <div class="auth-card animate-on-scroll fade-up" style="max-width: 480px;">
+    <div class="text-center mb-4">
+      <div class="auth-icon-circle">
+        <i class="ph-fill ph-user-plus"></i>
+      </div>
+      <h1 class="h3 mb-2" style="color: var(--text-primary);">انضم إلينا</h1>
+      <p class="text-secondary mb-0">أنشئ حسابك لبدء رحلة القراءة</p>
+    </div>
+
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label for="name" class="form-label">
+          <i class="ph ph-user"></i> الاسم الكامل
+        </label>
+        <input type="text" name="name" id="name" class="form-input" placeholder="الاسم" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">
+          <i class="ph ph-envelope"></i> البريد الإلكتروني
+        </label>
+        <input type="email" name="email" id="email" class="form-input" placeholder="اسمك@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">
+          <i class="ph ph-lock"></i> كلمة المرور
+        </label>
+        <input type="password" name="password" id="password" class="form-input" placeholder="••••••••" required>
+        <small class="text-muted mt-1 d-block">6 أحرف على الأقل</small>
+      </div>
+
+      <div class="form-group">
+        <label for="password_confirm" class="form-label">
+          <i class="ph ph-lock-key"></i> تأكيد كلمة المرور
+        </label>
+        <input type="password" name="password_confirm" id="password_confirm" class="form-input" placeholder="••••••••"
+          required>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 py-3 mt-2 font-medium">
+        <i class="ph ph-user-plus"></i>
+        إنشاء حساب
+      </button>
+    </form>
+
+    <div class="divider">
+      <span>أو</span>
+    </div>
+
+    <div class="text-center">
+      <p class="text-secondary mb-3">لديك حساب بالفعل؟</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline w-100">
+        <i class="ph ph-sign-in"></i>
+        تسجيل الدخول
+      </a>
+    </div>
+
+    <div class="features-row">
+      <div class="feature-item">
+        <i class="ph-fill ph-brain"></i>
+        توصيات AI
+      </div>
+      <div class="feature-item">
+        <i class="ph-fill ph-books"></i>
+        مكتبة شخصية
+      </div>
+      <div class="feature-item">
+        <i class="ph-fill ph-chart-line-up"></i>
+        أدوات قراءة
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

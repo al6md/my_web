@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}استكشف | ALHAM - توصيات ذكية{% endblock %}
+
+{% block content %}
+<style>
+    /* Hero for Aurora */
+    .explore-hero {
+        padding: calc(var(--header-height) + 3rem) 0 4rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .explore-hero::before {
+        content: '';
+        position: absolute;
+        top: -20%;
+        right: -10%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: float 8s ease-in-out infinite;
+    }
+
+    .explore-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -20%;
+        left: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(244, 114, 182, 0.15) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: float 8s ease-in-out infinite reverse;
+    }
+
+    /* Scroll Container */
+    .scroll-container {
+        display: flex;
+        gap: 1.25rem;
+        overflow-x: auto;
+        padding: 1rem 0;
+        scroll-behavior: smooth;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scroll-container .book-card {
+        flex: 0 0 160px;
+        min-width: 160px;
+    }
+
+    .book-card {
+        position: relative;
+        transition: all var(--transition-base);
+    }
+
+    .book-card:hover {
+        transform: translateY(-8px);
+    }
+
+    .book-cover-wrap {
+        position: relative;
+        aspect-ratio: 2/3;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+        transition: all var(--transition-base);
+    }
+
+    .book-card:hover .book-cover-wrap {
+        box-shadow: var(--glow-primary);
+    }
+
+    .book-cover-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform var(--transition-smooth);
+    }
+
+    .book-card:hover .book-cover-wrap img {
+        transform: scale(1.05);
+    }
+
+    /* Make book-card clickable */
+    .book-card a {
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Navigation Buttons */
+    .scroll-nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-lg);
+        pointer-events: auto;
+    }
+
+    .scroll-nav-btn:hover {
+        box-shadow: var(--glow-primary);
+    }
+
+    /* Scroll wrapper to contain nav buttons */
+    .scroll-wrapper {
+        position: relative;
+        padding: 0 25px;
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="explore-hero">
+    <div class="container" style="position: relative; z-index: 10;">
+        <div class="text-center" style="max-width: 800px; margin: 0 auto;">
+            <!-- Badge -->
+            <div class="animate-on-scroll fade-up">
+                <span class="d-inline-flex align-center gap-2"
+                    style="padding: 0.5rem 1rem; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); color: var(--accent-cyan); font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem;">
+                    <i class="ph-fill ph-sparkle"></i>
+                    مدعوم بالذكاء الاصطناعي
+                </span>
+            </div>
+
+            <!-- Title -->
+            <h1 class="animate-on-scroll fade-up delay-1" style="margin-bottom: 1.5rem;">
+                اكتشف كتابك القادم
+                <br>
+                <span class="text-gradient">بذكاء وإلهام</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="animate-on-scroll fade-up delay-2 text-secondary mb-5" style="font-size: 1.2rem;">
+                خوارزميات ذكية تحلل اهتماماتك وتقترح لك الكتب المثالية من آلاف العناوين المتاحة
+            </p>
+
+            <!-- Actions -->
+            <div class="animate-on-scroll fade-up delay-3 d-flex justify-center gap-3 flex-wrap">
+                <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
+                    <i class="ph ph-magnifying-glass"></i>
+                    تصفح المكتبة
+                </a>
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">
+                    <i class="ph ph-user-plus"></i>
+                    انضم مجاناً
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Stats -->
+            <div class="d-flex justify-center gap-5 flex-wrap mt-5 animate-on-scroll fade-up">
+                <div class="text-center">
+                    <div class="text-gradient fw-bold" style="font-size: 2rem;">+١٠٠٠</div>
+                    <div class="text-muted small">كتاب متاح</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-gradient fw-bold" style="font-size: 2rem;">AI</div>
+                    <div class="text-muted small">توصيات ذكية</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-gradient fw-bold" style="font-size: 2rem;">٢٤/٧</div>
+                    <div class="text-muted small">متاح دائماً</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Book Card -->
+        {% if hero %}
+        <div class="d-flex justify-center mt-5 animate-on-scroll scale-in">
+            <div class="card d-flex flex-wrap align-center gap-4 p-4" style="max-width: 700px;">
+                <div style="width: 120px; flex-shrink: 0;">
+                    <img src="{{ hero.cover }}" alt="{{ hero.title }}" class="float" loading="lazy"
+                        style="width: 100%; border-radius: var(--radius-md); box-shadow: var(--shadow-lg);"
+                        onerror="this.src='https://via.placeholder.com/120x180/1a1a2e/667eea?text=📚'">
+                </div>
+                <div class="flex-grow-1" style="text-align: right;">
+                    <span class="d-inline-flex align-center gap-1 fw-bold small mb-2" style="color: var(--warning);">
+                        <i class="ph-fill ph-star-four"></i>
+                        ترشيح اليوم لك
+                    </span>
+                    <h3 class="mb-2" style="font-size: 1.25rem; color: var(--text-primary);">{{ hero.title }}</h3>
+                    <p class="text-muted mb-3">{{ hero.author }}</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('public.book_detail', gid=hero.id) }}" class="btn btn-primary btn-sm">
+                            <i class="ph ph-eye"></i>
+                            عرض التفاصيل
+                        </a>
+                        <a href="{{ url_for('public.list_books') }}" class="btn btn-secondary btn-sm">
+                            المزيد من الكتب
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Book Sections -->
+<div class="container py-5" id="explore-sections">
+    {% for section in sections %}
+    <div class="mb-5 animate-on-scroll fade-up">
+        <div class="d-flex justify-between align-center mb-4 flex-wrap gap-3">
+            <div class="d-flex align-center gap-3">
+                <div class="btn-icon"
+                    style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; cursor: default; box-shadow: var(--glow-primary);">
+                    <i class="ph ph-{{ section.icon if section.icon else 'sparkle' }}"></i>
+                </div>
+                <h2 class="mb-0" style="font-size: 1.5rem; color: var(--text-primary);">{{ section.title }}</h2>
+            </div>
+            <a href="{{ url_for('public.list_books', q=section.query) }}" class="btn btn-ghost btn-sm">
+                عرض الكل
+                <i class="ph ph-arrow-left"></i>
+            </a>
+        </div>
+
+        <div class="scroll-wrapper" style="position: relative;">
+            <button class="btn-icon scroll-nav-btn" onclick="scrollSection(this, 1)" style="right: -20px;">
+                <i class="ph ph-caret-right"></i>
+            </button>
+
+            <div class="scroll-container">
+                {% for book in section.books %}
+                {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
+
+                <div class="book-card">
+                    <a href="{{ url_for('public.book_detail', gid=book.id) }}"
+                        style="display: block; text-decoration: none;">
+                        <div class="book-cover-wrap">
+                            {% if book.cover %}
+                            <img src="{{ book.cover }}" alt="{{ book.title }}" loading="lazy"
+                                onerror="handleCoverError(this, '{{ ai_cover | e }}')">
+                            <div class="dynamic-cover d-flex align-center justify-center text-center p-2"
+                                style="display: none; width: 100%; height: 100%; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
+                                <span class="small fw-bold">{{ book.title }}</span>
+                            </div>
+                            {% else %}
+                            <img src="{{ ai_cover }}" alt="{{ book.title }}" loading="lazy"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="dynamic-cover d-flex align-center justify-center text-center p-2"
+                                style="display: none; width: 100%; height: 100%; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
+                                <span class="small fw-bold">{{ book.title }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="text-truncate mb-1" style="font-size: 0.95rem; color: var(--text-primary);">
+                                {{ book.title }}
+                            </h5>
+                            <p class="small text-muted mb-0">{{ book.author or 'غير معروف' }}</p>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button class="btn-icon scroll-nav-btn" onclick="scrollSection(this, -1)" style="left: -20px;">
+                <i class="ph ph-caret-left"></i>
+            </button>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5 animate-on-scroll fade-up">
+        <div class="card mx-auto" style="max-width: 500px;">
+            <div class="mb-4">
+                <div class="btn-icon mx-auto mb-3"
+                    style="width: 80px; height: 80px; font-size: 2rem; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; box-shadow: var(--glow-primary);">
+                    <i class="ph ph-brain"></i>
+                </div>
+            </div>
+            <h3 class="mb-2" style="color: var(--text-primary);">جاري تدريب الخوارزميات...</h3>
+            <p class="text-secondary mb-4">ابحث في المكتبة لتبدأ رحلة التوصيات الذكية</p>
+            <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
+                <i class="ph ph-magnifying-glass"></i>
+                استكشف المكتبة
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Features Section -->
+<section class="container py-5 mb-5"
+    style="background: var(--bg-surface); border-radius: var(--radius-xl); padding: 3rem; border: 1px solid var(--border-subtle);">
+    <div class="text-center mb-5 animate-on-scroll fade-up">
+        <h2 class="mb-3" style="color: var(--text-primary);">لماذا <span class="text-gradient">مكتبة الإلهام</span>؟
+        </h2>
+        <p class="text-secondary">تجربة قراءة فريدة مع أحدث تقنيات الذكاء الاصطناعي</p>
+    </div>
+
+    <div class="grid-3 text-center">
+        <div class="animate-on-scroll fade-up delay-1">
+            <div class="btn-icon mx-auto mb-4"
+                style="width: 70px; height: 70px; font-size: 1.75rem; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; box-shadow: var(--glow-primary);">
+                <i class="ph-fill ph-brain"></i>
+            </div>
+            <h4 class="mb-2" style="color: var(--text-primary);">توصيات ذكية</h4>
+            <p class="text-secondary mb-0 small">خوارزميات AI متقدمة تحلل ذوقك وتقترح كتب مناسبة</p>
+        </div>
+
+        <div class="animate-on-scroll fade-up delay-2">
+            <div class="btn-icon mx-auto mb-4"
+                style="width: 70px; height: 70px; font-size: 1.75rem; background: linear-gradient(135deg, var(--accent-magenta), var(--accent-purple)); color: white; box-shadow: var(--glow-magenta);">
+                <i class="ph-fill ph-chats-circle"></i>
+            </div>
+            <h4 class="mb-2" style="color: var(--text-primary);">تحدث مع الكتب</h4>
+            <p class="text-secondary mb-0 small">اسأل أي سؤال عن محتوى الكتاب واحصل على إجابات فورية</p>
+        </div>
+
+        <div class="animate-on-scroll fade-up delay-3">
+            <div class="btn-icon mx-auto mb-4"
+                style="width: 70px; height: 70px; font-size: 1.75rem; background: linear-gradient(135deg, var(--accent-cyan), var(--primary)); color: white; box-shadow: var(--glow-cyan);">
+                <i class="ph-fill ph-sparkle"></i>
+            </div>
+            <h4 class="mb-2" style="color: var(--text-primary);">ملخصات AI</h4>
+            <p class="text-secondary mb-0 small">ملخصات ذكية لكل كتاب لمساعدتك في اتخاذ القرار</p>
+        </div>
+    </div>
+</section>
+
+<script>
+    function handleCoverError(img, aiCoverUrl) {
+        img.onerror = null;
+        const aiImg = new Image();
+        aiImg.onload = function () {
+            img.src = aiCoverUrl;
+        };
+        aiImg.onerror = function () {
+            img.style.display = 'none';
+            const dynamicCover = img.nextElementSibling;
+            if (dynamicCover) dynamicCover.style.display = 'flex';
+        };
+        aiImg.src = aiCoverUrl;
+    }
+
+    function scrollSection(btn, direction) {
+        const wrapper = btn.closest('.scroll-wrapper');
+        const container = wrapper.querySelector('.scroll-container');
+        const scrollAmount = 600;
+        container.scrollBy({
+            left: direction * scrollAmount,
+            behavior: 'smooth'
+        });
+    }
+</script>
+{% endblock %}

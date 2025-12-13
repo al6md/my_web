@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+
+{% block title %}كتبي | ALHAM{% endblock %}
+
+{% block content %}
+<style>
+  /* Page Header */
+  .my-library-header {
+    padding: calc(var(--header-height) + 3rem) 0 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .my-library-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(ellipse 50% 40% at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse 40% 30% at 80% 70%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* My Books Grid */
+  .my-books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .my-books-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+  }
+
+  .my-book-card {
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .my-book-cover {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2/3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    background: var(--bg-elevated);
+    transition: all var(--transition-base);
+  }
+
+  .my-book-card:hover .my-book-cover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--glow-primary);
+  }
+
+  .my-book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-smooth);
+  }
+
+  .my-book-card:hover .my-book-cover img {
+    transform: scale(1.1);
+  }
+
+  .book-actions {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    justify-content: flex-end;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+
+  .my-book-card:hover .book-actions {
+    opacity: 1;
+  }
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: white;
+  }
+
+  .action-btn:hover {
+    transform: scale(1.1);
+  }
+
+  .action-btn.delete {
+    background: rgba(239, 68, 68, 0.9);
+  }
+
+  .action-btn.delete:hover {
+    background: #ef4444;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  }
+
+  .my-book-info {
+    padding: 0 0.25rem;
+  }
+
+  .my-book-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    transition: color var(--transition-fast);
+  }
+
+  .my-book-card:hover .my-book-title {
+    color: var(--primary-light);
+  }
+
+  .my-book-author {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Section Styles */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+  }
+
+  .section-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    box-shadow: var(--glow-primary);
+  }
+
+  .feature-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--primary-light);
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+  }
+
+  .empty-state-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: var(--glow-primary);
+  }
+
+  .empty-state-icon i {
+    font-size: 3rem;
+    color: white;
+  }
+
+  /* Scroll Container */
+  .library-scroll-container {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 0.5rem 0 1rem;
+    scroll-snap-type: x mandatory;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .library-scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .library-scroll-container>* {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+    width: 140px;
+  }
+
+  /* Glass Card */
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+  }
+
+  /* Book Card in Scroll */
+  .book-card {
+    text-decoration: none;
+    display: block;
+  }
+
+  .book-cover {
+    position: relative;
+    aspect-ratio: 2/3;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-base);
+  }
+
+  .book-card:hover .book-cover img {
+    transform: scale(1.05);
+  }
+
+  .book-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 0.75rem;
+  }
+
+  .book-card:hover .book-overlay {
+    opacity: 1;
+  }
+
+  .book-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .book-author {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* Modal Styling */
+  .modal-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+  }
+
+  .modal-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 1.25rem;
+  }
+
+  .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+</style>
+
+<!-- Page Header -->
+<div class="my-library-header animate-on-scroll fade-up">
+  <div class="container" style="position: relative; z-index: 1;">
+    <div class="d-flex flex-wrap justify-between align-center gap-3">
+      <div>
+        <h1 style="color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
+          <span class="text-gradient"><i class="ph-fill ph-books"></i></span>
+          مكتبتي الخاصة
+        </h1>
+        <p class="text-secondary mb-0">مجموعتك المميزة من الكتب والمعرفة</p>
+      </div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookModal">
+        <i class="ph ph-plus"></i>
+        إضافة كتاب
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <!-- AI Recommendations -->
+  {% if cf_recs %}
+  <div class="mb-5 animate-on-scroll fade-up">
+    <div class="section-header">
+      <h2 class="section-title">
+        <div class="section-icon">
+          <i class="ph ph-sparkle"></i>
+        </div>
+        موصى به لك
+      </h2>
+      <span class="feature-badge">
+        <i class="ph ph-brain"></i>
+        بناءً على ذوقك
+      </span>
+    </div>
+    <div class="my-books-grid">
+      {% for book in cf_recs %}
+      <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="my-book-card">
+        <div class="my-book-cover">
+          {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
+          <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
+            onerror="this.onerror=null; this.src='{{ ai_cover }}';">
+        </div>
+        <div class="my-book-info">
+          <div class="my-book-title">{{ book.title }}</div>
+          <div class="my-book-author">{{ book.author }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Favorites -->
+  {% if favorites %}
+  <div class="mb-5 animate-on-scroll fade-up">
+    <div class="section-header">
+      <h2 class="section-title">
+        <div class="section-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+          <i class="ph-fill ph-heart"></i>
+        </div>
+        المفضلة
+      </h2>
+      <span class="feature-badge" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+        <i class="ph ph-heart"></i>
+        {{ favorites|length }} كتاب
+      </span>
+    </div>
+    <div class="my-books-grid">
+      {% for book in favorites %}
+      <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="my-book-card">
+        <div class="my-book-cover">
+          {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
+          <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
+            onerror="this.onerror=null; this.src='{{ ai_cover }}';">
+        </div>
+        <div class="my-book-info">
+          <div class="my-book-title">{{ book.title }}</div>
+          <div class="my-book-author">{{ book.author }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- All My Books -->
+  <div class="mb-5 animate-on-scroll fade-up">
+    <div class="section-header">
+      <h2 class="section-title">
+        <div class="section-icon" style="background: linear-gradient(135deg, var(--accent-cyan), var(--primary));">
+          <i class="ph-fill ph-books"></i>
+        </div>
+        جميع كتبي
+      </h2>
+      {% if books %}
+      <span class="feature-badge">
+        <i class="ph ph-stack"></i>
+        {{ books|length }} كتاب
+      </span>
+      {% endif %}
+    </div>
+
+    {% if books %}
+    <div class="my-books-grid">
+      {% for book in books %}
+      <div class="my-book-card">
+        <a href="{{ url_for('main.book_detail', book_id=book.id) }}">
+          <div class="my-book-cover">
+            {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
+            <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
+              onerror="this.onerror=null; this.src='{{ ai_cover }}';">
+            <div class="book-actions">
+              <form method="post" action="{{ url_for('main.delete_book', book_id=book.id) }}"
+                onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب؟')">
+                <button type="submit" class="action-btn delete">
+                  <i class="ph ph-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </a>
+        <div class="my-book-info">
+          <div class="my-book-title">{{ book.title }}</div>
+          <div class="my-book-author">{{ book.author }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <i class="ph ph-books"></i>
+      </div>
+      <h3 class="mb-2" style="color: var(--text-primary);">مكتبتك فارغة</h3>
+      <p class="text-secondary mb-4">ابدأ بإضافة كتبك المفضلة لبناء مكتبتك الخاصة</p>
+      <div class="d-flex gap-2 justify-center flex-wrap">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookModal">
+          <i class="ph ph-plus"></i>
+          إضافة كتاب
+        </button>
+        <a href="{{ url_for('explore.index') }}" class="btn btn-outline">
+          <i class="ph ph-compass"></i>
+          استكشف الكتب
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Explore Global Libraries -->
+  {% if library_sections %}
+  <div class="pt-4 animate-on-scroll fade-up" style="border-top: 1px solid var(--border-subtle);">
+    <div class="section-header mb-4">
+      <h2 class="section-title">
+        <div class="section-icon"
+          style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-magenta));">
+          <i class="ph ph-globe"></i>
+        </div>
+        استكشف المكتبات العالمية
+      </h2>
+      <span class="feature-badge">
+        <i class="ph ph-database"></i>
+        5 مصادر عالمية
+      </span>
+    </div>
+
+    <p class="text-secondary mb-4">اكتشف ملايين الكتب من أفضل المكتبات الرقمية في العالم</p>
+
+    {% for section in library_sections %}
+    <div class="glass-card mb-4 p-4">
+      <div class="d-flex align-center gap-3 mb-3">
+        <div class="section-icon" style="width: 48px; height: 48px; font-size: 1.2rem;
+                    {% if 'Google' in section.title %}background: linear-gradient(135deg, #4285F4, #0F9D58);
+                    {% elif 'Archive' in section.title %}background: linear-gradient(135deg, #F4B400, #FF6B00);
+                    {% elif 'Gutenberg' in section.title %}background: linear-gradient(135deg, #0F9D58, #00C853);
+                    {% elif 'OpenLibrary' in section.title %}background: linear-gradient(135deg, #DB4437, #E91E63);
+                    {% elif 'IT' in section.title %}background: linear-gradient(135deg, var(--accent-purple), var(--primary));
+                    {% else %}background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));{% endif %}">
+          <i class="ph ph-{{ section.icon or 'books' }}"></i>
+        </div>
+        <div style="flex: 1;">
+          <h4 class="mb-0" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">{{ section.title }}
+          </h4>
+          <small class="text-muted">{{ section.subtitle }}</small>
+        </div>
+        <span class="feature-badge">{{ section.books|length }} كتاب</span>
+      </div>
+
+      <div class="library-scroll-container">
+        {% for book in section.books %}
+        <a href="{{ url_for('public.book_detail', gid=book.id) }}" class="book-card">
+          <div class="book-cover">
+            {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '',
+            source=section.title) %}
+            <img src="{{ book.cover or ai_cover }}" alt="{{ book.title }}" loading="lazy"
+              onerror="this.onerror=null; this.src='{{ ai_cover }}';">
+            <div class="book-overlay">
+              <span class="btn btn-primary btn-sm">
+                <i class="ph ph-eye"></i>
+              </span>
+            </div>
+          </div>
+          <div class="book-info">
+            <h5 class="book-title">{{ book.title[:25] }}{% if book.title|length > 25 %}...{% endif %}</h5>
+            <p class="book-author">{{ book.author or 'مؤلف غير معروف' }}</p>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="text-center mt-4">
+      <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
+        <i class="ph ph-arrow-left"></i>
+        تصفح المكتبة الشاملة
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Book Modal -->
+<div class="modal fade" id="addBookModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="ph ph-plus-circle" style="color: var(--primary-light);"></i>
+          إضافة كتاب جديد
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" action="{{ url_for('main.create_book') }}">
+          <div class="form-group">
+            <label class="form-label">عنوان الكتاب</label>
+            <input type="text" class="form-control" name="title" required placeholder="أدخل عنوان الكتاب">
+          </div>
+          <div class="form-group">
+            <label class="form-label">المؤلف</label>
+            <input type="text" class="form-control" name="author" placeholder="اسم المؤلف">
+          </div>
+          <div class="form-group">
+            <label class="form-label">رابط الغلاف</label>
+            <input type="url" class="form-control" name="cover_url" placeholder="https://example.com/cover.jpg">
+          </div>
+          <div class="form-group">
+            <label class="form-label">رابط الملف (PDF/EPUB)</label>
+            <input type="url" class="form-control" name="file_url" placeholder="https://example.com/book.pdf">
+          </div>
+          <div class="form-group">
+            <label class="form-label">وصف مختصر</label>
+            <textarea class="form-control" name="description" rows="3" placeholder="وصف مختصر عن الكتاب..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 mt-2">
+            <i class="ph ph-check"></i>
+            إضافة الكتاب
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

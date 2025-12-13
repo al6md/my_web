@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% block title %}📊 تحليل عادات القراءة | ALHAM{% endblock %}
+
+{% block content %}
+<style>
+    .analytics-header {
+        padding: calc(var(--header-height) + var(--space-2xl)) 0 var(--space-xl);
+        text-align: center;
+        position: relative;
+    }
+
+    .analytics-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+        pointer-events: none;
+    }
+
+    /* Stat Cards */
+    .stat-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-lg);
+        margin-bottom: var(--space-2xl);
+    }
+
+    @media (max-width: 1024px) {
+        .stat-cards-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stat-cards-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+    }
+
+    .analytics-stat-card {
+        padding: var(--space-xl);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .analytics-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: var(--radius-full);
+    }
+
+    .analytics-stat-card.purple::before {
+        background: var(--gradient-primary);
+    }
+
+    .analytics-stat-card.green::before {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    .analytics-stat-card.gold::before {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+
+    .analytics-stat-card.pink::before {
+        background: linear-gradient(90deg, #ec4899, #db2777);
+    }
+
+    .stat-value {
+        font-size: 3rem;
+        font-weight: 800;
+        background: var(--gradient-aurora);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: var(--space-xs);
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    /* Charts Section */
+    .chart-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: var(--space-xl);
+        margin-bottom: var(--space-2xl);
+    }
+
+    @media (max-width: 1024px) {
+        .chart-section {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .chart-card {
+        padding: var(--space-xl);
+    }
+
+    .chart-title {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        margin-bottom: var(--space-lg);
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .chart-title i {
+        font-size: 1.3rem;
+    }
+
+    /* Tips */
+    .tips-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .tip-card {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: var(--radius-lg);
+        padding: var(--space-md) var(--space-lg);
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-md);
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .tip-card i {
+        color: var(--aurora-gold);
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    /* More Stats */
+    .more-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-lg);
+    }
+
+    @media (max-width: 768px) {
+        .more-stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .more-stat-card {
+        padding: var(--space-xl);
+        text-align: center;
+    }
+
+    .more-stat-card i {
+        font-size: 2.5rem;
+        margin-bottom: var(--space-md);
+    }
+
+    .more-stat-card h3 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: var(--space-xs);
+    }
+</style>
+
+<!-- Header -->
+<section class="analytics-header">
+    <div class="container" style="position: relative; z-index: 10;">
+        <div class="animate-on-scroll fade-up is-visible">
+            <span class="feature-badge mb-3">
+                <i class="ph ph-chart-line-up"></i>
+                تحليلات ذكية
+            </span>
+            <h1 class="display-2 mb-3">تحليل عادات القراءة</h1>
+            <p class="text-secondary mb-0" style="max-width: 600px; margin: 0 auto;">
+                اكتشف أنماط قراءتك واحصل على نصائح مخصصة لتحسين تجربتك
+            </p>
+        </div>
+    </div>
+</section>
+
+<div class="container pb-5">
+    <!-- Loading State -->
+    <div id="analyticsLoading" class="text-center py-5">
+        <div class="glass-card p-5 mx-auto" style="max-width: 400px;">
+            <i class="ph ph-spinner"
+                style="font-size: 3rem; color: var(--primary); animation: spin 1s linear infinite;"></i>
+            <p class="mt-4 text-secondary">جاري تحليل بياناتك...</p>
+        </div>
+    </div>
+
+    <!-- Analytics Content -->
+    <div id="analyticsContent" style="display: none;">
+
+        <!-- Main Stats -->
+        <div class="stat-cards-grid stagger-children">
+            <div class="glass-card analytics-stat-card purple animate-on-scroll scale-in">
+                <div class="stat-value" id="statTotalBooks">0</div>
+                <div class="stat-label">إجمالي الكتب</div>
+            </div>
+            <div class="glass-card analytics-stat-card green animate-on-scroll scale-in delay-1">
+                <div class="stat-value" id="statFinished">0</div>
+                <div class="stat-label">كتب مكتملة</div>
+            </div>
+            <div class="glass-card analytics-stat-card gold animate-on-scroll scale-in delay-2">
+                <div class="stat-value" id="statFavorite">0</div>
+                <div class="stat-label">مفضلات</div>
+            </div>
+            <div class="glass-card analytics-stat-card pink animate-on-scroll scale-in delay-3">
+                <div class="stat-value" id="statAvgRating">0</div>
+                <div class="stat-label">متوسط التقييم</div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="chart-section">
+            <!-- Monthly Activity Chart -->
+            <div class="glass-card chart-card animate-on-scroll fade-up">
+                <div class="chart-title">
+                    <i class="ph-fill ph-chart-bar" style="color: var(--primary);"></i>
+                    نشاط القراءة الشهري
+                </div>
+                <canvas id="monthlyChart" height="250"></canvas>
+            </div>
+
+            <!-- AI Tips -->
+            <div class="glass-card chart-card animate-on-scroll fade-up delay-1"
+                style="background: rgba(245, 158, 11, 0.03);">
+                <div class="chart-title">
+                    <i class="ph-fill ph-lightbulb" style="color: var(--aurora-gold);"></i>
+                    نصائح ذكية
+                </div>
+                <div id="aiTipsContainer" class="tips-container">
+                    <!-- Tips will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- More Stats -->
+        <div class="more-stats-grid stagger-children">
+            <div class="glass-card more-stat-card animate-on-scroll fade-up">
+                <i class="ph-fill ph-bookmark-simple" style="color: var(--aurora-cyan);"></i>
+                <h3 id="statLater">0</h3>
+                <p class="text-muted mb-0">للقراءة لاحقاً</p>
+            </div>
+            <div class="glass-card more-stat-card animate-on-scroll fade-up delay-1">
+                <i class="ph-fill ph-pencil-simple" style="color: var(--aurora-green);"></i>
+                <h3 id="statReviews">0</h3>
+                <p class="text-muted mb-0">مراجعات مكتوبة</p>
+            </div>
+            <div class="glass-card more-stat-card animate-on-scroll fade-up delay-2">
+                <i class="ph-fill ph-magnifying-glass" style="color: var(--primary);"></i>
+                <h3 id="statSearches">0</h3>
+                <p class="text-muted mb-0">عمليات بحث (30 يوم)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let monthlyChart = null;
+
+    async function loadAnalytics() {
+        const loading = document.getElementById('analyticsLoading');
+        const content = document.getElementById('analyticsContent');
+
+        try {
+            const response = await fetch('/public/api/reading-analytics');
+            const data = await response.json();
+
+            loading.style.display = 'none';
+
+            if (data.success) {
+                const stats = data.stats;
+
+                // Update stats
+                document.getElementById('statTotalBooks').textContent = stats.total_books;
+                document.getElementById('statFinished').textContent = stats.finished_books;
+                document.getElementById('statFavorite').textContent = stats.favorite_books;
+                document.getElementById('statAvgRating').textContent = stats.average_rating;
+                document.getElementById('statLater').textContent = stats.later_books;
+                document.getElementById('statReviews').textContent = stats.total_reviews;
+                document.getElementById('statSearches').textContent = stats.recent_searches;
+
+                // AI Tips
+                const tipsContainer = document.getElementById('aiTipsContainer');
+                tipsContainer.innerHTML = '';
+                stats.ai_tips.forEach(tip => {
+                    tipsContainer.innerHTML += `
+                        <div class="tip-card">
+                            <i class="ph-fill ph-star-four"></i>
+                            <span>${tip}</span>
+                        </div>
+                    `;
+                });
+
+                // Monthly Chart
+                const labels = stats.monthly_activity.map(m => m.month);
+                const counts = stats.monthly_activity.map(m => m.count);
+
+                const ctx = document.getElementById('monthlyChart').getContext('2d');
+                if (monthlyChart) monthlyChart.destroy();
+
+                monthlyChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'كتب مكتملة',
+                            data: counts,
+                            backgroundColor: 'rgba(168, 85, 247, 0.8)',
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1, color: '#94a3b8' },
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                            },
+                            x: {
+                                ticks: { color: '#94a3b8' },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+
+                content.style.display = 'block';
+            }
+        } catch (e) {
+            loading.innerHTML = '<div class="glass-card p-5 text-center"><p class="text-danger mb-0">حدث خطأ في تحميل البيانات.</p></div>';
+        }
+    }
+
+    // Spinner animation
+    const style = document.createElement('style');
+    style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+    document.head.appendChild(style);
+
+    // Load on page ready
+    loadAnalytics();
+</script>
+{% endblock %}

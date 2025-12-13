@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+{% block title %}المكتبة | ALHAM{% endblock %}
+
+{% block content %}
+<style>
+  /* Layout */
+  .library-container {
+    display: flex;
+    gap: 2rem;
+    padding-top: calc(var(--header-height) + 2rem);
+    padding-bottom: 4rem;
+    min-height: 100vh;
+  }
+
+
+
+  /* Main Content */
+  .library-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .library-header-minimal {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  /* Book Grid (Existing) */
+  .library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .book-item {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all var(--transition-base);
+  }
+
+  .book-item:hover {
+    transform: translateY(-8px);
+  }
+
+  .book-item:hover .book-cover {
+    box-shadow: var(--glow-primary);
+  }
+
+  .book-cover {
+    position: relative;
+    aspect-ratio: 2/3;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-elevated);
+    transition: all var(--transition-base);
+  }
+
+  .book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-smooth);
+  }
+
+  .book-item:hover .book-cover img {
+    transform: scale(1.05);
+  }
+
+  .book-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 1rem;
+  }
+
+  .book-item:hover .book-overlay {
+    opacity: 1;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 991px) {
+    .library-container {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<style>
+  /* Layout */
+  .library-container {
+    display: flex;
+    gap: 2rem;
+    padding-top: calc(var(--header-height) + 2rem);
+    padding-bottom: 4rem;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .library-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    position: sticky;
+    top: calc(var(--header-height) + 2rem);
+    height: fit-content;
+    max-height: calc(100vh - var(--header-height) - 4rem);
+    overflow-y: auto;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
+
+  /* Custom Scrollbar for Sidebar */
+  .library-sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .library-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .library-sidebar::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 10px;
+  }
+
+  .sidebar-section {
+    margin-bottom: 2rem;
+  }
+
+  .sidebar-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+
+  .sidebar-link:hover,
+  .sidebar-link.active {
+    background: var(--bg-elevated);
+    color: var(--primary-light);
+    transform: translateX(-4px);
+  }
+
+  .sidebar-link.active {
+    font-weight: 600;
+    background: rgba(102, 126, 234, 0.1);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .sidebar-link i {
+    font-size: 1.1em;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 991px) {
+    .library-container {
+      flex-direction: column;
+    }
+
+    .library-sidebar {
+      width: 100%;
+      position: relative;
+      top: 0;
+      max-height: none;
+    }
+  }
+</style>
+
+<div class="container library-container">
+
+  <!-- SIDEBAR -->
+  <aside class="library-sidebar animate-on-scroll fade-right">
+
+    <!-- User Library Section if Logged In -->
+    {% if current_user.is_authenticated %}
+    <div class="sidebar-section">
+      <div class="sidebar-title">
+        <i class="ph-fill ph-user"></i> مكتبتي
+      </div>
+      <a href="{{ url_for('main.books') }}" class="sidebar-link">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-bookmark-simple"></i>
+          <span>كتبي الخاصة</span>
+        </div>
+        <i class="ph ph-caret-right"></i>
+      </a>
+      <a href="{{ url_for('main.books', sort='rating') }}" class="sidebar-link">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-heart"></i>
+          <span>المفضلة</span>
+        </div>
+        <i class="ph ph-caret-right"></i>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Categories Section -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">
+        <i class="ph-fill ph-squares-four"></i> التصنيفات
+      </div>
+
+      <a href="{{ url_for('public.list_books') }}" class="sidebar-link {% if not cat %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-list"></i>
+          <span>الكل</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Fiction') }}"
+        class="sidebar-link {% if cat == 'Fiction' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-book-open"></i>
+          <span>الأدب والروايات</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Science') }}"
+        class="sidebar-link {% if cat == 'Science' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-atom"></i>
+          <span>العلوم والطبيعة</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Technology') }}"
+        class="sidebar-link {% if cat == 'Technology' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-code"></i>
+          <span>التكنولوجيا والبرمجة</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Business') }}"
+        class="sidebar-link {% if cat == 'Business' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-trend-up"></i>
+          <span>المال والأعمال</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='History') }}"
+        class="sidebar-link {% if cat == 'History' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-scroll"></i>
+          <span>التاريخ والحضارة</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Philosophy') }}"
+        class="sidebar-link {% if cat == 'Philosophy' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-lightbulb"></i>
+          <span>الفلسفة والفكر</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Self Help') }}"
+        class="sidebar-link {% if cat == 'Self Help' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-target"></i>
+          <span>تطوير الذات</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Psychology') }}"
+        class="sidebar-link {% if cat == 'Psychology' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-brain"></i>
+          <span>علم النفس</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Art') }}"
+        class="sidebar-link {% if cat == 'Art' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-paint-brush"></i>
+          <span>الفنون</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Religion') }}"
+        class="sidebar-link {% if cat == 'Religion' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-mosque"></i>
+          <span>الأديان</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='Biography') }}"
+        class="sidebar-link {% if cat == 'Biography' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-user-circle"></i>
+          <span>السير الذاتية</span>
+        </div>
+      </a>
+
+      <a href="{{ url_for('public.list_books', cat='General') }}"
+        class="sidebar-link {% if cat == 'General' %}active{% endif %}">
+        <div class="d-flex align-center gap-2">
+          <i class="ph ph-circles-four"></i>
+          <span>كتب عامة</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Quick Stats or Info -->
+    <div class="sidebar-section">
+      <div class="p-3 rounded" style="background: var(--bg-elevated); border: 1px solid var(--border-subtle);">
+        <h6 class="mb-2 text-white">هل تبحث عن المزيد؟</h6>
+        <p class="small text-muted mb-0">يمكنك استخدام شريط البحث في الأعلى للعثور على كتب محددة.</p>
+      </div>
+    </div>
+  </aside>
+
+
+  <!-- MAIN CONTENT -->
+  <main class="library-main animate-on-scroll fade-up delay-1">
+
+    <!-- Minimal Header -->
+    <div class="library-header-minimal">
+      <div>
+        <h1 class="h3 mb-1">
+          {% if cat %}
+          <span class="text-gradient">{{ cat }}</span>
+          {% elif q == 'special:interests' %}
+          <span class="text-gradient">من اهتماماتك العامة</span>
+          {% elif q == 'special:cf' %}
+          <span class="text-gradient">مختارات لك</span>
+          {% elif q == 'special:content' %}
+          <span class="text-gradient">لأنك قرأت</span>
+          {% elif q == 'special:trending' %}
+          <span class="text-gradient">الأكثر رواجاً</span>
+          {% elif q %}
+          نتائج البحث: "{{ q }}"
+          {% else %}
+          استكشف <span class="text-gradient">المكتبة</span>
+          {% endif %}
+        </h1>
+        <p class="text-muted small mb-0">
+          تم العثور على {{ total }} كتاب
+        </p>
+      </div>
+
+      <!-- Simple Sort (Optional) -->
+      <!-- Could add a dropdown here later -->
+    </div>
+
+    <!-- Results Grid -->
+    <div class="library-grid">
+      {% set sources = [
+      {'data': items, 'name': 'Google Books'},
+      {'data': ol_items, 'name': 'OpenLibrary'},
+      {'data': ia_items, 'name': 'Internet Archive'},
+      {'data': it_items, 'name': 'IT Bookstore'},
+      {'data': gut_items, 'name': 'Project Gutenberg'}
+      ] %}
+
+      {% for source in sources %}
+      {% for book in source.data %}
+      {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
+
+      <div class="book-item">
+        <a href="{{ url_for('public.book_detail', gid=book.id) }}" class="d-block text-decoration-none">
+          <div class="book-cover mb-3">
+            {% if book.cover %}
+            <img src="{{ book.cover }}" alt="{{ book.title }}" loading="lazy"
+              onerror="handleCoverError(this, '{{ ai_cover | e }}')">
+            {% else %}
+            <img src="{{ ai_cover }}" alt="{{ book.title }}" loading="lazy"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            {% endif %}
+
+            <div class="dynamic-cover d-flex align-center justify-center text-center p-2"
+              style="display: none; width: 100%; height: 100%; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
+              <span class="small fw-bold">{{ book.title }}</span>
+            </div>
+
+            <!-- Hover Overlay -->
+            <div class="book-overlay">
+              <span class="btn btn-primary btn-sm">
+                <i class="ph ph-eye"></i> التفاصيل
+              </span>
+            </div>
+          </div>
+
+          <h5 class="text-truncate mb-1" style="font-size: 0.95rem; color: var(--text-primary);"
+            title="{{ book.title }}">
+            {{ book.title }}
+          </h5>
+          <p class="text-muted small mb-0">{{ book.author or 'مؤلف غير معروف' }}</p>
+        </a>
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+
+    <script>
+      function handleCoverError(img, aiCoverUrl) {
+        img.onerror = null;
+        const aiImg = new Image();
+        aiImg.onload = function () { img.src = aiCoverUrl; };
+        aiImg.onerror = function () {
+          img.style.display = 'none';
+          const dynamicCover = img.parentElement.querySelector('.dynamic-cover');
+          if (dynamicCover) dynamicCover.style.display = 'flex';
+        };
+        aiImg.src = aiCoverUrl;
+      }
+    </script>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-center gap-3 mt-5">
+      {% if start >= per %}
+      <a href="{{ url_for('public.list_books', q=q, cat=cat, start=start-per) }}" class="btn btn-secondary">
+        <i class="ph ph-arrow-right"></i> السابق
+      </a>
+      {% endif %}
+
+      {% if shown >= per %}
+      <a href="{{ url_for('public.list_books', q=q, cat=cat, start=start+per) }}" class="btn btn-primary">
+        التالي <i class="ph ph-arrow-left"></i>
+      </a>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}
