@@ -68,8 +68,9 @@ def create_app():
     app.register_blueprint(public_bp)
     
     # تسجيل REST API Blueprint
+    # إعفاء API من CSRF (يستخدم JWT بدلاً منه)
+    csrf.exempt(api_bp)
     app.register_blueprint(api_bp)
-    csrf.exempt(api_bp)  # إعفاء API من CSRF (يستخدم JWT بدلاً منه)
 
     # الصفحة الرئيسية → Explore
     @app.route("/")
