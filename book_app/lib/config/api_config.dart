@@ -4,7 +4,9 @@ class ApiConfig {
   // For local testing: http://10.0.2.2:5000 (Android emulator)
   // For Windows testing: http://127.0.0.1:5000
   // For production: https://your-api.onrender.com
-  static const String baseUrl = 'http://127.0.0.1:5000';
+  
+  // ✅ Production API on Render
+  static const String baseUrl = 'https://my-web1-h144.onrender.com';
   
   // API Endpoints
   static const String authRegister = '/api/auth/register';

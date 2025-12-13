@@ -36,12 +36,14 @@ class ApiService {
   // HTTP helpers
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   };
   
   Future<Map<String, String>> get _authHeaders async {
     final t = await token;
     return {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       if (t != null) 'Authorization': 'Bearer $t',
     };
   }
@@ -52,10 +54,14 @@ class ApiService {
   Future<Map<String, dynamic>> get(String endpoint, {bool requireAuth = false}) async {
     try {
       final headers = requireAuth ? await _authHeaders : _headers;
-      final response = await http.get(Uri.parse(_url(endpoint)), headers: headers);
+      final url = _url(endpoint);
+      print('[API GET] $url');  // Debug
+      final response = await http.get(Uri.parse(url), headers: headers);
+      print('[API Response] ${response.statusCode}: ${response.body.substring(0, response.body.length.clamp(0, 200))}');  // Debug
       return _handleResponse(response);
     } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      print('[API Error] $e');  // Debug
+      return {'success': false, 'error': 'خطأ في الاتصال: $e'};
     }
   }
   
@@ -63,14 +69,19 @@ class ApiService {
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> body, {bool requireAuth = false}) async {
     try {
       final headers = requireAuth ? await _authHeaders : _headers;
+      final url = _url(endpoint);
+      print('[API POST] $url');  // Debug
+      print('[API Body] $body');  // Debug
       final response = await http.post(
-        Uri.parse(_url(endpoint)),
+        Uri.parse(url),
         headers: headers,
         body: jsonEncode(body),
       );
+      print('[API Response] ${response.statusCode}: ${response.body}');  // Debug
       return _handleResponse(response);
     } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      print('[API Error] $e');  // Debug
+      return {'success': false, 'error': 'خطأ في الاتصال: $e'};
     }
   }
   
@@ -85,7 +96,7 @@ class ApiService {
       );
       return _handleResponse(response);
     } catch (e) {
-      return {'success': false, 'error': e.toString()};
+      return {'success': false, 'error': 'خطأ في الاتصال: $e'};
     }
   }
   
@@ -101,22 +112,36 @@ class ApiService {
   }
   
   Map<String, dynamic> _handleResponse(http.Response response) {
+    print('[Handle Response] Status: ${response.statusCode}');  // Debug
+    
+    // Check for empty response
+    if (response.body.isEmpty) {
+      return {
+        'success': false,
+        'error': 'الاستجابة فارغة (${response.statusCode})',
+        'statusCode': response.statusCode,
+      };
+    }
+    
     try {
       final data = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        return data;
+        return data is Map<String, dynamic> ? data : {'success': true, 'data': data};
       } else {
         return {
           'success': false,
-          'error': data['error'] ?? 'حدث خطأ (${response.statusCode})',
+          'error': data['error'] ?? data['message'] ?? 'حدث خطأ (${response.statusCode})',
           'statusCode': response.statusCode,
         };
       }
     } catch (e) {
+      print('[JSON Parse Error] $e');  // Debug
+      print('[Response Body] ${response.body}');  // Debug
       return {
         'success': false,
-        'error': 'خطأ في معالجة الاستجابة',
+        'error': 'خطأ في الاتصال بالسيرفر',
         'statusCode': response.statusCode,
+        'rawBody': response.body,
       };
     }
   }

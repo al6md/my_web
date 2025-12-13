@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
@@ -34,49 +35,61 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const primaryBrown = Color(0xFF622204);
+    const lightCream = Color(0xFFFBF5E6);
+    
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
+              lightCream,
+              Color(0xFFE7D8B5),
             ],
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App Icon
-              Icon(
-                Icons.auto_stories,
-                size: 100,
-                color: Colors.white,
-              ),
-              SizedBox(height: 24),
-              // App Name
-              Text(
-                'كتبي',
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
+              // Logo - مثل الموقع
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: primaryBrown,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.auto_stories,
+                  size: 64,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 24),
+              // App Name
               Text(
-                'اكتشف كتابك القادم',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white70,
+                'ALHAM',
+                style: GoogleFonts.cairo(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: primaryBrown,
+                  letterSpacing: 4,
                 ),
               ),
-              SizedBox(height: 48),
+              const SizedBox(height: 8),
+              Text(
+                'توصيات ذكية',
+                style: GoogleFonts.cairo(
+                  fontSize: 20,
+                  color: primaryBrown.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 48),
               CircularProgressIndicator(
-                color: Colors.white,
+                color: primaryBrown,
+                strokeWidth: 3,
               ),
             ],
           ),
