@@ -18,3 +18,7 @@ csrf = CSRFProtect()
 
 # تعريف نظام Caching
 cache = Cache()
+
+# تعريف JWT للـ API
+from flask_jwt_extended import JWTManager
+jwt = JWTManager()

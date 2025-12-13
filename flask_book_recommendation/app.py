@@ -2,8 +2,9 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from flask import Flask, redirect, url_for, jsonify, request
+from flask_cors import CORS
 from .config import Config
-from .extensions import db, login_manager, migrate, csrf, cache
+from .extensions import db, login_manager, migrate, csrf, cache, jwt
 from .models import User
 from .routes.main import main_bp
 from .routes.auth import auth_bp
@@ -11,6 +12,7 @@ from .routes.preferences import prefs_bp
 from .routes.my_google_books import google_bp
 from .routes.explore import explore_bp
 from .routes.public import public_bp
+from .routes.api import api_bp
 
 
 def setup_logging(app):
@@ -41,6 +43,10 @@ def create_app():
     migrate.init_app(app, db)
     csrf.init_app(app)
     cache.init_app(app)
+    jwt.init_app(app)  # JWT للـ API
+    
+    # تفعيل CORS للـ API فقط (للسماح لـ Flutter بالاتصال)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
     
     # إعداد Logging
     setup_logging(app)
@@ -60,6 +66,10 @@ def create_app():
     app.register_blueprint(google_bp)
     app.register_blueprint(explore_bp)   # صفحة الاستكشاف
     app.register_blueprint(public_bp)
+    
+    # تسجيل REST API Blueprint
+    app.register_blueprint(api_bp)
+    csrf.exempt(api_bp)  # إعفاء API من CSRF (يستخدم JWT بدلاً منه)
 
     # الصفحة الرئيسية → Explore
     @app.route("/")

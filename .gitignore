@@ -5,3 +5,11 @@ __pycache__/
 instance/
 .pytest_cache/
 .DS_Store
+*.db
+*.log
+
+# Flutter
+book_app/.dart_tool/
+book_app/build/
+book_app/.idea/
+book_app/*.iml

@@ -30,3 +30,8 @@ class Config:
     # إعدادات Logging
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
     LOG_FILE = os.path.join(BASE_DIR, "app.log")
+    
+    # إعدادات JWT للـ API
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY") or SECRET_KEY
+    from datetime import timedelta
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)
