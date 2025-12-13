@@ -101,3 +101,8 @@ def create_app():
             app.logger.warning(f"Could not create tables (may already exist): {e}")
 
     return app
+
+
+# For Gunicorn in production (Render)
+# Usage: gunicorn flask_book_recommendation.app:app
+app = create_app()
