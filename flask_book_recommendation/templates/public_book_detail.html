@@ -113,12 +113,185 @@
       </div>
 
       <div class="d-flex flex-column gap-3">
-        <form method="post" action="{{ url_for('main.import_book_generic', gid=book.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn btn-primary w-100 justify-center">
-            <i class="ph-bold ph-plus"></i> أضف لمكتبتي
+        <style>
+          .shelf-actions {
+            background: var(--bg-elevated);
+            /* fallback */
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 0.75rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            backdrop-filter: blur(10px);
+            margin-bottom: 1rem;
+          }
+
+          .shelf-btn {
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            border-radius: var(--radius-lg);
+            padding: 0.75rem 0.5rem;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            overflow: hidden;
+          }
+
+          .shelf-btn i {
+            font-size: 1.6rem;
+            margin-bottom: 2px;
+            transition: transform 0.4s var(--ease-spring);
+          }
+
+          .shelf-btn span {
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+          }
+
+          .shelf-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+            border-color: var(--border-subtle);
+          }
+
+          .shelf-btn:hover i {
+            transform: scale(1.15) rotate(5deg);
+          }
+
+          .shelf-btn:active {
+            transform: scale(0.95);
+          }
+
+          /* Active States */
+          .shelf-btn.active-later {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+          }
+
+          .shelf-btn.active-favorite {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.3);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+          }
+
+          .shelf-btn.active-favorite i {
+            animation: bounce-heart 1.5s infinite;
+          }
+
+          .shelf-btn.active-finished {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+          }
+
+          @keyframes bounce-heart {
+
+            0%,
+            100% {
+              transform: scale(1);
+            }
+
+            50% {
+              transform: scale(1.15);
+            }
+          }
+        </style>
+
+        <div class="shelf-actions">
+          <!-- Read Later Button -->
+          <button onclick="updateShelf(this, 'later')"
+            class="shelf-btn {{ 'active-later' if current_status == 'later' else '' }}" id="btn-later">
+            <i class="ph-bold ph-clock"></i>
+            <span>لاحقاً</span>
           </button>
-        </form>
+
+          <!-- Favorite Button -->
+          <button onclick="updateShelf(this, 'favorite')"
+            class="shelf-btn {{ 'active-favorite' if current_status == 'favorite' else '' }}" id="btn-favorite">
+            <i class="{{ 'ph-fill' if current_status == 'favorite' else 'ph-bold' }} ph-heart"></i>
+            <span>المفضلة</span>
+          </button>
+
+
+        </div>
+
+        <script>
+          async function updateShelf(btn, status) {
+            {% if not current_user.is_authenticated %}
+            window.location.href = "{{ url_for('auth.login') }}";
+            return;
+            {% endif %}
+
+            const iconEl = btn.querySelector('i');
+            const originalIconClass = iconEl.className;
+
+            // Loading state
+            iconEl.className = 'ph ph-spinner spin';
+            btn.style.pointerEvents = 'none';
+
+            try {
+              const res = await fetch(`{{ url_for('public.add_to_shelf', gid=book.id, status='') }}${status}`, {
+                method: 'POST'
+              });
+              const data = await res.json();
+
+              if (data.success) {
+                // Reset all buttons
+                const allStatuses = ['later', 'favorite'];
+                allStatuses.forEach(s => {
+                  const b = document.getElementById(`btn-${s}`);
+                  if (b) {
+                    b.classList.remove('active-later', 'active-favorite');
+
+                    // Reset icon style (outline for all primarily)
+                    const i = b.querySelector('i');
+                    if (s === 'favorite') i.className = 'ph-bold ph-heart';
+                    else i.className = 'ph-bold ph-clock';
+                  }
+                });
+
+                if (data.status) {
+                  // Active status
+                  const activeBtn = document.getElementById(`btn-${data.status}`);
+                  activeBtn.classList.add(`active-${data.status}`);
+
+                  // Make icon filled/styled
+                  const i = activeBtn.querySelector('i');
+                  if (data.status === 'favorite') i.className = 'ph-fill ph-heart';
+                  else if (data.status === 'finished') i.className = 'ph-fill ph-check-circle';
+                  else i.className = 'ph-fill ph-clock'; // or bold
+                }
+
+              } else {
+                alert(data.error || 'حدث خطأ');
+              }
+            } catch (e) {
+              alert('فشل الاتصال');
+            } finally {
+              // Restore pointer events
+              btn.style.pointerEvents = 'auto';
+
+              // If it was just a loading spinner and we didn't enter success block (error), restore original:
+              if (btn.querySelector('.ph-spinner')) {
+                iconEl.className = originalIconClass;
+              }
+            }
+          }
+        </script>
 
         {% if book.preview %}
         <a href="{{ book.preview }}" target="_blank" class="btn btn-secondary w-100 justify-center">
@@ -239,7 +412,197 @@
     </div>
   </div>
   {% endif %}
+
+  <!-- Reviews Section -->
+  <div class="mt-5 pt-5 border-top border-subtle animate-on-scroll fade-up">
+    <div class="d-flex align-center justify-between mb-4">
+      <h3 class="h4 mb-0">
+        <i class="ph-fill ph-star" style="color: var(--warning);"></i>
+        التقييمات والمراجعات
+      </h3>
+    </div>
+
+    <!-- Rating Details Card -->
+    <div id="ratingDetailsCard" class="card mb-4" style="background: var(--bg-elevated); display: none;">
+      <h5 class="text-center mb-3" style="color: var(--text-primary); font-weight: 600; letter-spacing: 0.05em;">
+        <i class="ph-fill ph-chart-bar" style="color: var(--warning);"></i> تفاصيل التقييم
+      </h5>
+      <div class="rating-summary text-center mb-4">
+        <div id="avgRatingDisplay" class="d-flex align-center justify-center gap-2 mb-2">
+          <!-- Average rating big number -->
+        </div>
+        <div id="totalRatingsCount" class="text-muted small">
+          <!-- Total count -->
+        </div>
+      </div>
+      <div id="ratingBars" class="rating-bars">
+        <!-- Rating bars will be inserted here -->
+      </div>
+    </div>
+
+    <!-- نموذج إضافة مراجعة -->
+    {% if current_user.is_authenticated %}
+    <div class="card mb-4" style="background: var(--bg-elevated);">
+      <h5 class="mb-3" style="color: var(--text-primary);">
+        <i class="ph ph-pencil-line"></i> أضف تقييمك
+      </h5>
+      <form method="post" action="{{ url_for('public.submit_review', gid=book.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- تقييم بالنجوم -->
+        <div class="mb-3">
+          <label class="small text-muted mb-2 d-block">تقييمك:</label>
+          <div class="star-rating" id="starRating">
+            {% for i in range(5, 0, -1) %}
+            <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" required>
+            <label for="star{{ i }}" title="{{ i }} نجوم">
+              <i class="ph-fill ph-star"></i>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- نص المراجعة -->
+        <div class="mb-3">
+          <textarea name="review_text" class="form-control" rows="3"
+            placeholder="شاركنا رأيك في هذا الكتاب... (اختياري)" style="resize: vertical;"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          <i class="ph ph-paper-plane-right"></i> إرسال المراجعة
+        </button>
+      </form>
+    </div>
+    {% else %}
+    <div class="card mb-4" style="background: var(--bg-elevated); text-align: center;">
+      <p class="mb-3" style="color: var(--text-muted);">سجل دخولك لإضافة تقييم</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+        <i class="ph ph-sign-in"></i> تسجيل الدخول
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- قائمة المراجعات -->
+    <div id="reviewsList">
+      <div class="text-center py-4">
+        <i class="ph ph-spinner spin" style="font-size: 1.5rem; color: var(--primary-light);"></i>
+        <p class="text-muted small mt-2">جاري تحميل المراجعات...</p>
+      </div>
+    </div>
+  </div>
 </div>
+
+<style>
+  /* Star Rating Styles */
+  .star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+
+  .star-rating input {
+    display: none;
+  }
+
+  .star-rating label {
+    cursor: pointer;
+    font-size: 1.75rem;
+    color: var(--border-subtle);
+    transition: color 0.2s, transform 0.1s;
+  }
+
+  .star-rating label:hover,
+  .star-rating label:hover~label,
+  .star-rating input:checked~label {
+    color: var(--warning);
+    transform: scale(1.1);
+  }
+
+  /* Review Card */
+  .review-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .review-stars {
+    color: var(--warning);
+    font-size: 0.9rem;
+  }
+
+  /* Rating Details Styles */
+  .rating-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .rating-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .rating-bar-stars {
+    display: flex;
+    gap: 2px;
+    min-width: 85px;
+    font-size: 0.85rem;
+  }
+
+  .rating-bar-stars i.filled {
+    color: var(--warning);
+  }
+
+  .rating-bar-stars i.empty {
+    color: var(--border-subtle);
+  }
+
+  .rating-bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--bg-surface);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .rating-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--warning), #f59e0b);
+    border-radius: 5px;
+    transition: width 0.8s ease-out;
+    min-width: 0;
+  }
+
+  .rating-bar-percentage {
+    min-width: 45px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .avg-rating-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .avg-rating-stars {
+    font-size: 1.25rem;
+    color: var(--warning);
+  }
+
+  .avg-rating-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+</style>
 
 <!-- Chat Modal -->
 <div class="modal-overlay" id="chatModal">
@@ -287,6 +650,9 @@
 
 <script>
   const bookId = "{{ book.id }}";
+  const bookTitle = {{ book.title | tojson }};
+  const bookAuthor = {{ (book.author or '') | tojson }};
+  const bookPages = {{ book.pageCount or 200 }};
   let chatHistory = [];
 
   // Modal Logic
@@ -343,18 +709,329 @@
     }
   }
 
-  // Coach and Quiz placeholders
+  // مدرب القراءة - تفاعلي كامل
   function openCoachModal() {
     document.getElementById('aiResultModal').classList.add('active');
     document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-calendar-check" style="color: var(--success);"></i> مدرب القراءة';
-    document.getElementById('resultBody').innerHTML = '<p class="text-muted">هذه الميزة قيد التطوير...</p>';
+
+    // عرض نموذج إدخال الأيام
+    document.getElementById('resultBody').innerHTML = `
+      <div class="text-center">
+        <p class="mb-4" style="color: var(--text-secondary);">كم يوماً تريد لإنهاء هذا الكتاب؟</p>
+        <div class="d-flex justify-center gap-2 mb-4 flex-wrap">
+          <button class="btn btn-secondary" onclick="generateReadingPlan(7)">أسبوع (7 أيام)</button>
+          <button class="btn btn-secondary" onclick="generateReadingPlan(14)">أسبوعين (14 يوم)</button>
+          <button class="btn btn-secondary" onclick="generateReadingPlan(30)">شهر (30 يوم)</button>
+        </div>
+        <div class="d-flex align-center justify-center gap-2">
+          <input type="number" id="customDays" class="form-control" style="width: 100px; text-align: center;" min="1" max="365" placeholder="عدد">
+          <button class="btn btn-primary" onclick="generateReadingPlan(document.getElementById('customDays').value)">
+            <i class="ph ph-arrow-right"></i> ابدأ
+          </button>
+        </div>
+      </div>
+    `;
   }
 
-  function openQuizModal() {
+  async function generateReadingPlan(days) {
+    if (!days || days < 1) {
+      alert('الرجاء إدخال عدد أيام صحيح');
+      return;
+    }
+
+    document.getElementById('resultBody').innerHTML = '<div class="text-center py-5"><i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--success);"></i><p class="mt-2 text-muted">جاري إعداد خطة القراءة...</p></div>';
+
+    try {
+      const res = await fetch('/public/api/coach/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: bookTitle,
+          pages: bookPages,
+          days: parseInt(days)
+        })
+      });
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      let scheduleHtml = '';
+      if (data.schedule && data.schedule.length > 0) {
+        scheduleHtml = `
+          <div class="mt-4" style="max-height: 300px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--bg-elevated); color: var(--text-primary);">
+                  <th style="padding: 10px; text-align: right; border-radius: 8px 0 0 0;">اليوم</th>
+                  <th style="padding: 10px; text-align: right;">المهمة</th>
+                  <th style="padding: 10px; text-align: right; border-radius: 0 8px 0 0;">نصيحة</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.schedule.map(day => `
+                  <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 10px; color: var(--accent-cyan); font-weight: 600;">يوم ${day.day}</td>
+                    <td style="padding: 10px; color: var(--text-primary);">${day.focus}</td>
+                    <td style="padding: 10px; color: var(--text-muted); font-size: 0.9rem;">${day.tip || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      document.getElementById('resultBody').innerHTML = `
+        <div class="text-center mb-4">
+          <div style="font-size: 3rem; color: var(--success);">📚</div>
+          <h4 style="color: var(--text-primary);">خطتك جاهزة!</h4>
+        </div>
+        <div class="card mb-3" style="background: var(--bg-elevated); border-color: var(--success);">
+          <div class="d-flex justify-between align-center">
+            <div>
+              <p class="text-muted mb-1">الحصة اليومية</p>
+              <h3 style="color: var(--success); margin: 0;">${data.daily_quota} صفحة</h3>
+            </div>
+            <div class="text-left">
+              <p class="text-muted mb-1">المدة</p>
+              <h3 style="color: var(--accent-cyan); margin: 0;">${days} يوم</h3>
+            </div>
+          </div>
+        </div>
+        <div class="p-3 rounded-lg mb-3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success);">
+          <p class="mb-0" style="color: var(--text-primary);">
+            <i class="ph-fill ph-lightbulb" style="color: var(--warning);"></i>
+            <strong>نصيحة:</strong> ${data.strategy || 'القراءة المنتظمة يومياً هي مفتاح النجاح!'}
+          </p>
+        </div>
+        ${scheduleHtml}
+      `;
+    } catch (e) {
+      document.getElementById('resultBody').innerHTML = `<p style="color: var(--danger);">حدث خطأ: ${e.message}</p>`;
+    }
+  }
+
+  // اختبر معلوماتك - تفاعلي كامل
+  let quizQuestions = [];
+  let currentQuestionIndex = 0;
+  let userScore = 0;
+
+  async function openQuizModal() {
     document.getElementById('aiResultModal').classList.add('active');
     document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-brain" style="color: var(--warning);"></i> اختبر معلوماتك';
-    document.getElementById('resultBody').innerHTML = '<p class="text-muted">هذه الميزة قيد التطوير...</p>';
+    document.getElementById('resultBody').innerHTML = '<div class="text-center py-5"><i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--warning);"></i><p class="mt-2 text-muted">جاري تحضير الأسئلة...</p></div>';
+
+    try {
+      const res = await fetch('/public/api/quiz/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: bookTitle,
+          author: bookAuthor
+        })
+      });
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      quizQuestions = data.questions || [];
+      currentQuestionIndex = 0;
+      userScore = 0;
+
+      if (quizQuestions.length === 0) {
+        document.getElementById('resultBody').innerHTML = '<p class="text-muted text-center">لم نتمكن من تحضير أسئلة لهذا الكتاب.</p>';
+        return;
+      }
+
+      showQuizQuestion();
+    } catch (e) {
+      document.getElementById('resultBody').innerHTML = `<p style="color: var(--danger);">حدث خطأ: ${e.message}</p>`;
+    }
   }
+
+  function showQuizQuestion() {
+    const q = quizQuestions[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+
+    document.getElementById('resultBody').innerHTML = `
+      <div class="mb-3">
+        <div style="background: var(--bg-elevated); height: 8px; border-radius: 4px; overflow: hidden;">
+          <div style="background: linear-gradient(90deg, var(--warning), var(--accent-orange)); height: 100%; width: ${progress}%; transition: width 0.3s;"></div>
+        </div>
+        <p class="text-muted small mt-2 text-center">السؤال ${currentQuestionIndex + 1} من ${quizQuestions.length}</p>
+      </div>
+      
+      <div class="card mb-4" style="background: var(--bg-elevated);">
+        <h4 style="color: var(--text-primary); margin: 0; line-height: 1.6;">${q.question}</h4>
+      </div>
+      
+      <div class="d-flex flex-column gap-2">
+        ${q.options.map((opt, idx) => `
+          <button class="btn btn-outline w-100 text-right quiz-option" onclick="answerQuiz(${idx}, ${q.correct_index})" style="padding: 1rem; font-size: 1rem;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--bg-surface); border-radius: 50%; margin-left: 10px; font-weight: 600;">${String.fromCharCode(65 + idx)}</span>
+            ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function answerQuiz(selectedIndex, correctIndex) {
+    const buttons = document.querySelectorAll('.quiz-option');
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (idx === correctIndex) {
+        btn.style.background = 'rgba(16, 185, 129, 0.2)';
+        btn.style.borderColor = 'var(--success)';
+        btn.style.color = 'var(--success)';
+      } else if (idx === selectedIndex && selectedIndex !== correctIndex) {
+        btn.style.background = 'rgba(239, 68, 68, 0.2)';
+        btn.style.borderColor = 'var(--danger)';
+        btn.style.color = 'var(--danger)';
+      }
+    });
+
+    if (selectedIndex === correctIndex) {
+      userScore++;
+    }
+
+    setTimeout(() => {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < quizQuestions.length) {
+        showQuizQuestion();
+      } else {
+        showQuizResult();
+      }
+    }, 1500);
+  }
+
+  function showQuizResult() {
+    const percentage = Math.round((userScore / quizQuestions.length) * 100);
+    let emoji = '🎉';
+    let message = 'ممتاز! أنت خبير بهذا الكتاب!';
+
+    if (percentage < 40) {
+      emoji = '📖';
+      message = 'تحتاج لقراءة المزيد من هذا الكتاب!';
+    } else if (percentage < 70) {
+      emoji = '👍';
+      message = 'جيد! لديك معرفة لا بأس بها.';
+    }
+
+    document.getElementById('resultBody').innerHTML = `
+      <div class="text-center">
+        <div style="font-size: 4rem;">${emoji}</div>
+        <h3 style="color: var(--text-primary); margin: 1rem 0;">انتهى الاختبار!</h3>
+        <div class="card mb-4" style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
+          <h2 style="margin: 0;">${userScore} / ${quizQuestions.length}</h2>
+          <p style="margin: 0.5rem 0 0; opacity: 0.9;">${percentage}%</p>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 1.1rem;">${message}</p>
+        <div class="d-flex justify-center gap-2 mt-4">
+          <button class="btn btn-secondary" onclick="closeAIResultModal()">إغلاق</button>
+          <button class="btn btn-primary" onclick="openQuizModal()">
+            <i class="ph ph-arrow-clockwise"></i> حاول مرة أخرى
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Load Reviews
+  async function loadReviews() {
+    try {
+      const res = await fetch(`/public/books/${bookId}/reviews`);
+      const data = await res.json();
+
+      const container = document.getElementById('reviewsList');
+      const ratingCard = document.getElementById('ratingDetailsCard');
+      const avgDisplay = document.getElementById('avgRatingDisplay');
+      const totalCount = document.getElementById('totalRatingsCount');
+      const ratingBars = document.getElementById('ratingBars');
+
+      // Display rating details card if there are reviews
+      if (data.count > 0) {
+        ratingCard.style.display = 'block';
+
+        // Average rating display
+        let avgStarsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+          avgStarsHtml += `<i class="ph${i <= Math.round(data.average_rating) ? '-fill' : ''} ph-star"></i>`;
+        }
+        avgDisplay.innerHTML = `
+          <span class="avg-rating-number">${data.average_rating}</span>
+          <div class="d-flex flex-column align-start">
+            <span class="avg-rating-stars">${avgStarsHtml}</span>
+            <span class="avg-rating-text">من 5</span>
+          </div>
+        `;
+
+        totalCount.innerHTML = `<i class="ph ph-users"></i> ${data.count.toLocaleString('ar-EG')} تقييم`;
+
+        // Rating bars (5 to 1 stars)
+        let barsHtml = '';
+        for (let stars = 5; stars >= 1; stars--) {
+          const distData = data.rating_distribution[stars.toString()] || { count: 0, percentage: 0 };
+          let starsIcons = '';
+          for (let i = 1; i <= 5; i++) {
+            starsIcons += `<i class="ph-fill ph-star ${i <= stars ? 'filled' : 'empty'}"></i>`;
+          }
+          barsHtml += `
+            <div class="rating-bar-row">
+              <div class="rating-bar-stars">${starsIcons}</div>
+              <div class="rating-bar-track">
+                <div class="rating-bar-fill" style="width: ${distData.percentage}%;"></div>
+              </div>
+              <div class="rating-bar-percentage">${distData.percentage}%</div>
+            </div>
+          `;
+        }
+        ratingBars.innerHTML = barsHtml;
+
+      } else {
+        ratingCard.style.display = 'none';
+      }
+
+      // Display reviews
+      if (data.reviews && data.reviews.length > 0) {
+        container.innerHTML = data.reviews.map(review => {
+          let starsHtml = '';
+          for (let i = 1; i <= 5; i++) {
+            starsHtml += `<i class="ph${i <= review.rating ? '-fill' : ''} ph-star"></i>`;
+          }
+          return `
+            <div class="review-card">
+              <div class="d-flex justify-between align-center mb-2">
+                <div class="d-flex align-center gap-2">
+                  <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                    ${review.user_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <strong style="color: var(--text-primary);">${review.user_name}</strong>
+                    <div class="review-stars">${starsHtml}</div>
+                  </div>
+                </div>
+                <span class="text-muted small">${review.created_at || ''}</span>
+              </div>
+              ${review.review_text ? `<p style="color: var(--text-secondary); margin: 0; line-height: 1.7;">${review.review_text}</p>` : ''}
+            </div>
+          `;
+        }).join('');
+      } else {
+        container.innerHTML = `
+          <div class="text-center py-5" style="color: var(--text-muted);">
+            <i class="ph ph-chat-teardrop-dots" style="font-size: 3rem; opacity: 0.5;"></i>
+            <p class="mt-2">لا توجد مراجعات حتى الآن. كن أول من يشارك رأيه!</p>
+          </div>
+        `;
+      }
+    } catch (e) {
+      document.getElementById('reviewsList').innerHTML = '<p class="text-muted text-center">خطأ في تحميل المراجعات</p>';
+    }
+  }
+
+  // Load reviews on page load
+  document.addEventListener('DOMContentLoaded', loadReviews);
 </script>
 
 <style>

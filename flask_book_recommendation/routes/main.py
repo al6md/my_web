@@ -270,6 +270,7 @@ def book_read(book_id):
 
 
 @main_bp.post("/books/<int:book_id>/status/<status>")
+@csrf.exempt
 @login_required
 def set_book_status(book_id, status):
     if status not in ['favorite', 'later', 'finished']:
@@ -297,7 +298,7 @@ def set_book_status(book_id, status):
         flash(f"تمت الإضافة إلى قائمة {status}", "success")
         
     db.session.commit()
-    return redirect(url_for("main.book_detail", book_id=book.id))
+    return redirect(url_for("main.books"))
 
 
 @main_bp.post("/books/<int:book_id>/rate")

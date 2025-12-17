@@ -7,7 +7,8 @@ from flask import current_app
 
 from .models import (
     Book, UserRatingCF, SearchHistory,
-    UserPreference, BookEmbedding,
+    Book, UserRatingCF, SearchHistory,
+    UserPreference, BookEmbedding, BookReview
 )
 from .utils import (
     fetch_google_books, fetch_gutenberg_books,
@@ -627,7 +628,7 @@ def semantic_search(query: str, limit: int = 12, exclude_book_ids: list = None):
 
 # recommender.py
 
-@cache.memoize(timeout=60)  # إعادة الكاش مع تقليل المدة لـ 60 ثانية لضمان التحديث
+# @cache.memoize(timeout=60)  # DISABLED for pagination to work
 def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=None):
     """
     توصيات مبنية على اهتمامات المستخدم (Topic-Based Recommendations).
@@ -651,10 +652,48 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
     
     logger.info(f"[Topic] Getting topic-based recommendations for user {user_id}, offset={offset}")
 
+    # ---------------------------------------------------------
+    # 🆕 تصفية الكتب التي يمتلكها المستخدم أو مهتم بها مسبقاً
+    # ---------------------------------------------------------
+    exclude_gids = set()
+    try:
+        # 1. كتب رفعها المستخدم
+        user_books = Book.query.filter_by(owner_id=user_id).all()
+        for b in user_books:
+            if b.google_id: exclude_gids.add(b.google_id)
+            
+        # 2. كتب في مفضلة/قائمة المستخدم (BookStatus)
+        from .models import BookStatus
+        statuses = BookStatus.query.filter_by(user_id=user_id).all()
+        for s in statuses:
+            if s.book and s.book.google_id:
+                exclude_gids.add(s.book.google_id)
+                
+        # 3. كتب تم تقييمها (UserRatingCF)
+        ratings = UserRatingCF.query.filter_by(user_id=user_id).all()
+        for r in ratings:
+            if r.google_id: exclude_gids.add(r.google_id)
+            
+    except Exception as e:
+        logger.error(f"[Topic] Error getting excluded books: {e}")
+
     # 1. تجميع المواضيع المحتملة بالترتيب حسب الأولوية
+    # 🔧 FIX: نعطي الأولوية للاهتمامات المسجلة من الـ onboarding أولاً
     if recent_query:
         potential_topics.append(recent_query)
 
+    # 🎯 الأولوية الأولى: اهتمامات المستخدم الفعلية من الـ onboarding
+    try:
+        # جلب الاهتمامات بترتيب الوزن (الأعلى أولاً = الأحدث/الأهم)
+        prefs = UserPreference.query.filter_by(user_id=user_id).order_by(UserPreference.weight.desc()).all()
+        for p in prefs:
+            # 🔧 FIX: تجاهل المواضيع الخاصة بالنظام
+            if p.topic and not p.topic.startswith('special:'):
+                potential_topics.append(p.topic)
+    except Exception as e:
+        logger.error(f"[Topic] prefs error: {e}", exc_info=True)
+
+    # الأولوية الثانوية: آخر بحث
     try:
         last_search = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc(), SearchHistory.id.desc()).first()
         if last_search:
@@ -662,15 +701,8 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
     except Exception as e:
         logger.error(f"[Topic] History error: {e}", exc_info=True)
 
-    try:
-        # Increase limit to get more old interests
-        prefs = UserPreference.query.filter_by(user_id=user_id).order_by(UserPreference.weight.desc()).limit(20).all()
-        for p in prefs:
-            potential_topics.append(p.topic)
-    except Exception as e:
-        logger.error(f"[Topic] prefs error: {e}", exc_info=True)
-
     # 2. معالجة المواضيع (ترجمة + إزالة تكرار)
+    all_unique_topics = []  # كل المواضيع الفريدة بالترتيب
     for t in potential_topics:
         if not t or not t.strip():
             continue
@@ -690,32 +722,45 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         
         # إضافة الموضوع إذا لم يكن مكرراً
         if topic_to_use.lower() not in seen_topics:
-            topics.append(topic_to_use)
+            all_unique_topics.append(topic_to_use)
             seen_topics.add(topic_to_use.lower())
-            
-        # نتوقف بعد الحصول على عدد كاف من المواضيع الفريدة
-        # Increased to 6 to show more local/old interests
-        if len(topics) >= 6:
-            break
 
-    if not topics:
+    if not all_unique_topics:
         logger.debug(f"[Topic] No topics found for user {user_id}")
         return []
 
-    logger.info(f"[Topic] Found {len(topics)} topics for user {user_id}: {topics}")
+    # 🔧 FIX: التصفح عبر الاهتمامات حسب الصفحة
+    # كل صفحة تعرض اهتمامات مختلفة (3 اهتمامات لكل صفحة)
+    topics_per_page = 3
+    current_page = (offset // limit) if limit > 0 else 0
+    start_topic_idx = current_page * topics_per_page
+    
+    # اختيار الاهتمامات لهذه الصفحة
+    topics = all_unique_topics[start_topic_idx:start_topic_idx + topics_per_page]
+    
+    # 🆕 تحديد ما إذا انتهت الاهتمامات
+    # الاهتمامات تنتهي إذا كانت الصفحة التالية ستكون فارغة
+    next_page_start = (current_page + 1) * topics_per_page
+    interests_exhausted = next_page_start >= len(all_unique_topics)
+    
+    # إذا انتهت الاهتمامات في هذه الصفحة (لا توجد اهتمامات لعرضها)
+    if not topics:
+        # نعرض آخر اهتمامات متاحة بدلاً من العودة للبداية
+        interests_exhausted = True
+        start_topic_idx = max(0, len(all_unique_topics) - topics_per_page)
+        topics = all_unique_topics[start_topic_idx:]
+    
+    logger.info(f"[Topic] Page {current_page + 1}: Using topics {start_topic_idx + 1}-{start_topic_idx + len(topics)} of {len(all_unique_topics)}: {topics} (exhausted: {interests_exhausted})")
     all_books = []
     seen_ids = set()
     
     # 🚀 جلب الكتب من جميع المصادر بالتوازي لكل موضوع
-    per_topic_limit = max(4, int(limit / len(topics)))
-    # حساب الإزاحة لكل موضوع تقريبياً
-    per_topic_offset = 0
-    if offset > 0:
-        per_topic_offset = int(offset / len(topics))
-        
-    # حساب الصفحة التقريبية (للمصادر التي تستخدم نظام الصفحات)
-    # نفرض كل صفحة فيها حوالي 10 نتائج
-    current_page = (per_topic_offset // 10) + 1
+    per_topic_limit = max(4, int(limit / len(topics))) if topics else limit
+    
+    # 🔧 استخدام رقم الصفحة للـ APIs
+    # الصفحة الأولى من كل اهتمام (لأننا غيرنا الاهتمام نفسه)
+    api_page = 1
+    global_offset = 0
     
     def process_google_result(items, topic):
         """معالجة نتائج Google Books"""
@@ -727,19 +772,30 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
             if not gid:
                 continue
             vi = it.get("volumeInfo") or {}
+            title = vi.get("title")
+            # 🔧 FIX: تجاهل الكتب بدون عنوان
+            if not title or not title.strip():
+                continue
             img = (vi.get("imageLinks") or {}).get("thumbnail")
             if img:
                 if img.startswith("http://"):
                     img = img.replace("http://", "https://")
                 if '&edge=curl' in img:
                     img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
+            
+            # 🆕 جلب التقييم من Google Books API
+            rating = vi.get("averageRating")
+            ratings_count = vi.get("ratingsCount")
+            
             books.append({
                 "id": gid,
-                "title": vi.get("title"),
+                "title": title,
                 "author": ", ".join(vi.get("authors") or []),
                 "cover": img,
                 "source": "Google Books",
                 "reason": f"🎯 لأنك بحثت مؤخراً عن «{topic}»",
+                "rating": rating,
+                "ratings_count": ratings_count,
             })
         return books
     
@@ -763,6 +819,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
                 # لا يمكننا تحديد offset دقيق، لذا نستخدم الصفحة
                 # ITBS صفحتها عادة 10 كتب
                 books = fetch_itbook_books(topic, limit=per_source, page=topic_page) or []
+                # 🔧 FIX: تحقق من وجود العنوان والـ ID
                 return ("itbook", [{
                     "id": b.get("id"),
                     "title": b.get("title"),
@@ -770,7 +827,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
                     "cover": b.get("cover"),
                     "source": "IT Bookstore",
                     "reason": f"🎯 كتب تقنية: «{topic}»",
-                } for b in books if b.get("id")])
+                } for b in books if b.get("id") and b.get("title")])
             except Exception as e:
                 logger.error(f"[Topic] ITBook error for '{topic}': {e}")
                 return ("itbook", [])
@@ -779,6 +836,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
             try:
                 # OpenLibrary يدعم offset
                 books = fetch_openlib_books(topic, limit=per_source, offset=topic_offset) or []
+                # 🔧 FIX: تحقق من وجود العنوان والـ ID
                 return ("openlib", [{
                     "id": b.get("id"),
                     "title": b.get("title"),
@@ -786,7 +844,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
                     "cover": b.get("cover"),
                     "source": "OpenLibrary",
                     "reason": f"🎯 OpenLibrary: «{topic}»",
-                } for b in books if b.get("id")])
+                } for b in books if b.get("id") and b.get("title")])
             except Exception as e:
                 logger.error(f"[Topic] OpenLib error for '{topic}': {e}")
                 return ("openlib", [])
@@ -794,10 +852,8 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         def fetch_archive():
             try:
                 # Archive يدعم page (تقريبي)
-                books = fetch_archive_books(topic, limit=per_source) or [] # Archive wrapper might not support explicit page arg easily yet in standard utils?
-                # Actually fetch_archive_books in utils.py usually takes just limit, let's verify if we updated it.
-                # Assuming simple support for now, or just re-fetching (limited effective pagination for archive without deeper changes)
-                # But let's try calling with page if supported or just rely on randomness if not
+                books = fetch_archive_books(topic, limit=per_source) or []
+                # 🔧 FIX: تحقق من وجود العنوان والـ ID
                 return ("archive", [{
                     "id": b.get("id"),
                     "title": b.get("title"),
@@ -805,7 +861,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
                     "cover": b.get("cover"),
                     "source": "Internet Archive",
                     "reason": f"📚 من أرشيف الإنترنت: «{topic}»",
-                } for b in books if b.get("id")])
+                } for b in books if b.get("id") and b.get("title")])
             except Exception as e:
                 logger.error(f"[Topic] Archive error for '{topic}': {e}")
                 return ("archive", [])
@@ -814,6 +870,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
             try:
                 # Gutenberg uses page
                 books = fetch_gutenberg_books(topic, limit=per_source, page=topic_page) or []
+                # 🔧 FIX: تحقق من وجود العنوان والـ ID
                 return ("gutenberg", [{
                     "id": b.get("id"),
                     "title": b.get("title"),
@@ -821,7 +878,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
                     "cover": b.get("cover"),
                     "source": "Project Gutenberg",
                     "reason": f"📖 كلاسيكيات: «{topic}»",
-                } for b in books if b.get("id")])
+                } for b in books if b.get("id") and b.get("title")])
             except Exception as e:
                 logger.error(f"[Topic] Gutenberg error for '{topic}': {e}")
                 return ("gutenberg", [])
@@ -854,10 +911,9 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         current_limit = per_topic_limit + 2 if i == 0 else per_topic_limit
         per_source = max(4, int(current_limit / 3))
         
-        # حساب إزاحة خاصة لهذا الموضوع (لتوزيع النتائج بشكل جيد)
-        # إذا كان topics=3 و offset=12، فكل موضوع يأخذ offset=4
-        this_offset = per_topic_offset 
-        this_page = current_page
+        # 🔧 FIX: نستخدم الصفحة الأولى من كل اهتمام جديد
+        this_offset = global_offset
+        this_page = api_page
         
         logger.debug(f"[Topic] Searching for '{t}' with limit {per_source}, offset {this_offset}, page {this_page}")
         
@@ -865,9 +921,27 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         
         for book in topic_books:
             bid = book.get("id")
-            if bid and bid not in seen_ids:
-                seen_ids.add(bid)
-                all_books.append(book)
+            title = book.get("title")
+            
+            # 🔧 FIX: ضمان أن العنوان نص وليس كائن
+            if title:
+                title = str(title).strip()
+                book["title"] = title
+            
+            # 🔧 FIX: تجاهل الكتب التي ليس لها عنوان صحيح أو تبدو ككائنات تالفة
+            if not bid or bid in seen_ids or bid in exclude_gids: # 🆕 Check against exclude_gids
+                continue
+            
+            # تجاهل العناوين التي تبدو كتمثيل لكائن Python (<...>)
+            if title and (title.startswith('<') and '>' in title and 'object at' in title):
+                 logger.warning(f"[Topic] Skipping corrupted title book: {bid} - {title}")
+                 continue
+
+            if not title:
+                logger.debug(f"[Topic] Skipping book {bid} - no title")
+                continue
+            seen_ids.add(bid)
+            all_books.append(book)
         
         if len(all_books) >= limit:
             break
@@ -876,7 +950,16 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
     logger.info(f"[Topic] Returning {len(result)} books for user {user_id} (from {len(all_books)} total found)")
     if len(result) == 0:
         logger.warning(f"[Topic] No books found for user {user_id} with topics: {topics}")
-    return result
+    
+    # 🆕 إرجاع النتائج مع معلومات عن حالة الاهتمامات
+    # نضيف الـ metadata كـ attribute على القائمة لتجنب كسر التوافقية
+    result_with_meta = {
+        'books': result,
+        'interests_exhausted': interests_exhausted,
+        'total_interests': len(all_unique_topics),
+        'current_page': current_page + 1
+    }
+    return result_with_meta
 
 
 def get_personal_trending(user_id, limit=12):
@@ -991,6 +1074,8 @@ def get_personal_trending(user_id, limit=12):
                     "cover": img,
                     "source": "Google Books",
                     "reason": f"🔥 رائج في موضوع: {topic}",
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount"),
                 })
                 
                 if len(books_dicts) >= limit:
@@ -1078,6 +1163,8 @@ def get_last_search_recommendations(user_id, limit=12):
                 "cover": img,
                 "source": "Google Books",
                 "reason": f"لأنك بحثت عن: {display_query}",
+                "rating": vi.get("averageRating"),
+                "ratings_count": vi.get("ratingsCount"),
             })
             
             if len(books_dicts) >= limit:
@@ -1217,7 +1304,13 @@ def get_homepage_sections(user_id, recent_query=None):
         })
 
     # C) من اهتماماتك – Topic-based
-    topics_raw = get_topic_based(user_id, limit=60, recent_query=recent_query)
+    topics_result = get_topic_based(user_id, limit=60, recent_query=recent_query)
+    # 🔧 FIX: get_topic_based الآن ترجع قاموساً يحتوي على 'books'
+    if isinstance(topics_result, dict):
+        topics_raw = topics_result.get('books', [])
+    else:
+        topics_raw = topics_result if topics_result else []
+    
     if topics_raw:
         sections.append({
             "title": "🎯 من اهتماماتك العامة",
@@ -1287,6 +1380,8 @@ def get_all_libraries_showcase(query="books", limit_per_source=6):
                     "author": ", ".join(vi.get("authors") or []),
                     "cover": img,
                     "source": "Google Books",
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount"),
                 })
             if google_books:
                 sections.append({
@@ -1357,4 +1452,70 @@ def get_all_libraries_showcase(query="books", limit_per_source=6):
     
     return sections
 
+
+
+# ------------------------------------------------------------------
+# Top Rated �   ا� أع� �0  ت� �`�`�& ا�9 
+# ------------------------------------------------------------------
+
+@cache.memoize(timeout=60)  # Cache for 1 minute
+def get_top_rated(limit=10):
+    """
+    Get top rated books based on user reviews (BookReview).
+    Returns a list of dicts.
+    """
+    try:
+        # 1. Aggregate ratings: Average Rating & Count
+        # Filter for books with at least 1 review
+        # Order by Average DESC, then Count DESC
+        results = (
+            db.session.query(
+                BookReview.google_id,
+                func.avg(BookReview.rating).label('avg_rating'),
+                func.count(BookReview.id).label('review_count')
+            )
+            .group_by(BookReview.google_id)
+            .having(func.count(BookReview.id) >= 1) # At least 1 review
+            .order_by(func.avg(BookReview.rating).desc(), func.count(BookReview.id).desc())
+            .limit(limit)
+            .all()
+        )
+        
+        books_dicts = []
+        for row in results:
+            gid = row.google_id
+            avg = float(row.avg_rating)
+            count = int(row.review_count)
+            
+            # 2. Get Book Details
+            # Try local DB first
+            book = Book.query.filter_by(google_id=gid).first()
+            if book:
+                d = _book_to_dict(book, source="Community", reason=f"⭐ {avg:.1f} ({count})")
+                d['rating'] = avg # Explicit rating for UI
+                books_dicts.append(d)
+            else:
+                # Fallback to API/Utils if not in DB (slower but necessary)
+                # We can use fetch_book_details from utils (imported)
+                from .utils import fetch_book_details
+                details = fetch_book_details(gid)
+                if details:
+                    cover = details.get("cover")
+                    if cover and cover.startswith("http://"): cover = "https://" + cover[7:]
+                    
+                    books_dicts.append({
+                        "id": gid,
+                        "title": details.get("title"),
+                        "author": details.get("author"),
+                        "cover": cover,
+                        "source": "Community",
+                        "reason": f"⭐ {avg:.1f} ({count})",
+                        "rating": avg
+                    })
+        
+        return books_dicts
+
+    except Exception as e:
+        logger.error(f"[TopRated] Error: {e}", exc_info=True)
+        return []
 

@@ -3,7 +3,8 @@ from flask_login import current_user
 
 from ..recommender import (
     get_homepage_sections,
-    get_trending
+    get_trending,
+    get_top_rated
 )
 
 explore_bp = Blueprint("explore", __name__, url_prefix="/explore")
@@ -27,18 +28,30 @@ def index():
     
     if not current_user.is_authenticated:
         trending_books = get_trending(13)  # +1 for hero
+        top_rated = get_top_rated(12)
+        
         if trending_books:
             hero = trending_books[0]
 
-        sections = [{
-            "title": "🔥 الرائج الآن",
-            "subtitle": "الأكثر انتشاراً في المكتبات",
-            "books": trending_books[1:] if trending_books else [],
-            "style": "dark"
-        }]
+        sections = [
+            {
+                "title": "🔥 الرائج الآن",
+                "subtitle": "الأكثر انتشاراً في المكتبات",
+                "books": trending_books[1:] if trending_books else [],
+                "style": "dark",
+                "query": "trending"
+            },
+            {
+                "title": "⭐ أعلى التقييمات",
+                "subtitle": "الكتب المفضلة لدى مجتمعنا",
+                "books": top_rated,
+                "style": "gold",
+                "icon": "star",
+                "query": "top_rated"
+            }
+        ]
     else:
         # مستخدم مسجل → توصيات كاملة مثل Netflix/Amazon
-
         # التحقق من وجود استعلام بحث حديث لتحديث التوصيات
         # هذا سيساعد في ربط عمليات البحث مباشرة بالتوصيات المعروضة
         from_search_query = request.args.get('from_search')
@@ -46,6 +59,22 @@ def index():
             user_id=current_user.id,
             recent_query=from_search_query
         )
+        
+        # Add Top Rated for logged in users too if not present
+        has_top_rated = any(s['title'] == "⭐ أعلى التقييمات" for s in sections)
+        if not has_top_rated:
+             top_rated = get_top_rated(12)
+             if top_rated:
+                 sections.insert(1, {
+                    "title": "⭐ أعلى التقييمات",
+                    "subtitle": "الكتب المفضلة لدى مجتمعنا",
+                    "books": top_rated,
+                    "style": "gold",
+                    "icon": "star",
+                    "query": "top_rated"
+                })
+
+        # Use the first book of the first section as a hero
 
         # Use the first book of the first section as a hero
         if sections and sections[0].get("books"):

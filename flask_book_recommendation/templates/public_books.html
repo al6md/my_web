@@ -419,7 +419,18 @@
             title="{{ book.title }}">
             {{ book.title }}
           </h5>
-          <p class="text-muted small mb-0">{{ book.author or 'مؤلف غير معروف' }}</p>
+          <p class="text-muted small mb-1">{{ book.author or 'مؤلف غير معروف' }}</p>
+
+          <!-- Global Rating (Google Books) -->
+          {% if book.rating %}
+          <div class="d-flex align-center gap-1 mb-1" title="Global Rating (Google Books)">
+            <i class="ph-fill ph-globe-hemisphere-west" style="color: var(--accent-cyan); font-size: 0.85rem;"></i>
+            <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">{{ book.rating }}</span>
+            <span class="text-muted" style="font-size: 0.75rem;">/ 5</span>
+          </div>
+          {% endif %}
+
+          <div class="book-rating" data-book-id="{{ book.id }}" style="font-size: 0.8rem;"></div>
         </a>
       </div>
       {% endfor %}
@@ -438,6 +449,37 @@
         };
         aiImg.src = aiCoverUrl;
       }
+
+      // جلب تقييمات المستخدمين من API
+      async function loadUserRatings() {
+        const ratingElements = document.querySelectorAll('.book-rating[data-book-id]');
+
+        for (const el of ratingElements) {
+          const bookId = el.dataset.bookId;
+          if (!bookId) continue;
+
+          try {
+            const res = await fetch(`/public/books/${bookId}/reviews`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.count > 0) {
+                el.innerHTML = `
+                  <div class="d-flex align-center gap-1">
+                    <i class="ph-fill ph-star" style="color: var(--warning);"></i>
+                    <span style="color: var(--text-primary); font-weight: 600;">${data.average_rating}</span>
+                    <span class="text-muted" style="font-size: 0.75rem;">· ${data.count} تقييم</span>
+                  </div>
+                `;
+              }
+            }
+          } catch (e) {
+            // تجاهل الأخطاء
+          }
+        }
+      }
+
+      // تحميل التقييمات عند تحميل الصفحة
+      document.addEventListener('DOMContentLoaded', loadUserRatings);
     </script>
 
     <!-- Pagination -->
@@ -449,9 +491,16 @@
       {% endif %}
 
       {% if shown >= per %}
+      {% if q == 'special:interests' and interests_exhausted %}
+      <!-- عند انتهاء الاهتمامات، نعرض زر استكشاف المكتبة -->
+      <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
+        <i class="ph ph-compass"></i> المزيد من الاستكشاف
+      </a>
+      {% else %}
       <a href="{{ url_for('public.list_books', q=q, cat=cat, start=start+per) }}" class="btn btn-primary">
         التالي <i class="ph ph-arrow-left"></i>
       </a>
+      {% endif %}
       {% endif %}
     </div>
 

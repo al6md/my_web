@@ -9,7 +9,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 60vh;
+    height: 70vh;
     z-index: -1;
     overflow: hidden;
     mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
@@ -20,8 +20,35 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: blur(60px) opacity(0.2) saturate(1.5);
-    transform: scale(1.1);
+    filter: blur(100px) saturate(1.8) brightness(0.25);
+    transform: scale(1.3);
+  }
+
+  /* Cover Glow Effect */
+  .cover-wrapper {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--bg-surface);
+    padding: 6px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .cover-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-3));
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0.6;
+    filter: blur(15px);
+  }
+
+  .cover-wrapper img {
+    width: 100%;
+    border-radius: calc(var(--radius-xl) - 6px);
+    display: block;
   }
 
   /* Detail Layout */
@@ -39,36 +66,27 @@
     }
   }
 
-  .cover-wrapper {
-    position: relative;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
-    background: white;
-    padding: 8px;
-    border: 1px solid var(--border-subtle);
-  }
-
-  .cover-wrapper img {
-    width: 100%;
-    border-radius: 4px;
-    display: block;
-  }
-
-  /* Feature Cards */
+  /* AI Cards */
   .ai-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    margin-top: 3rem;
+    gap: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .ai-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .ai-card {
-    background: white;
+    background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-xl);
-    padding: 1.5rem;
+    padding: 1.25rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    text-align: center;
   }
 
   .ai-card:hover {
@@ -81,8 +99,8 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
     z-index: 2000;
     display: none;
     align-items: center;
@@ -95,7 +113,7 @@
   }
 
   .modal-container {
-    background: white;
+    background: var(--bg-surface);
     width: 100%;
     max-width: 700px;
     max-height: 85vh;
@@ -103,7 +121,190 @@
     display: flex;
     flex-direction: column;
     box-shadow: var(--shadow-xl);
-    animation: scale-in 0.2s ease-out;
+    border: 1px solid var(--border-subtle);
+    animation: scale-in 0.3s ease-out;
+    overflow: hidden;
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Star Rating */
+  .star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+
+  .star-rating input {
+    display: none;
+  }
+
+  .star-rating label {
+    cursor: pointer;
+    font-size: 1.75rem;
+    color: var(--border-subtle);
+    transition: color 0.2s, transform 0.1s;
+  }
+
+  .star-rating label:hover,
+  .star-rating label:hover~label,
+  .star-rating input:checked~label {
+    color: var(--warning);
+    transform: scale(1.1);
+  }
+
+  /* Review Card */
+  .review-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .review-stars {
+    color: var(--warning);
+    font-size: 0.9rem;
+  }
+
+  /* Rating Details Styles */
+  .rating-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .rating-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .rating-bar-stars {
+    display: flex;
+    gap: 2px;
+    min-width: 85px;
+    font-size: 0.85rem;
+  }
+
+  .rating-bar-stars i.filled {
+    color: var(--warning);
+  }
+
+  .rating-bar-stars i.empty {
+    color: var(--border-subtle);
+  }
+
+  .rating-bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--bg-surface);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .rating-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--warning), #f59e0b);
+    border-radius: 5px;
+    transition: width 0.8s ease-out;
+  }
+
+  .rating-bar-percentage {
+    min-width: 45px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .avg-rating-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .avg-rating-stars {
+    font-size: 1.25rem;
+    color: var(--warning);
+  }
+
+  .avg-rating-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  /* Status Buttons Grid */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .status-btn-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.75rem 0.25rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+
+  .status-btn-small i {
+    font-size: 1.25rem;
+    margin-bottom: 2px;
+  }
+
+  .status-btn-small:hover {
+    transform: translateY(-2px);
+    background: var(--bg-surface);
+    border-color: var(--primary-light);
+    color: var(--text-primary);
+  }
+
+  .status-btn-small.active {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(168, 85, 247, 0.1));
+    border-color: var(--primary-light);
+    color: var(--primary-light);
+    box-shadow: var(--glow-primary);
+  }
+
+  .status-btn-small.active i {
+    animation: pulse-mini 1s infinite;
+  }
+
+  @keyframes pulse-mini {
+
+    0%,
+    100% {
+      transform: scale(1);
+    }
+
+    50% {
+      transform: scale(1.1);
+    }
   }
 </style>
 
@@ -114,11 +315,12 @@
 
 <div class="container pb-5">
   <div class="detail-layout">
-    <!-- Left Column -->
-    <div class="animate-on-scroll fade-up">
+    <!-- Left Column - Cover -->
+    <div class="cover-section animate-on-scroll fade-up">
       <div class="cover-wrapper mb-4">
-        <img src="{{ book.cover_url }}" alt="{{ book.title }}"
-          onerror="this.src='https://via.placeholder.com/300x450?text=No+Cover'">
+        {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
+        <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
+          onerror="this.onerror=null; this.src='{{ ai_cover }}';">
       </div>
 
       <div class="d-flex flex-column gap-3">
@@ -128,72 +330,594 @@
         </a>
         {% endif %}
 
+        <!-- Status Buttons Section -->
+        <div class="status-grid">
+          <form method="post" action="{{ url_for('main.set_book_status', book_id=book.id, status='favorite') }}"
+            class="w-100">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="status-btn-small {{ 'active' if book_status == 'favorite' else '' }}">
+              <i class="ph-fill ph-heart"></i>
+              <span>مفضلة</span>
+            </button>
+          </form>
+
+          <form method="post" action="{{ url_for('main.set_book_status', book_id=book.id, status='later') }}"
+            class="w-100">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="status-btn-small {{ 'active' if book_status == 'later' else '' }}">
+              <i class="ph-fill ph-clock"></i>
+              <span>لاحقاً</span>
+            </button>
+          </form>
+
+          <form method="post" action="{{ url_for('main.set_book_status', book_id=book.id, status='finished') }}"
+            class="w-100">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="status-btn-small {{ 'active' if book_status == 'finished' else '' }}">
+              <i class="ph-fill ph-check-circle"></i>
+              <span>مكتمل</span>
+            </button>
+          </form>
+        </div>
+
         <div class="d-flex gap-2">
-          <button class="btn btn-secondary flex-grow-1 justify-center" onclick="alert('تعديل') /* Placeholder */">
+          <!-- <button class="btn btn-secondary flex-grow-1 justify-center" onclick="alert('قريباً')">
             <i class="ph ph-pencil-simple"></i> تعديل
-          </button>
+          </button> -->
           <form method="post" action="{{ url_for('main.delete_book', book_id=book.id) }}"
-            onsubmit="return confirm('حذف؟')">
-            <button class="btn btn-outline text-danger border-danger justify-center">
-              <i class="ph ph-trash"></i>
+            onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب؟')" class="w-100">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline text-danger border-danger justify-center w-100">
+              <i class="ph ph-trash"></i> حذف من المكتبة
             </button>
           </form>
         </div>
       </div>
     </div>
 
-    <!-- Right Column -->
+    <!-- Right Column - Details -->
     <div class="animate-on-scroll fade-up delay-1">
-      <h1 class="h1 mb-2 fw-bold text-primary">{{ book.title }}</h1>
-      <div class="h4 text-secondary mb-4">بقلم <strong>{{ book.author }}</strong></div>
+      <!-- Meta Tags -->
+      <div class="meta-tags mb-3">
+        <span class="meta-tag">
+          <i class="ph-fill ph-book-open"></i> في مكتبتي
+        </span>
+      </div>
 
+      <!-- Title & Author -->
+      <h1 class="book-title">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
+      <div class="book-author mb-4">
+        بقلم <strong class="text-gradient">{{ book.author or 'مؤلف غير معروف' }}</strong>
+      </div>
+
+      <!-- Description Card -->
       <div class="card mb-5">
-        <h3 class="h6 text-muted text-uppercase mb-3">نبذة عن الكتاب</h3>
-        <p class="text-secondary" style="line-height: 1.8;">
-          {{ book.description or 'لا يوجد وصف.' }}
+        <h3 class="h6 text-muted mb-3" style="letter-spacing: 0.05em; text-transform: uppercase;">
+          <i class="ph ph-text-align-right"></i> نبذة عن الكتاب
+        </h3>
+        <p class="text-secondary mb-0" style="line-height: 1.9; font-size: 1.05rem;">
+          {{ book.description | safe if book.description else 'لا يوجد وصف متاح لهذا الكتاب.' }}
         </p>
       </div>
 
-      <h3 class="h4 mb-4">أدوات ذكية</h3>
+      <!-- AI Features -->
+      <h3 class="h4 mb-4">
+        <i class="ph-fill ph-sparkle" style="color: var(--accent-cyan);"></i>
+        أدوات <span class="text-gradient">ذكية</span>
+      </h3>
       <div class="ai-grid">
+        <!-- Chat Card -->
         <div class="ai-card" onclick="openChatModal()">
-          <div class="btn-icon mb-3" style="background: var(--bg-subtle); color: var(--primary);">
+          <div class="btn-icon mb-3"
+            style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; width: 50px; height: 50px; font-size: 1.5rem; margin: 0 auto;">
             <i class="ph-fill ph-chat-circle-text"></i>
           </div>
-          <h4 class="h6 mb-1">تحدث مع الكتاب</h4>
+          <h4 class="h6 mb-1" style="color: var(--text-primary);">تحدث مع الكتاب</h4>
           <p class="small text-muted mb-0">اسأل وحاور الكتاب</p>
         </div>
 
-        <div class="ai-card" onclick="alert('قريباً')">
-          <div class="btn-icon mb-3" style="background: #FAF5FF; color: var(--secondary);">
+        <!-- Summary Card -->
+        <div class="ai-card" onclick="generateSummary()">
+          <div class="btn-icon mb-3"
+            style="background: linear-gradient(135deg, var(--accent-magenta), var(--accent-purple)); color: white; width: 50px; height: 50px; font-size: 1.5rem; margin: 0 auto;">
             <i class="ph-fill ph-magic-wand"></i>
           </div>
-          <h4 class="h6 mb-1">ملخص ذكي</h4>
+          <h4 class="h6 mb-1" style="color: var(--text-primary);">ملخص ذكي</h4>
           <p class="small text-muted mb-0">ملخص شامل للنقاط الرئيسية</p>
         </div>
+
+        <!-- Coach Card -->
+        <div class="ai-card" onclick="openCoachModal()">
+          <div class="btn-icon mb-3"
+            style="background: linear-gradient(135deg, var(--success), var(--accent-cyan)); color: white; width: 50px; height: 50px; font-size: 1.5rem; margin: 0 auto;">
+            <i class="ph-fill ph-calendar-check"></i>
+          </div>
+          <h4 class="h6 mb-1" style="color: var(--text-primary);">مدرب القراءة</h4>
+          <p class="small text-muted mb-0">خطة قراءة مخصصة</p>
+        </div>
+
+        <!-- Quiz Card -->
+        <div class="ai-card" onclick="openQuizModal()">
+          <div class="btn-icon mb-3"
+            style="background: linear-gradient(135deg, var(--warning), var(--accent-orange)); color: white; width: 50px; height: 50px; font-size: 1.5rem; margin: 0 auto;">
+            <i class="ph-fill ph-brain"></i>
+          </div>
+          <h4 class="h6 mb-1" style="color: var(--text-primary);">اختبر معلوماتك</h4>
+          <p class="small text-muted mb-0">أسئلة من محتوى الكتاب</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews Section -->
+  <div class="mt-5 pt-5 border-top border-subtle animate-on-scroll fade-up">
+    <div class="d-flex align-center justify-between mb-4">
+      <h3 class="h4 mb-0">
+        <i class="ph-fill ph-star" style="color: var(--warning);"></i>
+        التقييمات والمراجعات
+      </h3>
+    </div>
+
+
+    <!-- Ratings Overview Grid -->
+    <div class="row mb-4">
+      <!-- Global Rating Card -->
+      <div class="col-md-6 mb-3 mb-md-0">
+        <div class="card h-100" style="background: var(--bg-surface); border: 1px solid var(--border-subtle);">
+          <h5 class="text-center mb-3" style="color: var(--text-primary); font-weight: 600; letter-spacing: 0.05em;">
+            <i class="ph-fill ph-globe-hemisphere-west" style="color: var(--accent-cyan);"></i> التقييم العالمي
+          </h5>
+          <div class="text-center">
+            {% if book.rating %}
+            <div class="d-flex align-center justify-center gap-2 mb-2">
+              <span class="avg-rating-number">{{ book.rating }}</span>
+              <div class="d-flex flex-column align-start">
+                <span class="avg-rating-stars">
+                  {% for i in range(1, 6) %}
+                  <i class="ph-fill ph-star {{ 'text-warning' if i <= book.rating|round else 'text-muted' }}"
+                    style="opacity: {{ '1' if i <= book.rating|round else '0.3' }}"></i>
+                  {% endfor %}
+                </span>
+                <span class="avg-rating-text">من مصدر موثوق</span>
+              </div>
+            </div>
+            <p class="text-muted small">
+              <i class="ph-fill ph-check-circle text-success"></i> تقييمات من مصادر عالمية (Google/OpenLibrary)
+            </p>
+            {% else %}
+            <div class="py-4 d-flex flex-column align-center justify-center">
+              <i class="ph-fill ph-star"
+                style="font-size: 2.5rem; color: var(--border-subtle); margin-bottom: 0.5rem;"></i>
+              <p class="text-muted mb-0" style="font-weight: 500;">لا يتوفر تقييم عالمي</p>
+              <span class="small text-muted opacity-75">كن أول من يقيم هذا الكتاب!</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Local Rating Card (Hidden by default, shown via JS) -->
+      <div class="col-md-6">
+        <div id="ratingDetailsCard" class="card h-100"
+          style="background: var(--bg-surface); border: 1px solid var(--border-subtle); display: none;">
+          <h5 class="text-center mb-3" style="color: var(--text-primary); font-weight: 600; letter-spacing: 0.05em;">
+            <i class="ph-fill ph-chart-bar" style="color: var(--warning);"></i> تفاصيل التقييم
+          </h5>
+          <div class="rating-summary text-center mb-4">
+            <div id="avgRatingDisplay" class="d-flex align-center justify-center gap-2 mb-2">
+            </div>
+            <div id="totalRatingsCount" class="text-muted small">
+            </div>
+          </div>
+          <div id="ratingBars" class="rating-bars">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Review Form -->
+    <div class="card mb-4" style="background: var(--bg-elevated);">
+      <h5 class="mb-3" style="color: var(--text-primary);">
+        <i class="ph ph-pencil-line"></i> أضف تقييمك
+      </h5>
+      <form method="post" action="{{ url_for('public.submit_review', gid=book.google_id or book.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="small text-muted mb-2 d-block">تقييمك:</label>
+          <div class="star-rating" id="starRating">
+            {% for i in range(5, 0, -1) %}
+            <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" required>
+            <label for="star{{ i }}" title="{{ i }} نجوم">
+              <i class="ph-fill ph-star"></i>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <textarea name="review_text" class="form-control" rows="3"
+            placeholder="شاركنا رأيك في هذا الكتاب... (اختياري)" style="resize: vertical;"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          <i class="ph ph-paper-plane-right"></i> إرسال المراجعة
+        </button>
+      </form>
+    </div>
+
+    <!-- Reviews List -->
+    <div id="reviewsList">
+      <div class="text-center py-4">
+        <i class="ph ph-spinner spin" style="font-size: 1.5rem; color: var(--primary-light);"></i>
+        <p class="text-muted small mt-2">جاري تحميل المراجعات...</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Chat Modal (Reused) -->
+<!-- Chat Modal -->
 <div class="modal-overlay" id="chatModal">
   <div class="modal-container">
     <div class="d-flex align-center justify-between p-3 border-bottom border-subtle">
-      <h5 class="mb-0">تحدث مع "{{ book.title }}"</h5>
-      <button class="btn-icon" onclick="closeChatModal()"><i class="ph ph-x"></i></button>
+      <h5 class="mb-0" style="color: var(--text-primary);">
+        <i class="ph-fill ph-chat-circle-text" style="color: var(--primary-light);"></i>
+        تحدث مع "{{ book.title }}"
+      </h5>
+      <button class="btn-icon" onclick="closeChatModal()" style="width: 36px; height: 36px;">
+        <i class="ph ph-x"></i>
+      </button>
     </div>
-    <div class="flex-grow-1 p-3 overflow-y-auto" id="chatMessages" style="min-height: 300px;">
+    <div class="flex-grow-1 p-3 overflow-y-auto d-flex flex-column gap-3" id="chatMessages" style="min-height: 300px;">
+      <div class="d-flex gap-2">
+        <div class="p-3 rounded-lg" style="max-width: 80%; background: var(--bg-elevated); color: var(--text-primary);">
+          مرحباً! أنا مساعدك الذكي لهذا الكتاب. اسألني أي شيء.
+        </div>
+      </div>
     </div>
     <div class="p-3 border-top border-subtle d-flex gap-2">
-      <input type="text" id="chatInput" class="form-control" placeholder="اكتب سؤالك...">
-      <button class="btn btn-primary btn-icon"><i class="ph-bold ph-paper-plane-right"></i></button>
+      <input type="text" id="chatInput" class="form-control" placeholder="اكتب سؤالك..."
+        onkeypress="if(event.key==='Enter') sendChatMessage()">
+      <button class="btn btn-primary btn-icon" onclick="sendChatMessage()" style="width: 44px; height: 44px;">
+        <i class="ph-bold ph-paper-plane-right"></i>
+      </button>
     </div>
+  </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal-overlay" id="aiResultModal">
+  <div class="modal-container">
+    <div class="d-flex align-center justify-between p-3 border-bottom border-subtle">
+      <h5 class="mb-0" id="resultTitle" style="color: var(--text-primary);">النتيجة</h5>
+      <button class="btn-icon" onclick="closeAIResultModal()" style="width: 36px; height: 36px;">
+        <i class="ph ph-x"></i>
+      </button>
+    </div>
+    <div class="p-4 overflow-y-auto" id="resultBody" style="color: var(--text-secondary);"></div>
   </div>
 </div>
 
 <script>
+  const bookId = "{{ book.google_id or book.id }}";
+  const bookTitle = "{{ book.title }}";
+  const bookAuthor = "{{ book.author or '' }}";
+  let chatHistory = [];
+
+  // Modal Logic
   function openChatModal() { document.getElementById('chatModal').classList.add('active'); }
   function closeChatModal() { document.getElementById('chatModal').classList.remove('active'); }
+  function closeAIResultModal() { document.getElementById('aiResultModal').classList.remove('active'); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeChatModal();
+      closeAIResultModal();
+    }
+  });
+
+  // Chat
+  async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const container = document.getElementById('chatMessages');
+    container.innerHTML += `<div class="d-flex justify-end gap-2"><div class="p-3 rounded-lg" style="max-width: 80%; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">${msg}</div></div>`;
+    input.value = '';
+    container.scrollTop = container.scrollHeight;
+
+    try {
+      const res = await fetch(`/public/books/${bookId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history: chatHistory })
+      });
+      const data = await res.json();
+      container.innerHTML += `<div class="d-flex gap-2"><div class="p-3 rounded-lg" style="max-width: 80%; background: var(--bg-elevated); color: var(--text-primary);">${data.reply}</div></div>`;
+      chatHistory.push({ role: 'user', content: msg }, { role: 'assistant', content: data.reply });
+      container.scrollTop = container.scrollHeight;
+    } catch (e) {
+      container.innerHTML += `<div class="d-flex gap-2"><div class="p-3 rounded-lg" style="max-width: 80%; background: rgba(239,68,68,0.2); color: var(--danger);">حدث خطأ في الاتصال</div></div>`;
+    }
+  }
+
+  // Summary
+  async function generateSummary() {
+    document.getElementById('aiResultModal').classList.add('active');
+    document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-magic-wand" style="color: var(--accent-magenta);"></i> ملخص الكتاب';
+    document.getElementById('resultBody').innerHTML = '<div class="text-center py-5"><i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--primary-light);"></i><p class="mt-2 text-muted">جاري التلخيص...</p></div>';
+
+    try {
+      const res = await fetch(`/public/books/${bookId}/ai-summary`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('resultBody').innerHTML = `<p style="line-height: 1.9; color: var(--text-secondary);">${data.summary}</p>`;
+    } catch (e) {
+      document.getElementById('resultBody').innerHTML = '<p style="color: var(--danger);">حدث خطأ</p>';
+    }
+  }
+
+  // Reading Coach
+  function openCoachModal() {
+    document.getElementById('aiResultModal').classList.add('active');
+    document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-calendar-check" style="color: var(--success);"></i> مدرب القراءة';
+    document.getElementById('resultBody').innerHTML = `
+      <div class="text-center">
+        <p class="mb-4" style="color: var(--text-secondary);">كم يوماً تريد لإنهاء هذا الكتاب؟</p>
+        <div class="d-flex justify-center gap-2 mb-4 flex-wrap">
+          <button class="btn btn-secondary" onclick="generateReadingPlan(7)">أسبوع (7 أيام)</button>
+          <button class="btn btn-secondary" onclick="generateReadingPlan(14)">أسبوعين (14 يوم)</button>
+          <button class="btn btn-secondary" onclick="generateReadingPlan(30)">شهر (30 يوم)</button>
+        </div>
+        <div class="d-flex align-center justify-center gap-2">
+          <input type="number" id="customDays" class="form-control" style="width: 100px; text-align: center;" min="1" max="365" placeholder="عدد">
+          <button class="btn btn-primary" onclick="generateReadingPlan(document.getElementById('customDays').value)">
+            <i class="ph ph-arrow-right"></i> ابدأ
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function generateReadingPlan(days) {
+    if (!days || days < 1) {
+      alert('الرجاء إدخال عدد أيام صحيح');
+      return;
+    }
+
+    document.getElementById('resultBody').innerHTML = '<div class="text-center py-5"><i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--success);"></i><p class="mt-2 text-muted">جاري إعداد خطة القراءة...</p></div>';
+
+    try {
+      const res = await fetch('/public/api/coach/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: bookTitle, pages: 200, days: parseInt(days) })
+      });
+      const data = await res.json();
+
+      let scheduleHtml = '';
+      if (data.schedule && data.schedule.length > 0) {
+        scheduleHtml = `<div class="mt-4" style="max-height: 300px; overflow-y: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead><tr style="background: var(--bg-elevated); color: var(--text-primary);">
+              <th style="padding: 10px; text-align: right;">اليوم</th>
+              <th style="padding: 10px; text-align: right;">المهمة</th>
+              <th style="padding: 10px; text-align: right;">نصيحة</th>
+            </tr></thead>
+            <tbody>${data.schedule.map(day => `<tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 10px; color: var(--accent-cyan); font-weight: 600;">يوم ${day.day}</td>
+              <td style="padding: 10px; color: var(--text-primary);">${day.focus}</td>
+              <td style="padding: 10px; color: var(--text-muted);">${day.tip || ''}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      }
+
+      document.getElementById('resultBody').innerHTML = `
+        <div class="text-center mb-4"><div style="font-size: 3rem;">📚</div><h4 style="color: var(--text-primary);">خطتك جاهزة!</h4></div>
+        <div class="card mb-3" style="background: var(--bg-elevated);">
+          <div class="d-flex justify-between align-center">
+            <div><p class="text-muted mb-1">الحصة اليومية</p><h3 style="color: var(--success); margin: 0;">${data.daily_quota} صفحة</h3></div>
+            <div><p class="text-muted mb-1">المدة</p><h3 style="color: var(--accent-cyan); margin: 0;">${days} يوم</h3></div>
+          </div>
+        </div>
+        <div class="p-3 rounded-lg mb-3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success);">
+          <p class="mb-0" style="color: var(--text-primary);"><i class="ph-fill ph-lightbulb" style="color: var(--warning);"></i> <strong>نصيحة:</strong> ${data.strategy || 'القراءة المنتظمة يومياً هي مفتاح النجاح!'}</p>
+        </div>
+        ${scheduleHtml}
+      `;
+    } catch (e) {
+      document.getElementById('resultBody').innerHTML = `<p style="color: var(--danger);">حدث خطأ</p>`;
+    }
+  }
+
+  // Quiz
+  let quizQuestions = [];
+  let currentQuestionIndex = 0;
+  let userScore = 0;
+
+  async function openQuizModal() {
+    document.getElementById('aiResultModal').classList.add('active');
+    document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-brain" style="color: var(--warning);"></i> اختبر معلوماتك';
+    document.getElementById('resultBody').innerHTML = '<div class="text-center py-5"><i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--warning);"></i><p class="mt-2 text-muted">جاري تحضير الأسئلة...</p></div>';
+
+    try {
+      const res = await fetch('/public/api/quiz/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: bookTitle, author: bookAuthor })
+      });
+      const data = await res.json();
+
+      quizQuestions = data.questions || [];
+      currentQuestionIndex = 0;
+      userScore = 0;
+
+      if (quizQuestions.length === 0) {
+        document.getElementById('resultBody').innerHTML = '<p class="text-muted text-center">لم نتمكن من تحضير أسئلة لهذا الكتاب.</p>';
+        return;
+      }
+
+      showQuizQuestion();
+    } catch (e) {
+      document.getElementById('resultBody').innerHTML = `<p style="color: var(--danger);">حدث خطأ</p>`;
+    }
+  }
+
+  function showQuizQuestion() {
+    const q = quizQuestions[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+
+    document.getElementById('resultBody').innerHTML = `
+      <div class="mb-3">
+        <div style="background: var(--bg-elevated); height: 8px; border-radius: 4px; overflow: hidden;">
+          <div style="background: linear-gradient(90deg, var(--warning), var(--accent-orange)); height: 100%; width: ${progress}%;"></div>
+        </div>
+        <p class="text-muted small mt-2 text-center">السؤال ${currentQuestionIndex + 1} من ${quizQuestions.length}</p>
+      </div>
+      <div class="card mb-4" style="background: var(--bg-elevated);">
+        <h4 style="color: var(--text-primary); margin: 0; line-height: 1.6;">${q.question}</h4>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        ${q.options.map((opt, idx) => `
+          <button class="btn btn-outline w-100 text-right quiz-option" onclick="answerQuiz(${idx}, ${q.correct_index})" style="padding: 1rem;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--bg-surface); border-radius: 50%; margin-left: 10px; font-weight: 600;">${String.fromCharCode(65 + idx)}</span>
+            ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function answerQuiz(selectedIndex, correctIndex) {
+    const buttons = document.querySelectorAll('.quiz-option');
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (idx === correctIndex) {
+        btn.style.background = 'rgba(16, 185, 129, 0.2)';
+        btn.style.borderColor = 'var(--success)';
+      } else if (idx === selectedIndex && selectedIndex !== correctIndex) {
+        btn.style.background = 'rgba(239, 68, 68, 0.2)';
+        btn.style.borderColor = 'var(--danger)';
+      }
+    });
+
+    if (selectedIndex === correctIndex) userScore++;
+
+    setTimeout(() => {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < quizQuestions.length) {
+        showQuizQuestion();
+      } else {
+        showQuizResult();
+      }
+    }, 1500);
+  }
+
+  function showQuizResult() {
+    const percentage = Math.round((userScore / quizQuestions.length) * 100);
+    let emoji = '🎉', message = 'ممتاز!';
+    if (percentage < 40) { emoji = '📖'; message = 'تحتاج لقراءة المزيد!'; }
+    else if (percentage < 70) { emoji = '👍'; message = 'جيد!'; }
+
+    document.getElementById('resultBody').innerHTML = `
+      <div class="text-center">
+        <div style="font-size: 4rem;">${emoji}</div>
+        <h3 style="color: var(--text-primary);">انتهى الاختبار!</h3>
+        <div class="card mb-4" style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
+          <h2 style="margin: 0;">${userScore} / ${quizQuestions.length}</h2>
+          <p style="margin: 0.5rem 0 0; opacity: 0.9;">${percentage}%</p>
+        </div>
+        <p style="color: var(--text-secondary);">${message}</p>
+        <div class="d-flex justify-center gap-2 mt-4">
+          <button class="btn btn-secondary" onclick="closeAIResultModal()">إغلاق</button>
+          <button class="btn btn-primary" onclick="openQuizModal()"><i class="ph ph-arrow-clockwise"></i> مرة أخرى</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Load Reviews
+  async function loadReviews() {
+    try {
+      const res = await fetch(`/public/books/${bookId}/reviews`);
+      const data = await res.json();
+
+      const container = document.getElementById('reviewsList');
+      const ratingCard = document.getElementById('ratingDetailsCard');
+      const avgDisplay = document.getElementById('avgRatingDisplay');
+      const totalCount = document.getElementById('totalRatingsCount');
+      const ratingBars = document.getElementById('ratingBars');
+
+      // Display rating details card if there are reviews
+      if (data.count > 0) {
+        ratingCard.style.display = 'block';
+
+        // Average rating display
+        let avgStarsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+          avgStarsHtml += `<i class="ph${i <= Math.round(data.average_rating) ? '-fill' : ''} ph-star"></i>`;
+        }
+        avgDisplay.innerHTML = `
+          <span class="avg-rating-number">${data.average_rating}</span>
+          <div class="d-flex flex-column align-start">
+            <span class="avg-rating-stars">${avgStarsHtml}</span>
+            <span class="avg-rating-text">من 5</span>
+          </div>
+        `;
+
+        totalCount.innerHTML = `<i class="ph ph-users"></i> ${data.count.toLocaleString('ar-EG')} تقييم`;
+
+        // Rating bars (5 to 1 stars)
+        let barsHtml = '';
+        for (let stars = 5; stars >= 1; stars--) {
+          const distData = data.rating_distribution[stars.toString()] || { count: 0, percentage: 0 };
+          let starsIcons = '';
+          for (let i = 1; i <= 5; i++) {
+            starsIcons += `<i class="ph-fill ph-star ${i <= stars ? 'filled' : 'empty'}"></i>`;
+          }
+          barsHtml += `
+            <div class="rating-bar-row">
+              <div class="rating-bar-stars">${starsIcons}</div>
+              <div class="rating-bar-track">
+                <div class="rating-bar-fill" style="width: ${distData.percentage}%;"></div>
+              </div>
+              <div class="rating-bar-percentage">${distData.percentage}%</div>
+            </div>
+          `;
+        }
+        ratingBars.innerHTML = barsHtml;
+
+      } else {
+        ratingCard.style.display = 'none';
+      }
+
+      // Display reviews
+      if (data.reviews && data.reviews.length > 0) {
+        container.innerHTML = data.reviews.map(review => {
+          let starsHtml = '';
+          for (let i = 1; i <= 5; i++) {
+            starsHtml += `<i class="ph${i <= review.rating ? '-fill' : ''} ph-star"></i>`;
+          }
+          return `<div class="review-card">
+            <div class="d-flex justify-between align-center mb-2">
+              <div class="d-flex align-center gap-2">
+                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">${review.user_name.charAt(0).toUpperCase()}</div>
+                <div><strong style="color: var(--text-primary);">${review.user_name}</strong><div class="review-stars">${starsHtml}</div></div>
+              </div>
+              <span class="text-muted small">${review.created_at || ''}</span>
+            </div>
+            ${review.review_text ? `<p style="color: var(--text-secondary); margin: 0; line-height: 1.7;">${review.review_text}</p>` : ''}
+          </div>`;
+        }).join('');
+      } else {
+        container.innerHTML = '<div class="text-center py-5" style="color: var(--text-muted);"><i class="ph ph-chat-teardrop-dots" style="font-size: 3rem; opacity: 0.5;"></i><p class="mt-2">لا توجد مراجعات بعد</p></div>';
+      }
+    } catch (e) {
+      document.getElementById('reviewsList').innerHTML = '<p class="text-muted text-center">خطأ في تحميل المراجعات</p>';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadReviews);
 </script>
 {% endblock %}

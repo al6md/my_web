@@ -11,6 +11,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     onboarding_completed = db.Column(db.Boolean, default=False)  # هل اختار اهتماماته؟
+    profile_picture = db.Column(db.String(500), nullable=True)  # مسار صورة الملف الشخصي
 
 class Book(db.Model):
     __tablename__ = "books"

@@ -5,7 +5,7 @@ import os
 from flask import Blueprint, render_template, request, abort, session, flash, redirect, url_for, jsonify
 from flask_login import current_user, login_required
 from ..models import Book, SearchHistory, UserPreference, BookReview
-from ..extensions import db, csrf
+from ..extensions import db, csrf, cache
 from datetime import datetime
 import requests
 import random
@@ -18,65 +18,10 @@ from ..utils import (
     fetch_openlib_books, fetch_openlib_detail,
     fetch_itbook_books, fetch_itbook_detail,
     translate_to_english_with_gemini, analyze_search_intent_with_ai,
-    generate_quiz_with_ai, extract_quotes_with_ai
+    generate_quiz_with_ai
 )
 
 public_bp = Blueprint("public", __name__, url_prefix="/public")
-
-
-# Helper to manage shared quotes JSON
-QUOTES_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'shared_quotes.json')
-
-
-def load_shared_quotes():
-    if not os.path.exists(QUOTES_FILE): return []
-    try:
-        with open(QUOTES_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except: return []
-
-def save_shared_quotes(quotes):
-    os.makedirs(os.path.dirname(QUOTES_FILE), exist_ok=True)
-    with open(QUOTES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(quotes, f, ensure_ascii=False, indent=2)
-
-
-
-@public_bp.route("/inspiration")
-def inspiration_wall():
-    return render_template("inspiration_wall.html")
-
-
-
-@public_bp.route("/api/wall/feed")
-def wall_feed():
-    quotes = load_shared_quotes()
-    # Return latest first
-    return jsonify(sorted(quotes, key=lambda x: x['timestamp'], reverse=True))
-
-@public_bp.route("/api/wall/share", methods=["POST"])
-def share_quote():
-    data = request.json
-    quotes = load_shared_quotes()
-    
-    new_quote = {
-        "id": len(quotes) + 1,
-        "quote": data.get("quote"),
-        "author": data.get("author"),
-        "theme": data.get("theme", "aurora"),
-        "book_title": data.get("book_title"),
-        "user_name": current_user.name if current_user.is_authenticated else "مجهول",
-        "timestamp": datetime.now().isoformat()
-    }
-    
-    quotes.append(new_quote)
-    save_shared_quotes(quotes)
-    
-    return jsonify({"success": True})
-
-
-
-
 
 # قوائم المواضيع العشوائية
 RANDOM_TOPICS = [
@@ -155,9 +100,19 @@ def list_books():
             
             db.session.commit()
             
-            # إبطال الكاش (اختياري)
-            # from ..extensions import cache
-            # cache.clear()
+            # إبطال الكاش (لضمان تحديث التوصيات فوراً)
+            try:
+                # نحتاج للدوال لإبطال الكاش الخاص بها
+                from ..recommender import get_homepage_sections, get_topic_based, get_last_search_recommendations
+                
+                # حذف كل الكاش للدوال (بدون تحديد المعاملات لضمان الحذف الكامل)
+                cache.delete_memoized(get_homepage_sections)
+                cache.delete_memoized(get_topic_based)
+                cache.delete_memoized(get_last_search_recommendations)
+                
+                print(f"🧹 Cache cleared for all users after search by user {current_user.id}.")
+            except Exception as e:
+                print(f"⚠️ Error clearing cache: {e}")
             
         except Exception as e:
             db.session.rollback()
@@ -231,6 +186,8 @@ def list_books():
                     "desc": vi.get("description"),
                     "cover": cover,
                     "source": "google",
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount"),
                 })
             return ("google", result)
         except Exception as e:
@@ -285,9 +242,18 @@ def list_books():
         
         from ..recommender import get_topic_based, get_cf_similar, get_content_similar, get_trending
         
+        # متغير لتتبع حالة انتهاء الاهتمامات
+        interests_exhausted = False
+        
         if special_type == "interests":
             # من اهتماماتك العامة
-            recommendations = get_topic_based(current_user.id, limit=per*2, offset=start)
+            result = get_topic_based(current_user.id, limit=per, offset=start)
+            # النتيجة الآن dict يحتوي على books و interests_exhausted
+            if isinstance(result, dict):
+                recommendations = result.get('books', [])
+                interests_exhausted = result.get('interests_exhausted', False)
+            else:
+                recommendations = result  # للتوافقية مع القديم
         elif special_type == "cf":
             # مختارات لك (Collaborative Filtering)
             recommendations = get_cf_similar(current_user.id, top_n=per*2)
@@ -313,6 +279,9 @@ def list_books():
             raw_total = len(recommendations)
 
     else:
+        # متغير لتتبع حالة انتهاء الاهتمامات (للحالات العادية)
+        interests_exhausted = False
+        
         # تشغيل جميع APIs بشكل متوازي (أسرع 3-4 مرات!)
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = [
@@ -357,6 +326,7 @@ def list_books():
         it_items=it_items,
         q=q, cat=cat, sort=sort, per=per, start=start,
         total=display_total, shown=shown, categories=CATEGORIES,
+        interests_exhausted=interests_exhausted,  # 🆕 إرسال حالة انتهاء الاهتمامات
     )
 
 
@@ -477,14 +447,125 @@ def book_detail(gid):
     random.shuffle(similar)
     similar = similar[:18]
 
+    # -------------------------------------------------
+    #   التحقق من حالة الكتاب في مكتبة المستخدم
+    # -------------------------------------------------
     personal_recs = []
+    current_status = None
+    if current_user.is_authenticated:
+        # البحث عن الكتاب محلياً باستخدام Google ID
+        local_book = Book.query.filter_by(owner_id=current_user.id, google_id=gid).first()
+        if local_book:
+            # إذا وجد الكتاب، نبحث عن حالته
+            from ..models import BookStatus
+            status_entry = BookStatus.query.filter_by(user_id=current_user.id, book_id=local_book.id).first()
+            if status_entry:
+                current_status = status_entry.status
 
     return render_template(
         "public_book_detail.html",
         book=book_data,
         similar=similar,
         personal_recs=personal_recs,
+        current_status=current_status, # تمرير الحالة للقالب
     )
+
+@public_bp.route("/books/<gid>/add-to-shelf/<status>", methods=["POST"])
+@login_required
+@csrf.exempt
+def add_to_shelf(gid, status):
+    """إضافة كتاب إلى رف معين (قراءة لاحقاً، مفضلة، تم)"""
+    if status not in ['later', 'favorite', 'finished']:
+        return jsonify({"success": False, "error": "Invalid status"}), 400
+
+    from ..models import BookStatus
+    
+    try:
+        # 1. التحقق هل الكتاب موجود في مكتبة المستخدم
+        local_book = Book.query.filter_by(owner_id=current_user.id, google_id=gid).first()
+        
+        # 2. إذا لم يكن موجوداً، نقوم باستيراده
+        if not local_book:
+            # جلب البيانات
+            data = None
+            if gid.startswith("gut_"): data = fetch_gutenberg_detail(gid)
+            elif gid.startswith("arch_"): data = fetch_archive_detail(gid)
+            elif gid.startswith("ol_"): data = fetch_openlib_detail(gid)
+            elif gid.isdigit() and len(gid) == 13: data = fetch_itbook_detail(gid)
+            else: data = fetch_book_details(gid)
+
+            if not data:
+                return jsonify({"success": False, "error": "Book not found"}), 404
+
+            # استخراج البيانات
+            title = data.get("title")
+            author = data.get("author")
+            desc = data.get("desc") or data.get("description")
+            cover = data.get("cover")
+            
+            if "volumeInfo" in data:
+                vi = data["volumeInfo"]
+                title = vi.get("title")
+                author = ", ".join(vi.get("authors", [])) if vi.get("authors") else "Unknown"
+                desc = vi.get("description")
+                imgs = vi.get("imageLinks", {})
+                cover = imgs.get("thumbnail") or imgs.get("smallThumbnail")
+
+            if cover and cover.startswith("http://"):
+                cover = cover.replace("http://", "https://")
+
+            local_book = Book(
+                title=title or "Untitled",
+                author=author or "Unknown",
+                description=desc,
+                cover_url=cover,
+                owner_id=current_user.id,
+                google_id=gid
+            )
+            db.session.add(local_book)
+            db.session.commit()
+            
+            # محاولة إنشاء Embedding
+            try:
+                from ..utils import generate_book_embedding_if_missing
+                generate_book_embedding_if_missing(local_book)
+            except: pass
+
+        # 3. تحديث الحالة
+        status_entry = BookStatus.query.filter_by(user_id=current_user.id, book_id=local_book.id).first()
+        
+        if status_entry:
+            if status_entry.status == status:
+                # إذا ضغط نفس الزر، نحذف الحالة (Toggle Off)
+                db.session.delete(status_entry)
+                msg = "تم إزالة الكتاب من القائمة"
+                new_status = None
+            else:
+                # تغيير الحالة
+                status_entry.status = status
+                msg = f"تم نقل الكتاب إلى {status}"
+                new_status = status
+        else:
+            # حالة جديدة
+            status_entry = BookStatus(user_id=current_user.id, book_id=local_book.id, status=status)
+            db.session.add(status_entry)
+            msg = f"تم إضافة الكتاب إلى {status}"
+            new_status = status
+            
+        db.session.commit()
+        
+        # إبطال الكاشات المهمة
+        try:
+            from ..recommender import get_homepage_sections
+            cache.delete_memoized(get_homepage_sections)
+        except: pass
+
+        return jsonify({"success": True, "message": msg, "status": new_status})
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding to shelf: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @public_bp.get("/reader/<gid>", endpoint="reader")
 def reader(gid):
@@ -558,7 +639,67 @@ def submit_review(gid):
             db.session.add(new_review)
             flash("شكراً لمراجعتك! 🌟", "success")
         
+        # ---------------------------------------------------------
+        # 🧠 نظام الاهتمامات الذكي: تحديث التفضيلات بناءً على التقييم
+        # ---------------------------------------------------------
+        if rating >= 4:
+            try:
+                # نحتاج لعنوان الكتاب والمؤلف للتحليل
+                # (يمكننا جلبه من قاعدة البيانات أو APs)
+                book_title = "Unknown"
+                book_author = "Unknown"
+                
+                # نحاول جلبه من DB أولاً (لأنه أسرع)
+                local_book = Book.query.filter_by(google_id=gid).first()
+                if local_book:
+                    book_title = local_book.title
+                    book_author = local_book.author
+                else:
+                    # إذا لم يكن محلياً، نحاول تخمينه أو تركه للـ AI
+                    # (هنا سنعتمد على أن دالة التحليل ستتعامل مع النقص أو يمكننا جلبه)
+                    # للسرعة، سنمرر "Book ID {gid}" إذا لم نجد الاسم، والـ AI قد يفهم لو كان معروفاً
+                    pass 
+
+                # استدعاء دالة التحليل (يفضل أن تكون async في الإنتاج)
+                from ..utils import extract_interests_from_text_ai
+                
+                # استخدام Thread لعدم تعطيل السيرفر
+                from threading import Thread
+                
+                def background_interest_update(app, uid, b_title, b_author, r_text):
+                    with app.app_context():
+                        topics = extract_interests_from_text_ai(b_title, b_author, r_text)
+                        print(f"🎯 [Interest System] Extracted topics for {b_title}: {topics}")
+                        
+                        for topic in topics:
+                            pref = UserPreference.query.filter_by(user_id=uid, topic=topic).first()
+                            if pref:
+                                pref.weight += 5.0 # زيادة الوزن
+                                pref.updated_at = datetime.utcnow()
+                            else:
+                                new_pref = UserPreference(user_id=uid, topic=topic, weight=10.0)
+                                db.session.add(new_pref)
+                        
+                        db.session.commit()
+
+                # تشغيل في الخلفية
+                from flask import current_app
+                # ملاحظة: current_app is a proxy, need real app object for thread
+                real_app = current_app._get_current_object()
+                Thread(target=background_interest_update, args=(real_app, current_user.id, book_title, book_author, review_text)).start()
+                
+            except Exception as e:
+                print(f"[Interest System] Error: {e}")
+
         db.session.commit()
+        
+        # إبطال كاش أعلى التقييمات لتظهر التحديثات فوراً
+        try:
+            from ..recommender import get_top_rated
+            cache.delete_memoized(get_top_rated)
+            print(f"🧹 Top Rated cache cleared after review submission.")
+        except Exception as e:
+            print(f"⚠️ Error clearing top rated cache: {e}")
         
     except Exception as e:
         db.session.rollback()
@@ -577,12 +718,31 @@ def get_reviews(gid):
     
     # حساب متوسط التقييم
     avg_rating = 0
+    total_count = len(reviews)
+    
+    # حساب توزيع التقييمات (عدد كل نجمة)
+    rating_counts = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+    
     if reviews:
-        avg_rating = sum(r.rating for r in reviews) / len(reviews)
+        for r in reviews:
+            if 1 <= r.rating <= 5:
+                rating_counts[r.rating] += 1
+        avg_rating = sum(r.rating for r in reviews) / total_count
+    
+    # حساب النسب المئوية لكل تقييم
+    rating_distribution = {}
+    for stars in range(5, 0, -1):
+        count = rating_counts[stars]
+        percentage = round((count / total_count * 100), 1) if total_count > 0 else 0
+        rating_distribution[str(stars)] = {
+            "count": count,
+            "percentage": percentage
+        }
     
     return {
-        "count": len(reviews),
+        "count": total_count,
         "average_rating": round(avg_rating, 1),
+        "rating_distribution": rating_distribution,
         "reviews": [
             {
                 "id": r.id,
@@ -840,41 +1000,6 @@ def book_quiz_route(gid):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# ===========================================================================
-#                     📜 اقتباسات ذكية
-# ===========================================================================
-
-@public_bp.post("/books/<gid>/quotes")
-@csrf.exempt
-def book_quotes_route(gid):
-    """توليد اقتباسات للكتاب"""
-    from ..utils import extract_book_quotes
-    from flask import jsonify
-    
-    try:
-        # جلب معلومات الكتاب 
-        book_data = None
-        if gid.startswith("gut_"): book_data = fetch_gutenberg_detail(gid)
-        elif gid.startswith("arch_"): book_data = fetch_archive_detail(gid)
-        elif gid.startswith("ol_"): book_data = fetch_openlib_detail(gid)
-        elif gid.isdigit() and len(gid) == 13: book_data = fetch_itbook_detail(gid)
-        else:
-            d = fetch_book_details(gid)
-            if d:
-                vi = d.get("volumeInfo", {}) or {}
-                book_data = {
-                    "title": vi.get("title", ""),
-                    "author": ", ".join(vi.get("authors", [])) if vi.get("authors") else "",
-                }
-        
-        if not book_data:
-            return jsonify({"success": False, "error": "Book not found"}), 404
-            
-        result = extract_book_quotes(book_data)
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ===========================================================================
@@ -1195,6 +1320,7 @@ def generate_book_cover_gemini():
         return redirect(url_for('public.generate_book_cover', title=title, author=author, category=category))
 
 @public_bp.route("/api/coach/plan", methods=["POST"])
+@csrf.exempt
 def get_reading_plan():
     """
     API Returns personalized reading plan
@@ -1231,6 +1357,7 @@ def generate_quote_options():
     return jsonify(result)
 
 @public_bp.route("/api/quiz/generate", methods=["POST"])
+@csrf.exempt
 def generate_quiz():
     """
     API Returns AI Quiz questions

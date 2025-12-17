@@ -27,73 +27,105 @@
     <!-- Fixed Navbar -->
     <nav class="navbar" id="mainNav">
         <div class="nav-container">
-            <!-- Logo -->
-            <a href="/" class="nav-logo">
-                <i class="ph-fill ph-circles-three-plus"></i>
-                <span>ALHAM</span>
-            </a>
-
-            <!-- Mobile Toggle -->
-            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
-                <i class="ph ph-list"></i>
+            <!-- Search Button (Left) -->
+            <button class="btn-icon" onclick="toggleSearch()" aria-label="Search">
+                <i class="ph ph-magnifying-glass"></i>
             </button>
 
-            <!-- Desktop Navigation -->
-            <div class="nav-links">
+            <!-- Center Navigation Links -->
+            <div class="header-nav-links">
                 <a href="{{ url_for('explore.index') }}"
-                    class="nav-link {% if request.endpoint == 'explore.index' %}active{% endif %}">
-                    <i class="ph ph-compass"></i>
-                    استكشف
+                    class="header-nav-link {% if request.endpoint == 'explore.index' %}active{% endif %}">
+                    <i class="ph ph-house"></i>
+                    <span>الرئيسية</span>
                 </a>
-
-                <a href="{{ url_for('public.inspiration_wall') }}"
-                    class="nav-link {% if request.endpoint == 'public.inspiration_wall' %}active{% endif %}">
-                    <i class="ph ph-lightbulb"></i>
-                    الإلهام
-                </a>
-
-
-
                 <a href="{{ url_for('public.list_books') }}"
-                    class="nav-link {% if request.endpoint == 'public.list_books' %}active{% endif %}">
+                    class="header-nav-link {% if request.endpoint == 'public.list_books' %}active{% endif %}">
                     <i class="ph ph-books"></i>
-                    المكتبة
+                    <span>المكتبة</span>
                 </a>
-
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('main.books') }}"
-                    class="nav-link {% if request.endpoint == 'main.books' %}active{% endif %}">
+                    class="header-nav-link {% if request.endpoint == 'main.books' %}active{% endif %}">
                     <i class="ph ph-bookmark-simple"></i>
-                    محفوظاتي
+                    <span>محفوظاتي</span>
+                </a>
+                <a href="{{ url_for('auth.profile') }}"
+                    class="header-nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+                    <i class="ph ph-user-circle"></i>
+                    <span>حسابي</span>
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="header-nav-link">
+                    <i class="ph ph-sign-in"></i>
+                    <span>دخول</span>
                 </a>
                 {% endif %}
             </div>
 
-            <!-- Actions -->
-            <div class="nav-actions" style="display: flex; gap: 0.75rem; align-items: center;">
-                <button class="btn-icon" onclick="toggleSearch()" aria-label="Search">
-                    <i class="ph ph-magnifying-glass"></i>
-                </button>
-
-                <!-- Desktop Only Auth Buttons -->
-                <div class="desktop-auth-buttons">
-                    {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost">
-                        <i class="ph ph-sign-out"></i>
-                        خروج
-                    </a>
-                    {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
-                        <i class="ph ph-sign-in"></i>
-                        دخول
-                    </a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">
-                        تسجيل
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
+            <!-- Logo (Right) -->
+            <a href="/" class="nav-logo">
+                <span>ALHAM</span>
+                <i class="ph-fill ph-circles-three-plus"></i>
+            </a>
         </div>
+
+        <style>
+            /* Clean Header Navigation */
+            .header-nav-links {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .header-nav-link {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.4rem;
+                padding: 0.5rem 0.75rem;
+                color: var(--text-muted);
+                text-decoration: none;
+                font-size: 0.8rem;
+                transition: all 0.2s ease;
+                border-radius: 20px;
+            }
+
+            .header-nav-link i {
+                font-size: 1.1rem;
+            }
+
+            .header-nav-link span {
+                display: inline;
+            }
+
+            .header-nav-link:hover {
+                color: var(--primary-light);
+                background: var(--bg-elevated);
+            }
+
+            .header-nav-link.active {
+                color: white;
+                background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+            }
+
+            /* Hide old desktop nav-links on mobile, show header-nav-links always */
+            .nav-links {
+                display: none !important;
+            }
+
+            .desktop-auth-buttons {
+                display: none !important;
+            }
+
+            .mobile-menu-toggle {
+                display: none !important;
+            }
+
+            .nav-actions {
+                display: none !important;
+            }
+        </style>
 
         <!-- Mobile Menu Drawer -->
         <div class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
@@ -112,51 +144,9 @@
                 <a href="{{ url_for('explore.index') }}" class="mobile-link">
                     <i class="ph ph-compass"></i> استكشف
                 </a>
-                <a href="{{ url_for('public.inspiration_wall') }}" class="mobile-link">
-                    <i class="ph ph-lightbulb"></i> الإلهام
-                </a>
+
                 <a href="{{ url_for('public.list_books') }}" class="mobile-link">
                     <i class="ph ph-books"></i> المكتبة
-                </a>
-
-                <div class="mobile-divider"></div>
-                <p class="mobile-section-title">الأقسام</p>
-
-                <a href="{{ url_for('public.list_books', cat='Fiction') }}" class="mobile-link">
-                    <i class="ph ph-book-open"></i> الأدب والروايات
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Science') }}" class="mobile-link">
-                    <i class="ph ph-atom"></i> العلوم والطبيعة
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Technology') }}" class="mobile-link">
-                    <i class="ph ph-code"></i> التكنولوجيا والبرمجة
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Business') }}" class="mobile-link">
-                    <i class="ph ph-trend-up"></i> المال والأعمال
-                </a>
-                <a href="{{ url_for('public.list_books', cat='History') }}" class="mobile-link">
-                    <i class="ph ph-scroll"></i> التاريخ والحضارة
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Philosophy') }}" class="mobile-link">
-                    <i class="ph ph-lightbulb"></i> الفلسفة والفكر
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Self Help') }}" class="mobile-link">
-                    <i class="ph ph-target"></i> تطوير الذات
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Psychology') }}" class="mobile-link">
-                    <i class="ph ph-brain"></i> علم النفس
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Art') }}" class="mobile-link">
-                    <i class="ph ph-paint-brush"></i> الفنون
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Religion') }}" class="mobile-link">
-                    <i class="ph ph-mosque"></i> الأديان
-                </a>
-                <a href="{{ url_for('public.list_books', cat='Biography') }}" class="mobile-link">
-                    <i class="ph ph-user-circle"></i> السير الذاتية
-                </a>
-                <a href="{{ url_for('public.list_books', cat='General') }}" class="mobile-link">
-                    <i class="ph ph-circles-four"></i> كتب عامة
                 </a>
 
                 {% if current_user.is_authenticated %}
@@ -632,6 +622,9 @@
             }
         });
     </script>
+
+
+
 </body>
 
 </html>

@@ -48,6 +48,15 @@ def fetch_book_details(book_id, source="google"):
         if r.ok:
             data = r.json()
             vol = data.get("volumeInfo", {})
+            rating = vol.get("averageRating")
+            
+            # Fallback: Try OpenLibrary if no Google rating
+            if not rating:
+                isbns = vol.get("industryIdentifiers", [])
+                isbn = next((i["identifier"] for i in isbns if i["type"] in ["ISBN_13", "ISBN_10"]), None)
+                if isbn:
+                    rating = fetch_openlib_rating(isbn=isbn)
+
             return {
                 "id": data["id"],
                 "title": vol.get("title", "No Title"),
@@ -56,7 +65,7 @@ def fetch_book_details(book_id, source="google"):
                 "cover": vol.get("imageLinks", {}).get("thumbnail"),
                 "preview": vol.get("previewLink"),
                 "pageCount": vol.get("pageCount"),
-                "rating": vol.get("averageRating"),
+                "rating": rating,
                 "publishedDate": vol.get("publishedDate"),
                 "source": "google"
             }
@@ -82,7 +91,7 @@ def generate_ai_description(title: str, author: str = "") -> str:
     
     # Prompt مختصر للسرعة
     prompt = f"""اكتب وصفاً قصيراً (40-60 كلمة) لكتاب "{title}" للمؤلف {author or 'غير محدد'}. 
-اكتب الوصف مباشرة بدون مقدمات."""
+    اكتب الوصف مباشرة بدون مقدمات."""
 
     # Try Groq first (أسرع بكثير!)
     if groq_key:
@@ -181,6 +190,24 @@ def fetch_gutenberg_detail(gut_id):
 # -----------------------------------------------------------
 # 3. OpenLibrary
 # -----------------------------------------------------------
+def fetch_openlib_rating(isbn=None, olid=None, title=None):
+    """جلب التقييم من OpenLibrary"""
+    try:
+        url = None
+        if olid:
+            url = f"https://openlibrary.org/works/{olid}/ratings.json"
+        elif isbn:
+            url = f"https://openlibrary.org/isbn/{isbn}/ratings.json"
+        
+        if url:
+            r = requests.get(url, timeout=3)
+            if r.ok:
+                data = r.json()
+                summary = data.get("summary", {})
+                return summary.get("average")
+    except: pass
+    return None
+
 def fetch_openlib_books(query, limit=12, offset=0, **kwargs):
     """جلب كتب من OpenLibrary مع تحسين جلب الأغلفة"""
     try:
@@ -224,11 +251,17 @@ def fetch_openlib_books(query, limit=12, offset=0, **kwargs):
                 if not cover:
                     cover = "https://via.placeholder.com/150x200/DB4437/ffffff?text=📚+OpenLibrary"
                 
+                # ⭐️ محاولة قراءة التقييم من نتيجة البحث
+                rating = doc.get("ratings_average")
+                if rating:
+                    rating = round(float(rating), 1)
+
                 books.append({
                     "id": f"ol_{key}", 
                     "title": title, 
                     "author": author or "مؤلف غير معروف",
                     "cover": cover, 
+                    "rating": rating,
                     "source": "openlibrary"
                 })
             
@@ -247,10 +280,16 @@ def fetch_openlib_detail(ol_id):
             desc = data.get("description")
             if isinstance(desc, dict): desc = desc.get("value")
             cover = f"https://covers.openlibrary.org/b/id/{data['covers'][0]}-L.jpg" if data.get("covers") else None
+            
+            # Fetch Rating explicitly
+            rating = fetch_openlib_rating(olid=clean_id)
+
             return {
                 "id": ol_id, "title": data.get("title"), "author": "OpenLibrary Author",
                 "desc": desc or "No description.", "cover": cover,
-                "preview": f"https://openlibrary.org/works/{clean_id}", "source": "openlibrary"
+                "preview": f"https://openlibrary.org/works/{clean_id}", 
+                "rating": rating,
+                "source": "openlibrary"
             }
     except: pass
     return None
@@ -795,6 +834,71 @@ def generate_quiz_with_ai(title, author):
             }
         ]
     }
+
+
+def extract_interests_from_text_ai(title: str, author: str, review_text: str = "") -> list:
+    """
+    Extract 3-5 key topics/genres from a book and its review using AI.
+    Used to update user preferences based on high-rated books.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY")
+    groq_key = os.environ.get("GROQ_API_KEY")
+    
+    prompt = f"""
+    Analyze this book and optional review to extract 3-5 distinct, search-friendly topics or genres.
+    Book: "{title}" by {author}.
+    Review: "{review_text}"
+    
+    Return JSON ONLY:
+    {{
+        "topics": ["Genre/Topic 1", "Genre/Topic 2", "Genre/Topic 3"]
+    }}
+    
+    Rules:
+    - Topics should be general enough for recommendation (e.g., "Science Fiction", "Self Help", "History", "Dragons").
+    - If the review mentions specific aspects (e.g., "loved the world building"), include related topics (e.g., "World Building", "Fantasy").
+    - English is preferred for better matching, but Arabic is okay if the input is Arabic.
+    """
+    
+    try:
+        # 1. Try Groq (Fastest)
+        if groq_key:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {groq_key}"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.3,
+                    "response_format": {"type": "json_object"}
+                },
+                timeout=5
+            )
+            if response.ok:
+                data = response.json()
+                content = data['choices'][0]['message']['content']
+                return json.loads(content).get("topics", [])
+
+        # 2. Fallback to Gemini
+        if api_key:
+            response = requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}",
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"response_mime_type": "application/json"}
+                },
+                timeout=5
+            )
+            if response.ok:
+                data = response.json()
+                text_resp = data['candidates'][0]['content']['parts'][0]['text']
+                return json.loads(text_resp).get("topics", [])
+                
+    except Exception as e:
+        print(f"[Interest Extraction] Error: {e}")
+    
+    # Simple Fallback if AI fails: just use keywords from title
+    return [w for w in title.split() if len(w) > 4][:2]
 
 # ... (دالة get_text_embedding اتركها كما هي) ...
 

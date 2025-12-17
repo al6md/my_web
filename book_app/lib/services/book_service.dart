@@ -5,21 +5,21 @@ import '../config/api_config.dart';
 /// Book Service - handles book operations
 class BookService extends ChangeNotifier {
   final _api = ApiService();
-  
+
   List<Map<String, dynamic>> _categories = [];
   List<Map<String, dynamic>> _trendingBooks = [];
   List<Map<String, dynamic>> _searchResults = [];
   List<dynamic> _recommendations = [];
   bool _isLoading = false;
   String? _error;
-  
+
   List<Map<String, dynamic>> get categories => _categories;
   List<Map<String, dynamic>> get trendingBooks => _trendingBooks;
   List<Map<String, dynamic>> get searchResults => _searchResults;
   List<dynamic> get recommendations => _recommendations;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  
+
   // Fetch categories
   Future<void> fetchCategories() async {
     final result = await _api.get(ApiConfig.booksCategories);
@@ -28,35 +28,36 @@ class BookService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // Fetch trending books
   Future<void> fetchTrending({int limit = 12}) async {
     _isLoading = true;
     notifyListeners();
-    
+
     final result = await _api.get('${ApiConfig.booksTrending}?limit=$limit');
-    
+
     _isLoading = false;
     if (result['success'] == true) {
       _trendingBooks = List<Map<String, dynamic>>.from(result['books'] ?? []);
     }
     notifyListeners();
   }
-  
-  // Search books
+
+  // Search books (stateful)
   Future<void> search(String query, {int page = 1}) async {
     if (query.isEmpty) {
       _searchResults = [];
       notifyListeners();
       return;
     }
-    
+
     _isLoading = true;
     _error = null;
     notifyListeners();
-    
-    final result = await _api.get('${ApiConfig.booksSearch}?q=$query&page=$page');
-    
+
+    final result =
+        await _api.get('${ApiConfig.booksSearch}?q=$query&page=$page');
+
     _isLoading = false;
     if (result['success'] == true) {
       _searchResults = List<Map<String, dynamic>>.from(result['books'] ?? []);
@@ -65,7 +66,21 @@ class BookService extends ChangeNotifier {
     }
     notifyListeners();
   }
-  
+
+  // Search books (returns list directly)
+  Future<List<Map<String, dynamic>>> searchBooks(String query,
+      {int page = 1}) async {
+    if (query.isEmpty) return [];
+
+    final result =
+        await _api.get('${ApiConfig.booksSearch}?q=$query&page=$page');
+
+    if (result['success'] == true) {
+      return List<Map<String, dynamic>>.from(result['books'] ?? []);
+    }
+    return [];
+  }
+
   // Get book detail
   Future<Map<String, dynamic>?> getBookDetail(String gid) async {
     final result = await _api.get(ApiConfig.bookDetail(gid));
@@ -74,30 +89,39 @@ class BookService extends ChangeNotifier {
     }
     return null;
   }
-  
+
   // Fetch recommendations (requires auth)
   Future<void> fetchRecommendations() async {
     _isLoading = true;
     notifyListeners();
-    
-    final result = await _api.get(ApiConfig.booksRecommendations, requireAuth: true);
-    
+
+    final result =
+        await _api.get(ApiConfig.booksRecommendations, requireAuth: true);
+
     _isLoading = false;
     if (result['success'] == true) {
       _recommendations = result['sections'] ?? [];
     }
     notifyListeners();
   }
-  
-  // Get books by category
-  Future<List<Map<String, dynamic>>> getBooksByCategory(String categoryId, {int page = 1}) async {
-    final result = await _api.get('${ApiConfig.booksByCategory(categoryId)}?page=$page');
+
+  // Get books by category (returns list directly)
+  Future<List<Map<String, dynamic>>> fetchByCategory(String categoryId,
+      {int page = 1}) async {
+    final result =
+        await _api.get('${ApiConfig.booksByCategory(categoryId)}?page=$page');
     if (result['success'] == true) {
       return List<Map<String, dynamic>>.from(result['books'] ?? []);
     }
     return [];
   }
-  
+
+  // Legacy method name (alias)
+  Future<List<Map<String, dynamic>>> getBooksByCategory(String categoryId,
+      {int page = 1}) async {
+    return fetchByCategory(categoryId, page: page);
+  }
+
   void clearSearch() {
     _searchResults = [];
     notifyListeners();

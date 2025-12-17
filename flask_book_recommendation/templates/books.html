@@ -1,17 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}كتبي | ALHAM{% endblock %}
+{% block title %}محفوظاتي | ALHAM{% endblock %}
 
 {% block content %}
 <style>
-  /* Page Header */
-  .my-library-header {
-    padding: calc(var(--header-height) + 3rem) 0 2rem;
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Page Header - Enhanced Design
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .favorites-hero {
+    padding: calc(var(--header-height) + 2.5rem) 0 3rem;
     position: relative;
     overflow: hidden;
   }
 
-  .my-library-header::before {
+  .favorites-hero::before {
     content: '';
     position: absolute;
     top: 0;
@@ -19,108 +21,481 @@
     width: 100%;
     height: 100%;
     background:
-      radial-gradient(ellipse 50% 40% at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse 40% 30% at 80% 70%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+      radial-gradient(ellipse 60% 50% at 10% 20%, rgba(239, 68, 68, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 90% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(34, 211, 238, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    animation: hero-float 15s ease-in-out infinite;
+  }
+
+  @keyframes hero-float {
+
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+
+    50% {
+      transform: translateY(-10px) scale(1.02);
+    }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: white;
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+    animation: pulse-icon 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-icon {
+
+    0%,
+    100% {
+      transform: scale(1);
+    }
+
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  .hero-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 0;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Stats Cards - Compact Design
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .stat-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-primary);
+    border-color: var(--primary-light);
+  }
+
+  .stat-pill.active {
+    border-color: var(--primary-light);
+    box-shadow: var(--glow-primary);
+  }
+
+  .stat-pill.active.all {
+    border-color: var(--primary-light);
+  }
+
+  .stat-pill.active.favorite {
+    border-color: #ef4444;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  }
+
+  .stat-pill.active.finished {
+    border-color: #10b981;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+  }
+
+  .stat-pill.active.later {
+    border-color: #f59e0b;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  }
+
+  .stat-pill-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: white;
+  }
+
+  .stat-pill-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .stat-pill-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Toolbar Section
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+  }
+
+  /* Search Box */
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+    position: relative;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  }
+
+  .search-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .search-icon {
+    position: absolute;
+    right: auto;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.1rem;
     pointer-events: none;
   }
 
-  /* My Books Grid */
-  .my-books-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1.5rem;
+  .search-clear {
+    position: absolute;
+    left: auto;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    background: var(--bg-elevated);
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
   }
 
-  @media (max-width: 640px) {
-    .my-books-grid {
+  .search-clear:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .search-clear.visible {
+    display: flex;
+  }
+
+  .books-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .books-count strong {
+    color: var(--primary-light);
+    font-weight: 600;
+  }
+
+  .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+
+  .no-results-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    background: var(--bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    color: var(--text-muted);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Books Grid - Premium Design
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .books-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.75rem;
+  }
+
+  @media (max-width: 768px) {
+    .books-showcase {
       grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
     }
   }
 
-  .my-book-card {
+  /* Book Card */
+  .book-card {
     position: relative;
-    text-decoration: none;
-    color: inherit;
-    display: block;
+    cursor: pointer;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: card-appear 0.5s ease-out backwards;
   }
 
-  .my-book-cover {
+  .book-card:nth-child(1) {
+    animation-delay: 0.05s;
+  }
+
+  .book-card:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+
+  .book-card:nth-child(3) {
+    animation-delay: 0.15s;
+  }
+
+  .book-card:nth-child(4) {
+    animation-delay: 0.2s;
+  }
+
+  .book-card:nth-child(5) {
+    animation-delay: 0.25s;
+  }
+
+  .book-card:nth-child(6) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes card-appear {
+    from {
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .book-card:hover {
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), var(--glow-primary);
+    border-color: var(--primary-light);
+  }
+
+  .book-cover-wrap {
     position: relative;
     width: 100%;
     aspect-ratio: 2/3;
-    border-radius: var(--radius-lg);
     overflow: hidden;
-    margin-bottom: 0.75rem;
-    background: var(--bg-elevated);
-    transition: all var(--transition-base);
+    background: linear-gradient(135deg, var(--bg-surface), var(--bg-elevated));
   }
 
-  .my-book-card:hover .my-book-cover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: var(--glow-primary);
-  }
-
-  .my-book-cover img {
+  .book-cover-wrap img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform var(--transition-smooth);
+    transition: transform 0.5s ease;
   }
 
-  .my-book-card:hover .my-book-cover img {
+  .book-card:hover .book-cover-wrap img {
     transform: scale(1.1);
   }
 
-  .book-actions {
+  /* Book Status Badge */
+  .book-status-badge {
     position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    right: 0.5rem;
-    display: flex;
-    justify-content: flex-end;
-    opacity: 0;
-    transition: opacity var(--transition-fast);
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(8px);
+    z-index: 5;
   }
 
-  .my-book-card:hover .book-actions {
+  .book-status-badge.favorite {
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  }
+
+  .book-status-badge.finished {
+    background: rgba(16, 185, 129, 0.9);
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .book-status-badge.later {
+    background: rgba(251, 191, 36, 0.9);
+    color: #1a1a2e;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+  }
+
+  /* Hover Overlay */
+  .book-hover-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top,
+        rgba(15, 15, 35, 0.95) 0%,
+        rgba(15, 15, 35, 0.6) 50%,
+        transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.25rem;
+  }
+
+  .book-card:hover .book-hover-overlay {
     opacity: 1;
   }
 
-  .action-btn {
-    width: 36px;
-    height: 36px;
+  .hover-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .hover-btn {
+    width: 44px;
+    height: 44px;
     border-radius: var(--radius-full);
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
     color: white;
+    font-size: 1.1rem;
+    transform: translateY(20px);
+    opacity: 0;
   }
 
-  .action-btn:hover {
-    transform: scale(1.1);
+  .book-card:hover .hover-btn {
+    transform: translateY(0);
+    opacity: 1;
   }
 
-  .action-btn.delete {
-    background: rgba(239, 68, 68, 0.9);
+  .hover-btn:nth-child(1) {
+    transition-delay: 0.1s;
   }
 
-  .action-btn.delete:hover {
-    background: #ef4444;
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  .hover-btn:nth-child(2) {
+    transition-delay: 0.15s;
   }
 
-  .my-book-info {
-    padding: 0 0.25rem;
+  .hover-btn:nth-child(3) {
+    transition-delay: 0.2s;
   }
 
-  .my-book-title {
-    font-size: 0.9rem;
+  .hover-btn.view {
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+
+  .hover-btn.read {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .hover-btn.delete {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  }
+
+  .hover-btn:hover {
+    transform: scale(1.15);
+  }
+
+  .hover-hint {
+    text-align: center;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* Book Info */
+  .book-info {
+    padding: 1rem;
+  }
+
+  .book-title {
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.25rem;
@@ -129,14 +504,9 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
-    transition: color var(--transition-fast);
   }
 
-  .my-book-card:hover .my-book-title {
-    color: var(--primary-light);
-  }
-
-  .my-book-author {
+  .book-author {
     font-size: 0.8rem;
     color: var(--text-muted);
     white-space: nowrap;
@@ -144,7 +514,560 @@
     text-overflow: ellipsis;
   }
 
-  /* Section Styles */
+  .book-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+  }
+
+  .book-rating i {
+    color: var(--warning);
+    font-size: 0.85rem;
+  }
+
+  .book-rating .rating-value {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .book-rating .rating-count {
+    color: var(--text-muted);
+  }
+
+  /* Add Book Card */
+  .add-book-card {
+    cursor: pointer;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(168, 85, 247, 0.1));
+    border: 2px dashed var(--primary-light);
+    border-radius: var(--radius-xl);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 320px;
+    transition: all 0.3s ease;
+  }
+
+  .add-book-card:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(168, 85, 247, 0.2));
+    border-style: solid;
+    transform: scale(1.02);
+    box-shadow: var(--glow-primary);
+  }
+
+  .add-book-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 1rem;
+    box-shadow: var(--glow-primary);
+  }
+
+  .add-book-text {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Empty State
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-2xl);
+  }
+
+  .empty-icon {
+    width: 140px;
+    height: 140px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    box-shadow: var(--glow-primary);
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-15px);
+    }
+  }
+
+  .empty-icon i {
+    font-size: 4rem;
+    color: white;
+  }
+
+  .empty-title {
+    font-size: 1.75rem;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-text {
+    color: var(--text-secondary);
+    max-width: 400px;
+    margin: 0 auto 2rem;
+    line-height: 1.7;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Book Detail Modal
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-backdrop.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  .modal-dialog {
+    background: var(--bg-surface);
+    width: 100%;
+    max-width: 550px;
+    max-height: 90vh;
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+    transform: scale(0.9) translateY(30px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .modal-backdrop.active .modal-dialog {
+    transform: scale(1) translateY(0);
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), transparent);
+  }
+
+  .modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .modal-title-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .modal-close {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1.25rem;
+  }
+
+  .modal-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border-color: #ef4444;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(90vh - 180px);
+  }
+
+  .book-detail-card {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 500px) {
+    .book-detail-card {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  }
+
+  .detail-cover {
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  .detail-cover img {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .detail-info {
+    flex: 1;
+  }
+
+  .detail-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+
+  .detail-author {
+    color: var(--primary-light);
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+
+  .detail-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Modal Actions */
+  .modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .action-btn-large {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
+  }
+
+  .action-btn-large i {
+    font-size: 1.25rem;
+  }
+
+  .action-btn-large.primary {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  }
+
+  .action-btn-large.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+  }
+
+  .action-btn-large.secondary {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+  }
+
+  .action-btn-large.secondary:hover {
+    border-color: var(--primary-light);
+    color: var(--primary-light);
+  }
+
+  .action-btn-large.danger {
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  .action-btn-large.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .btn-row .action-btn-large {
+    flex: 1;
+  }
+
+  /* Status Buttons - Enhanced Design */
+  .status-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-surface);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .status-buttons-title {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .status-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 0.75rem;
+    background: var(--bg-elevated);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .status-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .status-btn i {
+    font-size: 1.75rem;
+    transition: transform 0.3s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .status-btn span {
+    position: relative;
+    z-index: 1;
+  }
+
+  .status-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .status-btn:hover i {
+    transform: scale(1.15);
+  }
+
+  /* Favorite Button */
+  .status-btn.favorite::before {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+  }
+
+  .status-btn.favorite:hover,
+  .status-btn.favorite.active {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+    border-color: #ef4444;
+    color: #ef4444;
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+  }
+
+  .status-btn.favorite.active::before {
+    opacity: 1;
+  }
+
+  /* Later Button */
+  .status-btn.later::before {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(217, 119, 6, 0.1));
+  }
+
+  .status-btn.later:hover,
+  .status-btn.later.active {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(217, 119, 6, 0.1));
+    border-color: #fbbf24;
+    color: #fbbf24;
+    box-shadow: 0 8px 25px rgba(251, 191, 36, 0.3);
+  }
+
+  .status-btn.later.active::before {
+    opacity: 1;
+  }
+
+  /* Finished Button */
+  .status-btn.finished::before {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+  }
+
+  .status-btn.finished:hover,
+  .status-btn.finished.active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+    border-color: #10b981;
+    color: #10b981;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  }
+
+  .status-btn.finished.active::before {
+    opacity: 1;
+  }
+
+  .status-btn.active {
+    transform: translateY(-2px);
+  }
+
+  .status-btn.active i {
+    animation: pulse-status 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-status {
+
+    0%,
+    100% {
+      transform: scale(1);
+    }
+
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Add Book Modal Styles
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .add-modal-header {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), transparent);
+  }
+
+  .add-modal-header .modal-title-icon {
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  }
+
+  .form-control::placeholder {
+    color: var(--text-muted);
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  .divider {
+    text-align: center;
+    margin: 1.5rem 0;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .divider-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     Section Dividers
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .section-divider {
+    margin: 3rem 0 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
   .section-header {
     display: flex;
     align-items: center;
@@ -159,445 +1082,535 @@
     align-items: center;
     gap: 0.75rem;
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     color: var(--text-primary);
   }
 
   .section-icon {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    box-shadow: var(--glow-primary);
+    font-size: 1.35rem;
   }
 
-  .feature-badge {
+  .section-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
+    padding: 0.375rem 0.875rem;
     background: var(--bg-elevated);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-full);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 500;
     color: var(--primary-light);
-  }
-
-  /* Empty State */
-  .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
-  }
-
-  .empty-state-icon {
-    width: 100px;
-    height: 100px;
-    border-radius: var(--radius-full);
-    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.5rem;
-    box-shadow: var(--glow-primary);
-  }
-
-  .empty-state-icon i {
-    font-size: 3rem;
-    color: white;
-  }
-
-  /* Scroll Container */
-  .library-scroll-container {
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    padding: 0.5rem 0 1rem;
-    scroll-snap-type: x mandatory;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .library-scroll-container::-webkit-scrollbar {
-    display: none;
-  }
-
-  .library-scroll-container>* {
-    scroll-snap-align: start;
-    flex: 0 0 auto;
-    width: 140px;
-  }
-
-  /* Glass Card */
-  .glass-card {
-    background: var(--bg-card);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
-  }
-
-  /* Book Card in Scroll */
-  .book-card {
-    text-decoration: none;
-    display: block;
-  }
-
-  .book-cover {
-    position: relative;
-    aspect-ratio: 2/3;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    margin-bottom: 0.5rem;
-  }
-
-  .book-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform var(--transition-base);
-  }
-
-  .book-card:hover .book-cover img {
-    transform: scale(1.05);
-  }
-
-  .book-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-    opacity: 0;
-    transition: opacity var(--transition-base);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 0.75rem;
-  }
-
-  .book-card:hover .book-overlay {
-    opacity: 1;
-  }
-
-  .book-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.125rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .book-author {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin: 0;
-  }
-
-  /* Modal Styling */
-  .modal-content {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
-  }
-
-  .modal-header {
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 1.25rem;
-  }
-
-  .modal-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-primary);
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-  }
-
-  .btn-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-muted);
-    cursor: pointer;
   }
 </style>
 
 <!-- Page Header -->
-<div class="my-library-header animate-on-scroll fade-up">
-  <div class="container" style="position: relative; z-index: 1;">
-    <div class="d-flex flex-wrap justify-between align-center gap-3">
-      <div>
-        <h1 style="color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
-          <span class="text-gradient"><i class="ph-fill ph-books"></i></span>
-          مكتبتي الخاصة
-        </h1>
-        <p class="text-secondary mb-0">مجموعتك المميزة من الكتب والمعرفة</p>
+<div class="favorites-hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="d-flex flex-wrap justify-between align-center gap-3">
+        <div>
+          <h1 class="hero-title">
+            <div class="hero-title-icon">
+              <i class="ph-fill ph-heart"></i>
+            </div>
+            <span class="text-gradient">محفوظاتي</span>
+          </h1>
+          <p class="hero-subtitle">مجموعتك الخاصة من الكتب والمعرفة</p>
+        </div>
       </div>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookModal">
-        <i class="ph ph-plus"></i>
-        إضافة كتاب
-      </button>
+
+      <div class="stats-row">
+        <div class="stat-pill active all" data-filter="all" onclick="filterBooks('all')">
+          <div class="stat-pill-icon"
+            style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));">
+            <i class="ph-fill ph-books"></i>
+          </div>
+          <div>
+            <div class="stat-pill-value">{{ books|length }}</div>
+            <div class="stat-pill-label">الكل</div>
+          </div>
+        </div>
+        <div class="stat-pill favorite" data-filter="favorite" onclick="filterBooks('favorite')">
+          <div class="stat-pill-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+            <i class="ph-fill ph-heart"></i>
+          </div>
+          <div>
+            <div class="stat-pill-value">{{ favorites|length }}</div>
+            <div class="stat-pill-label">المفضلة</div>
+          </div>
+        </div>
+        <div class="stat-pill later" data-filter="later" onclick="filterBooks('later')">
+          <div class="stat-pill-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <i class="ph-fill ph-clock"></i>
+          </div>
+          <div>
+            <div class="stat-pill-value">{{ later|length if later else 0 }}</div>
+            <div class="stat-pill-label">قراءة لاحقاً</div>
+          </div>
+        </div>
+        <div class="stat-pill finished" data-filter="finished" onclick="filterBooks('finished')">
+          <div class="stat-pill-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <i class="ph-fill ph-check-circle"></i>
+          </div>
+          <div>
+            <div class="stat-pill-value">{{ finished|length if finished else 0 }}</div>
+            <div class="stat-pill-label">مكتملة</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="container pb-5">
-  <!-- AI Recommendations -->
+  {% if books %}
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-box">
+      <i class="ph ph-magnifying-glass search-icon"></i>
+      <input type="text" class="search-input" id="bookSearch" placeholder="ابحث في كتبك..." autocomplete="off">
+      <button class="search-clear" id="searchClear" onclick="clearSearch()">
+        <i class="ph ph-x"></i>
+      </button>
+    </div>
+    <div class="books-count">
+      <i class="ph ph-books"></i>
+      <span><strong id="visibleCount">{{ books|length }}</strong> كتاب</span>
+    </div>
+  </div>
+
+  <!-- Books Grid -->
+  <div class="books-showcase" id="booksGrid">
+    {% set fav_ids = favorites|map(attribute='id')|list %}
+    {% set later_ids = later|map(attribute='id')|list %}
+    {% set finished_ids = finished|map(attribute='id')|list %}
+
+    {% for book in books %}
+    {% set book_status = '' %}
+    {% if book.id in fav_ids %}{% set book_status = 'favorite' %}
+    {% elif book.id in later_ids %}{% set book_status = 'later' %}
+    {% elif book.id in finished_ids %}{% set book_status = 'finished' %}
+    {% endif %}
+
+    <div class="book-card" data-book-id="{{ book.id }}" data-title="{{ book.title }}"
+      data-author="{{ book.author or 'مؤلف غير معروف' }}"
+      data-description="{{ book.description or 'لا يوجد وصف متاح' }}"
+      data-cover="{% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}{{ book.cover_url or ai_cover }}"
+      data-google-id="{{ book.google_id or '' }}" data-file-url="{{ book.file_url or '' }}"
+      data-status="{{ book_status }}" onclick="openBookDetail(this)">
+      <div class="book-cover-wrap">
+        {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
+        <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
+          onerror="this.onerror=null; this.src='{{ ai_cover }}';">
+
+        {% if book in favorites %}
+        <span class="book-status-badge favorite">
+          <i class="ph-fill ph-heart"></i> مفضل
+        </span>
+        {% elif later and book in later %}
+        <span class="book-status-badge later">
+          <i class="ph-fill ph-clock"></i> قراءة لاحقاً
+        </span>
+        {% elif finished and book in finished %}
+        <span class="book-status-badge finished">
+          <i class="ph-fill ph-check-circle"></i> مكتمل
+        </span>
+        {% endif %}
+
+        <div class="book-hover-overlay">
+          <div class="hover-actions">
+            <button class="hover-btn view" title="عرض التفاصيل"
+              onclick="event.stopPropagation(); openBookDetail(this.closest('.book-card'))">
+              <i class="ph ph-eye"></i>
+            </button>
+            <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="hover-btn read" title="الذهاب للتفاصيل"
+              onclick="event.stopPropagation()">
+              <i class="ph-fill ph-book-open"></i>
+            </a>
+            <form method="post" action="{{ url_for('main.delete_book', book_id=book.id) }}"
+              onsubmit="event.stopPropagation(); return confirm('هل أنت متأكد من حذف هذا الكتاب؟')"
+              style="display: inline;">
+              <button type="submit" class="hover-btn delete" title="حذف الكتاب" onclick="event.stopPropagation()">
+                <i class="ph ph-trash"></i>
+              </button>
+            </form>
+          </div>
+          <div class="hover-hint">انقر لعرض التفاصيل</div>
+        </div>
+      </div>
+      <div class="book-info">
+        <div class="book-title">{{ book.title }}</div>
+        <div class="book-author">{{ book.author or 'مؤلف غير معروف' }}</div>
+        <div class="book-rating" id="rating-{{ book.id }}" data-google-id="{{ book.google_id or '' }}"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- Empty State -->
+  <div class="empty-state">
+    <div class="empty-icon">
+      <i class="ph ph-heart"></i>
+    </div>
+    <h3 class="empty-title">محفوظاتك فارغة</h3>
+    <p class="empty-text">
+      استكشف مكتبتنا الضخمة للعثور على كنوز جديدة وإضافتها لمحفوظاتك
+    </p>
+    <div class="d-flex gap-2 justify-center flex-wrap">
+      <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
+        <i class="ph ph-compass"></i>
+        استكشف المكتبة
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- AI Recommendations Section -->
   {% if cf_recs %}
-  <div class="mb-5 animate-on-scroll fade-up">
+  <div class="section-divider">
     <div class="section-header">
       <h2 class="section-title">
-        <div class="section-icon">
+        <div class="section-icon"
+          style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); box-shadow: var(--glow-primary);">
           <i class="ph ph-sparkle"></i>
         </div>
         موصى به لك
       </h2>
-      <span class="feature-badge">
+      <span class="section-badge">
         <i class="ph ph-brain"></i>
         بناءً على ذوقك
       </span>
     </div>
-    <div class="my-books-grid">
+    <div class="books-showcase">
       {% for book in cf_recs %}
-      <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="my-book-card">
-        <div class="my-book-cover">
+      <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="book-card" style="text-decoration: none;">
+        <div class="book-cover-wrap">
           {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
           <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
             onerror="this.onerror=null; this.src='{{ ai_cover }}';">
         </div>
-        <div class="my-book-info">
-          <div class="my-book-title">{{ book.title }}</div>
-          <div class="my-book-author">{{ book.author }}</div>
+        <div class="book-info">
+          <div class="book-title">{{ book.title }}</div>
+          <div class="book-author">{{ book.author }}</div>
         </div>
       </a>
       {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Favorites -->
-  {% if favorites %}
-  <div class="mb-5 animate-on-scroll fade-up">
-    <div class="section-header">
-      <h2 class="section-title">
-        <div class="section-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-          <i class="ph-fill ph-heart"></i>
-        </div>
-        المفضلة
-      </h2>
-      <span class="feature-badge" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
-        <i class="ph ph-heart"></i>
-        {{ favorites|length }} كتاب
-      </span>
-    </div>
-    <div class="my-books-grid">
-      {% for book in favorites %}
-      <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="my-book-card">
-        <div class="my-book-cover">
-          {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
-          <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
-            onerror="this.onerror=null; this.src='{{ ai_cover }}';">
-        </div>
-        <div class="my-book-info">
-          <div class="my-book-title">{{ book.title }}</div>
-          <div class="my-book-author">{{ book.author }}</div>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- All My Books -->
-  <div class="mb-5 animate-on-scroll fade-up">
-    <div class="section-header">
-      <h2 class="section-title">
-        <div class="section-icon" style="background: linear-gradient(135deg, var(--accent-cyan), var(--primary));">
-          <i class="ph-fill ph-books"></i>
-        </div>
-        جميع كتبي
-      </h2>
-      {% if books %}
-      <span class="feature-badge">
-        <i class="ph ph-stack"></i>
-        {{ books|length }} كتاب
-      </span>
-      {% endif %}
-    </div>
-
-    {% if books %}
-    <div class="my-books-grid">
-      {% for book in books %}
-      <div class="my-book-card">
-        <a href="{{ url_for('main.book_detail', book_id=book.id) }}">
-          <div class="my-book-cover">
-            {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
-            <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
-              onerror="this.onerror=null; this.src='{{ ai_cover }}';">
-            <div class="book-actions">
-              <form method="post" action="{{ url_for('main.delete_book', book_id=book.id) }}"
-                onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب؟')">
-                <button type="submit" class="action-btn delete">
-                  <i class="ph ph-trash"></i>
-                </button>
-              </form>
-            </div>
-          </div>
-        </a>
-        <div class="my-book-info">
-          <div class="my-book-title">{{ book.title }}</div>
-          <div class="my-book-author">{{ book.author }}</div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <div class="empty-state-icon">
-        <i class="ph ph-books"></i>
-      </div>
-      <h3 class="mb-2" style="color: var(--text-primary);">مكتبتك فارغة</h3>
-      <p class="text-secondary mb-4">ابدأ بإضافة كتبك المفضلة لبناء مكتبتك الخاصة</p>
-      <div class="d-flex gap-2 justify-center flex-wrap">
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookModal">
-          <i class="ph ph-plus"></i>
-          إضافة كتاب
-        </button>
-        <a href="{{ url_for('explore.index') }}" class="btn btn-outline">
-          <i class="ph ph-compass"></i>
-          استكشف الكتب
-        </a>
-      </div>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- Explore Global Libraries -->
-  {% if library_sections %}
-  <div class="pt-4 animate-on-scroll fade-up" style="border-top: 1px solid var(--border-subtle);">
-    <div class="section-header mb-4">
-      <h2 class="section-title">
-        <div class="section-icon"
-          style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-magenta));">
-          <i class="ph ph-globe"></i>
-        </div>
-        استكشف المكتبات العالمية
-      </h2>
-      <span class="feature-badge">
-        <i class="ph ph-database"></i>
-        5 مصادر عالمية
-      </span>
-    </div>
-
-    <p class="text-secondary mb-4">اكتشف ملايين الكتب من أفضل المكتبات الرقمية في العالم</p>
-
-    {% for section in library_sections %}
-    <div class="glass-card mb-4 p-4">
-      <div class="d-flex align-center gap-3 mb-3">
-        <div class="section-icon" style="width: 48px; height: 48px; font-size: 1.2rem;
-                    {% if 'Google' in section.title %}background: linear-gradient(135deg, #4285F4, #0F9D58);
-                    {% elif 'Archive' in section.title %}background: linear-gradient(135deg, #F4B400, #FF6B00);
-                    {% elif 'Gutenberg' in section.title %}background: linear-gradient(135deg, #0F9D58, #00C853);
-                    {% elif 'OpenLibrary' in section.title %}background: linear-gradient(135deg, #DB4437, #E91E63);
-                    {% elif 'IT' in section.title %}background: linear-gradient(135deg, var(--accent-purple), var(--primary));
-                    {% else %}background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));{% endif %}">
-          <i class="ph ph-{{ section.icon or 'books' }}"></i>
-        </div>
-        <div style="flex: 1;">
-          <h4 class="mb-0" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">{{ section.title }}
-          </h4>
-          <small class="text-muted">{{ section.subtitle }}</small>
-        </div>
-        <span class="feature-badge">{{ section.books|length }} كتاب</span>
-      </div>
-
-      <div class="library-scroll-container">
-        {% for book in section.books %}
-        <a href="{{ url_for('public.book_detail', gid=book.id) }}" class="book-card">
-          <div class="book-cover">
-            {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '',
-            source=section.title) %}
-            <img src="{{ book.cover or ai_cover }}" alt="{{ book.title }}" loading="lazy"
-              onerror="this.onerror=null; this.src='{{ ai_cover }}';">
-            <div class="book-overlay">
-              <span class="btn btn-primary btn-sm">
-                <i class="ph ph-eye"></i>
-              </span>
-            </div>
-          </div>
-          <div class="book-info">
-            <h5 class="book-title">{{ book.title[:25] }}{% if book.title|length > 25 %}...{% endif %}</h5>
-            <p class="book-author">{{ book.author or 'مؤلف غير معروف' }}</p>
-          </div>
-        </a>
-        {% endfor %}
-      </div>
-    </div>
-    {% endfor %}
-
-    <div class="text-center mt-4">
-      <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
-        <i class="ph ph-arrow-left"></i>
-        تصفح المكتبة الشاملة
-      </a>
     </div>
   </div>
   {% endif %}
 </div>
 
-<!-- Add Book Modal -->
-<div class="modal fade" id="addBookModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="ph ph-plus-circle" style="color: var(--primary-light);"></i>
-          إضافة كتاب جديد
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal">
-          <i class="ph ph-x"></i>
-        </button>
+<!-- Book Detail Modal -->
+<div class="modal-backdrop" id="bookDetailModal">
+  <div class="modal-dialog" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon">
+          <i class="ph-fill ph-book"></i>
+        </div>
+        <h3 class="modal-title">تفاصيل الكتاب</h3>
       </div>
-      <div class="modal-body">
-        <form method="POST" action="{{ url_for('main.create_book') }}">
-          <div class="form-group">
-            <label class="form-label">عنوان الكتاب</label>
-            <input type="text" class="form-control" name="title" required placeholder="أدخل عنوان الكتاب">
+      <button class="modal-close" onclick="closeBookDetail()">
+        <i class="ph ph-x"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="book-detail-card">
+        <div class="detail-cover">
+          <img id="detailCover" src="" alt="">
+        </div>
+        <div class="detail-info">
+          <h2 class="detail-title" id="detailTitle"></h2>
+          <p class="detail-author" id="detailAuthor"></p>
+          <p class="detail-description" id="detailDescription"></p>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <!-- Status Buttons -->
+        <div class="status-buttons">
+          <div class="status-buttons-title">
+            <i class="ph-fill ph-tag"></i>
+            تغيير حالة الكتاب
           </div>
-          <div class="form-group">
-            <label class="form-label">المؤلف</label>
-            <input type="text" class="form-control" name="author" placeholder="اسم المؤلف">
-          </div>
-          <div class="form-group">
-            <label class="form-label">رابط الغلاف</label>
-            <input type="url" class="form-control" name="cover_url" placeholder="https://example.com/cover.jpg">
-          </div>
-          <div class="form-group">
-            <label class="form-label">رابط الملف (PDF/EPUB)</label>
-            <input type="url" class="form-control" name="file_url" placeholder="https://example.com/book.pdf">
-          </div>
-          <div class="form-group">
-            <label class="form-label">وصف مختصر</label>
-            <textarea class="form-control" name="description" rows="3" placeholder="وصف مختصر عن الكتاب..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary w-100 mt-2">
-            <i class="ph ph-check"></i>
-            إضافة الكتاب
+          <form method="post" id="favoriteForm" action="#" style="display: contents;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="status-btn favorite" id="favoriteBtn">
+              <i class="ph-fill ph-heart"></i>
+              <span>مفضلة</span>
+            </button>
+          </form>
+          <form method="post" id="laterForm" action="#" style="display: contents;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="status-btn later" id="laterBtn">
+              <i class="ph-fill ph-clock"></i>
+              <span>قراءة لاحقاً</span>
+            </button>
+          </form>
+          <form method="post" id="finishedForm" action="#" style="display: contents;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="status-btn finished" id="finishedBtn">
+              <i class="ph-fill ph-check-circle"></i>
+              <span>مكتملة</span>
+            </button>
+          </form>
+        </div>
+
+        <a href="#" id="readOfficialBtn" class="action-btn-large primary" target="_blank">
+          <i class="ph-fill ph-globe"></i>
+          قراءة من الموقع الرسمي
+        </a>
+        <div class="btn-row">
+          <a href="#" id="viewDetailBtn" class="action-btn-large secondary">
+            <i class="ph ph-eye"></i>
+            عرض التفاصيل
+          </a>
+          <a href="#" id="readLocalBtn" class="action-btn-large secondary">
+            <i class="ph-fill ph-book-open"></i>
+            قراءة
+          </a>
+        </div>
+        <form id="deleteBookForm" method="post" action="#" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب؟')">
+          <button type="submit" class="action-btn-large danger w-100">
+            <i class="ph ph-trash"></i>
+            حذف الكتاب
           </button>
         </form>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  // Book Detail Modal
+  function openBookDetail(card) {
+    const modal = document.getElementById('bookDetailModal');
+    const title = card.dataset.title;
+    const author = card.dataset.author;
+    const description = card.dataset.description;
+    const cover = card.dataset.cover;
+    const bookId = card.dataset.bookId;
+    const googleId = card.dataset.googleId;
+    const fileUrl = card.dataset.fileUrl;
+    const status = card.dataset.status;
+
+    document.getElementById('detailTitle').textContent = title;
+    document.getElementById('detailAuthor').textContent = author;
+    document.getElementById('detailDescription').textContent = description;
+    document.getElementById('detailCover').src = cover;
+
+    // Set links
+    document.getElementById('viewDetailBtn').href = `/books/${bookId}`;
+    document.getElementById('readLocalBtn').href = `/books/${bookId}/read`;
+    document.getElementById('deleteBookForm').action = `/books/${bookId}/delete`;
+
+    // Status form actions
+    document.getElementById('favoriteForm').action = `/books/${bookId}/status/favorite`;
+    document.getElementById('laterForm').action = `/books/${bookId}/status/later`;
+    document.getElementById('finishedForm').action = `/books/${bookId}/status/finished`;
+
+    // Update status button states
+    const favoriteBtn = document.getElementById('favoriteBtn');
+    const laterBtn = document.getElementById('laterBtn');
+    const finishedBtn = document.getElementById('finishedBtn');
+
+    // Remove all active states
+    favoriteBtn.classList.remove('active');
+    laterBtn.classList.remove('active');
+    finishedBtn.classList.remove('active');
+
+    // Set active state based on current book status
+    if (status === 'favorite') {
+      favoriteBtn.classList.add('active');
+    } else if (status === 'later') {
+      laterBtn.classList.add('active');
+    } else if (status === 'finished') {
+      finishedBtn.classList.add('active');
+    }
+
+    // Official read link
+    const readOfficialBtn = document.getElementById('readOfficialBtn');
+    if (googleId) {
+      // Google Books
+      readOfficialBtn.href = `https://books.google.com/books?id=${googleId}`;
+      readOfficialBtn.style.display = 'flex';
+    } else if (fileUrl) {
+      readOfficialBtn.href = fileUrl;
+      readOfficialBtn.style.display = 'flex';
+    } else {
+      readOfficialBtn.style.display = 'none';
+    }
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeBookDetail() {
+    const modal = document.getElementById('bookDetailModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // Close modals on backdrop click
+  document.getElementById('bookDetailModal').addEventListener('click', function (e) {
+    if (e.target === this) closeBookDetail();
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeBookDetail();
+    }
+  });
+
+  // Search functionality
+  const searchInput = document.getElementById('bookSearch');
+  const searchClear = document.getElementById('searchClear');
+  const booksGrid = document.getElementById('booksGrid');
+  const visibleCount = document.getElementById('visibleCount');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      const query = this.value.trim().toLowerCase();
+      const cards = booksGrid.querySelectorAll('.book-card');
+      let count = 0;
+
+      // Show/hide clear button
+      if (query) {
+        searchClear.classList.add('visible');
+      } else {
+        searchClear.classList.remove('visible');
+      }
+
+      // Filter cards
+      cards.forEach(card => {
+        const title = (card.dataset.title || '').toLowerCase();
+        const author = (card.dataset.author || '').toLowerCase();
+
+        if (title.includes(query) || author.includes(query) || !query) {
+          card.style.display = '';
+          count++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      // Update count
+      if (visibleCount) {
+        visibleCount.textContent = count;
+      }
+
+      // Show no results message
+      const existingNoResults = booksGrid.querySelector('.no-results');
+      if (count === 0 && query) {
+        if (!existingNoResults) {
+          const noResults = document.createElement('div');
+          noResults.className = 'no-results';
+          noResults.innerHTML = `
+            <div class="no-results-icon">
+              <i class="ph ph-magnifying-glass"></i>
+            </div>
+            <p>لا توجد نتائج لـ "${query}"</p>
+          `;
+          booksGrid.appendChild(noResults);
+        }
+      } else if (existingNoResults) {
+        existingNoResults.remove();
+      }
+    });
+  }
+
+  function clearSearch() {
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.dispatchEvent(new Event('input'));
+      searchInput.focus();
+    }
+  }
+
+  // Filter books by category
+  function filterBooks(filter) {
+    const pills = document.querySelectorAll('.stat-pill');
+    const cards = document.querySelectorAll('.book-card');
+    let count = 0;
+
+    // Update active pill
+    pills.forEach(pill => {
+      pill.classList.remove('active');
+      if (pill.dataset.filter === filter) {
+        pill.classList.add('active');
+      }
+    });
+
+    // Clear search
+    if (searchInput) {
+      searchInput.value = '';
+      searchClear.classList.remove('visible');
+    }
+
+    // Filter cards
+    cards.forEach(card => {
+      const status = card.dataset.status || '';
+
+      if (filter === 'all') {
+        card.style.display = '';
+        count++;
+      } else if (status === filter) {
+        card.style.display = '';
+        count++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Update count
+    if (visibleCount) {
+      visibleCount.textContent = count;
+    }
+
+    // Remove no results message if present
+    const existingNoResults = booksGrid?.querySelector('.no-results');
+    if (existingNoResults) {
+      existingNoResults.remove();
+    }
+  }
+
+  // Load book ratings from reviews API
+  async function loadBookRatings() {
+    const ratingElements = document.querySelectorAll('.book-rating[data-google-id]');
+
+    for (const el of ratingElements) {
+      const googleId = el.dataset.googleId;
+      if (!googleId) continue;
+
+      try {
+        const res = await fetch(`/public/books/${googleId}/reviews`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.count > 0) {
+            el.innerHTML = `
+              <i class="ph-fill ph-star"></i>
+              <span class="rating-value">${data.average_rating}</span>
+              <span class="rating-count">· ${data.count} تقييم</span>
+            `;
+          }
+        }
+      } catch (e) {
+        // Silently ignore errors
+      }
+    }
+  }
+
+  // Load ratings when page loads
+  document.addEventListener('DOMContentLoaded', loadBookRatings);
+</script>
 {% endblock %}

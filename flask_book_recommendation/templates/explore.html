@@ -257,7 +257,8 @@
                             <h5 class="text-truncate mb-1" style="font-size: 0.95rem; color: var(--text-primary);">
                                 {{ book.title }}
                             </h5>
-                            <p class="small text-muted mb-0">{{ book.author or 'غير معروف' }}</p>
+                            <p class="small text-muted mb-1">{{ book.author or 'غير معروف' }}</p>
+                            <div class="book-rating" data-book-id="{{ book.id }}" style="font-size: 0.8rem;"></div>
                         </div>
                     </a>
                 </div>
@@ -353,5 +354,36 @@
             behavior: 'smooth'
         });
     }
+
+    // جلب تقييمات المستخدمين من API
+    async function loadUserRatings() {
+        const ratingElements = document.querySelectorAll('.book-rating[data-book-id]');
+
+        for (const el of ratingElements) {
+            const bookId = el.dataset.bookId;
+            if (!bookId) continue;
+
+            try {
+                const res = await fetch(`/public/books/${bookId}/reviews`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.count > 0) {
+                        el.innerHTML = `
+                            <div class="d-flex align-center gap-1">
+                                <i class="ph-fill ph-star" style="color: var(--warning);"></i>
+                                <span style="color: var(--text-primary); font-weight: 600;">${data.average_rating}</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">· ${data.count} تقييم</span>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (e) {
+                // تجاهل الأخطاء
+            }
+        }
+    }
+
+    // تحميل التقييمات عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', loadUserRatings);
 </script>
 {% endblock %}
