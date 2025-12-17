@@ -9,10 +9,14 @@ load_dotenv(dotenv_path)
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-fallback-key"
 
-    # إذا موجود DB_URL في env نستخدمه كما هو (مثلاً MySQL في السيرفر)
-    db_url = os.environ.get("DB_URL")
+    # قاعدة البيانات - التعامل مع Render
+    db_url = os.environ.get("DATABASE_URL")
     if db_url:
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
         SQLALCHEMY_DATABASE_URI = db_url
+    elif os.environ.get("DB_URL"):
+        SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL")
     else:
         # SQLite محلي لتسهيل التطوير
         SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(BASE_DIR, "app.db")

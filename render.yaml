@@ -1,14 +1,11 @@
 services:
   - type: web
-    name: book-recommendation-api
+    name: book-recommendation-app
     env: python
-    region: frankfurt
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn flask_book_recommendation.app:create_app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn "flask_book_recommendation.app:create_app()"
     envVars:
-      - key: SECRET_KEY
-        generateValue: true
-      - key: JWT_SECRET_KEY
-        generateValue: true
+      - key: FLASK_APP
+        value: flask_book_recommendation.app:create_app
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.10.0
