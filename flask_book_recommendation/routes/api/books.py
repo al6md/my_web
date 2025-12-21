@@ -6,7 +6,10 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, jwt_required
 from ...recommender import (
     get_homepage_sections,
-    get_trending
+    get_trending,
+    get_mood_based_recommendations,
+    get_recommendations_by_title,
+    MOOD_MAPPING
 )
 from ...utils import (
     fetch_google_books,
@@ -112,6 +115,77 @@ def get_trending_books():
             'error': str(e),
             'books': []
         })
+
+
+
+@api_books_bp.route('/mood-recommendations', methods=['GET'])
+def get_mood_recs():
+    """
+    توصيات بناءً على المزاج
+    GET /api/books/mood-recommendations?mood=happy&limit=12
+    """
+    mood = request.args.get('mood', '').strip()
+    limit = request.args.get('limit', 12, type=int)
+    
+    if not mood:
+        return jsonify({
+            'success': False,
+            'error': 'يرجى تحديد المزاج (mood)'
+        }), 400
+    
+    try:
+        books = get_mood_based_recommendations(mood, limit=limit)
+        return jsonify({
+            'success': True,
+            'books': books
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'books': []
+        })
+
+
+@api_books_bp.route('/recommend-by-book', methods=['GET'])
+def get_book_recs():
+    """
+    توصيات بناءً على كتاب معين
+    GET /api/books/recommend-by-book?title=Harry Potter&limit=24
+    """
+    title = request.args.get('title', '').strip()
+    limit = request.args.get('limit', 24, type=int)
+    
+    if not title:
+        return jsonify({
+            'success': False,
+            'error': 'يرجى إدخال اسم الكتاب'
+        }), 400
+    
+    try:
+        books = get_recommendations_by_title(title, limit=limit)
+        return jsonify({
+            'success': True,
+            'books': books
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'books': []
+        })
+
+
+@api_books_bp.route('/mood-meta', methods=['GET'])
+def get_mood_meta():
+    """
+    بيانات الحالة المزاجية المتوفرة (العناوين والرموز التعبيرية)
+    GET /api/books/mood-meta
+    """
+    return jsonify({
+        'success': True,
+        'moods': MOOD_MAPPING
+    })
 
 
 @api_books_bp.route('/recommendations', methods=['GET'])

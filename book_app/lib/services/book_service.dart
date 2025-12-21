@@ -116,6 +116,17 @@ class BookService extends ChangeNotifier {
     return [];
   }
 
+  // Fetch books by mood (returns list directly)
+  Future<List<Map<String, dynamic>>> fetchByMood(String mood,
+      {int limit = 12}) async {
+    final result = await _api
+        .get('${ApiConfig.booksMoodRecommendations}?mood=$mood&limit=$limit');
+    if (result['success'] == true) {
+      return List<Map<String, dynamic>>.from(result['books'] ?? []);
+    }
+    return [];
+  }
+
   // Legacy method name (alias)
   Future<List<Map<String, dynamic>>> getBooksByCategory(String categoryId,
       {int page = 1}) async {

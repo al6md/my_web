@@ -382,12 +382,39 @@
         <span class="meta-tag">
           <i class="ph-fill ph-book-open"></i> في مكتبتي
         </span>
+        {% if book.rating %}
+        <span class="meta-tag" style="color: var(--warning); border-color: rgba(251, 191, 36, 0.3);">
+          <i class="ph-fill ph-star"></i> {{ book.rating }}
+        </span>
+        {% endif %}
+        {% if book.publishedDate %}
+        <span class="meta-tag">
+          <i class="ph-fill ph-calendar"></i> {{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else
+          book.publishedDate }}
+        </span>
+        {% endif %}
       </div>
 
       <!-- Title & Author -->
-      <h1 class="book-title">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
+      <h1 class="book-title mb-1">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
+      {% if book.rating %}
+      <div class="d-flex align-center gap-2 mb-3">
+        <div class="stars-display" style="color: var(--warning); font-size: 1.1rem;">
+          {% for i in range(1, 6) %}
+          <i class="ph-fill ph-star {{ 'text-warning' if i <= book.rating|round else 'text-muted' }}"
+            style="opacity: {{ '1' if i <= book.rating|round else '0.3' }}"></i>
+          {% endfor %}
+        </div>
+        <span style="font-weight: 700; color: var(--text-primary);">{{ book.rating }}</span>
+        <span class="text-muted small">تقييم عالمي</span>
+      </div>
+      {% endif %}
       <div class="book-author mb-4">
         بقلم <strong class="text-gradient">{{ book.author or 'مؤلف غير معروف' }}</strong>
+        {% if book.publishedDate %}
+        <span class="text-muted small ms-2">({{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else
+          book.publishedDate }})</span>
+        {% endif %}
       </div>
 
       <!-- Description Card -->

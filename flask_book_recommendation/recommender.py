@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy import func
 from flask import current_app
+from flask_login import current_user
 
 from .models import (
     Book, UserRatingCF, SearchHistory,
@@ -16,6 +17,7 @@ from .utils import (
     fetch_itbook_books,
     translate_to_english_with_gemini,
     get_text_embedding,
+    fetch_openlib_rating,
 )
 from .extensions import db, cache
 
@@ -55,7 +57,31 @@ def _book_to_dict(book, source="Local", reason=None):
         "cover": cover_url,
         "source": source,
         "reason": reason,
+        "rating": getattr(book, "average_rating", None) or getattr(book, "rating", None),
     }
+
+
+def _extract_rating_with_fallback(vi):
+    """
+    استخراج التقييم من بيانات Google Books مع محاولة Fallback إلى OpenLibrary.
+    """
+    rating = vi.get("averageRating")
+    if rating:
+        return rating
+    
+    # محاولة الحصول على ISBN للبحث في OpenLibrary
+    isbns = vi.get("industryIdentifiers") or []
+    isbn_13 = next((i["identifier"] for i in isbns if i["type"] == "ISBN_13"), None)
+    isbn_10 = next((i["identifier"] for i in isbns if i["type"] == "ISBN_10"), None)
+    isbn = isbn_13 or isbn_10
+    
+    if isbn:
+        try:
+            return fetch_openlib_rating(isbn=isbn)
+        except:
+            pass
+            
+    return None
 
 
 def _deduplicate_dicts(items, key="id"):
@@ -150,146 +176,7 @@ def get_trending(limit=12):
     return result
 
 
-def get_personal_trending(user_id, limit=12):
-    """
-    يحصل على كتب رائجة مخصصة للمستخدم بناءً على اهتماماته.
-    
-    يجمع بين:
-    - آخر بحث قام به المستخدم
-    - تفضيلاته (UserPreference)
-    - الكتب الرائجة في مواضيع اهتمامه
-    
-    Args:
-        user_id: معرف المستخدم
-        limit: عدد الكتب المطلوبة
-        
-    Returns:
-        قائمة من القواميس تمثل الكتب الرائجة المخصصة
-    """
-    books_dicts = []
-    seen_ids = set()
-    topics_to_search = []
-    
-    # 1) جمع المواضيع من آخر بحث
-    try:
-        last_search = (
-            db.session.query(SearchHistory)
-            .filter_by(user_id=user_id)
-            .order_by(SearchHistory.created_at.desc(), SearchHistory.id.desc())
-            .first()
-        )
-        if last_search and last_search.query:
-            query_text = last_search.query.strip()
-            # ترجمة إذا كان عربياً
-            if any("\u0600" <= c <= "\u06FF" for c in query_text):
-                try:
-                    translated = translate_to_english_with_gemini(query_text)
-                    if translated and translated.strip():
-                        topics_to_search.append(translated)
-                        logger.info(f"[PersonalTrending] Using last search: '{query_text}' -> '{translated}'")
-                    else:
-                        topics_to_search.append(query_text)
-                except Exception as e:
-                    logger.warning(f"[PersonalTrending] Translation failed: {e}")
-                    topics_to_search.append(query_text)
-            else:
-                topics_to_search.append(query_text)
-    except Exception as e:
-        logger.error(f"[PersonalTrending] Error getting last search: {e}", exc_info=True)
-    
-    # 2) جمع المواضيع من التفضيلات
-    try:
-        prefs = (
-            UserPreference.query
-            .filter_by(user_id=user_id)
-            .order_by(UserPreference.weight.desc())
-            .limit(3)
-            .all()
-        )
-        for pref in prefs:
-            if pref.topic:
-                # ترجمة إذا كان عربياً
-                if any("\u0600" <= c <= "\u06FF" for c in pref.topic):
-                    try:
-                        translated = translate_to_english_with_gemini(pref.topic)
-                        if translated and translated.strip() and translated.lower() not in [t.lower() for t in topics_to_search]:
-                            topics_to_search.append(translated)
-                    except:
-                        if pref.topic.lower() not in [t.lower() for t in topics_to_search]:
-                            topics_to_search.append(pref.topic)
-                else:
-                    if pref.topic.lower() not in [t.lower() for t in topics_to_search]:
-                        topics_to_search.append(pref.topic)
-    except Exception as e:
-        logger.error(f"[PersonalTrending] Error getting preferences: {e}", exc_info=True)
-    
-    # 3) إذا لم توجد مواضيع، نستخدم الكتب الرائجة العامة
-    if not topics_to_search:
-        logger.info(f"[PersonalTrending] No personal topics found for user {user_id}, using general trending")
-        return get_trending(limit)
-    
-    logger.info(f"[PersonalTrending] Searching for books in topics: {topics_to_search}")
-    
-    # 4) البحث عن كتب في مواضيع اهتمامه
-    per_topic_limit = max(4, limit // len(topics_to_search))
-    
-    for topic in topics_to_search[:3]:  # أول 3 مواضيع فقط
-        # Google Books
-        try:
-            gb_res = fetch_google_books(topic, max_results=per_topic_limit)
-            items = gb_res[0] if isinstance(gb_res, tuple) else gb_res
-            
-            for it in items or []:
-                if not isinstance(it, dict):
-                    continue
-                gid = it.get("id")
-                if not gid or gid in seen_ids:
-                    continue
-                seen_ids.add(gid)
-                
-                vi = it.get("volumeInfo") or {}
-                img = (vi.get("imageLinks") or {}).get("thumbnail")
-                if img:
-                    if img.startswith("http://"):
-                        img = img.replace("http://", "https://")
-                    # إزالة edge=curl من روابط Google Books لتحسين الأداء
-                    if '&edge=curl' in img:
-                        img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
-                
-                books_dicts.append({
-                    "id": gid,
-                    "title": vi.get("title"),
-                    "author": ", ".join(vi.get("authors") or []),
-                    "cover": img,
-                    "source": "Google Books",
-                    "reason": f"🔥 رائج في موضوع: {topic}",
-                })
-                
-                if len(books_dicts) >= limit:
-                    break
-        except Exception as e:
-            logger.error(f"[PersonalTrending] Google Books error for '{topic}': {e}", exc_info=True)
-        
-        if len(books_dicts) >= limit:
-            break
-    
-    # 5) إذا لم تكن كافية، نضيف كتب رائجة عامة
-    if len(books_dicts) < limit:
-        needed = limit - len(books_dicts)
-        general_trending = get_trending(needed * 2)
-        for book in general_trending:
-            book_id = book.get("id")
-            if book_id and book_id not in seen_ids:
-                seen_ids.add(book_id)
-                books_dicts.append(book)
-                if len(books_dicts) >= limit:
-                    break
-    
-    # خلط النتائج
-    random.shuffle(books_dicts)
-    result = books_dicts[:limit]
-    logger.info(f"[PersonalTrending] Returning {len(result)} personalized trending books for user {user_id}")
-    return result
+
 
 
 @cache.memoize(timeout=600)  # Cache لمدة 10 دقائق
@@ -783,8 +670,8 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
                 if '&edge=curl' in img:
                     img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
             
-            # 🆕 جلب التقييم من Google Books API
-            rating = vi.get("averageRating")
+            # 🆕 جلب التقييم من Google Books API مع Fallback
+            rating = _extract_rating_with_fallback(vi)
             ratings_count = vi.get("ratingsCount")
             
             books.append({
@@ -1074,7 +961,7 @@ def get_personal_trending(user_id, limit=12):
                     "cover": img,
                     "source": "Google Books",
                     "reason": f"🔥 رائج في موضوع: {topic}",
-                    "rating": vi.get("averageRating"),
+                    "rating": _extract_rating_with_fallback(vi),
                     "ratings_count": vi.get("ratingsCount"),
                 })
                 
@@ -1518,4 +1405,235 @@ def get_top_rated(limit=10):
     except Exception as e:
         logger.error(f"[TopRated] Error: {e}", exc_info=True)
         return []
+
+
+# ------------------------------------------------------------------
+# Mood-Based – مزاجك اليوم
+# ------------------------------------------------------------------
+
+MOOD_MAPPING = {
+    "happy": {
+        "title": "سعید",
+        "emoji": "😃",
+        "queries": ["Comedy", "Humor", "Feel-good", "Funny"],
+        "color": "var(--warning)"
+    },
+    "sad": {
+        "title": "حزین",
+        "emoji": "😔",
+        "queries": ["Drama", "Tragedy", "Emotional", "Sad"],
+        "color": "var(--accent-purple)"
+    },
+    "adventurous": {
+        "title": "متحمس",
+        "emoji": "🚀",
+        "queries": ["Adventure", "Action", "Science Fiction", "Thriller"],
+        "color": "var(--accent-cyan)"
+    },
+    "calm": {
+        "title": "هادئ",
+        "emoji": "🧘",
+        "queries": ["Meditation", "Philosophy", "Nature", "Calm"],
+        "color": "var(--primary)"
+    },
+    "curious": {
+        "title": "فضولي",
+        "emoji": "🧐",
+        "queries": ["Science", "Mystery", "History", "Nonfiction"],
+        "color": "var(--accent-magenta)"
+    },
+    "romantic": {
+        "title": "رومانسي",
+        "emoji": "❤️",
+        "queries": ["Romance", "Love", "Poetry"],
+        "color": "var(--accent-pink, #f472b6)"
+    }
+}
+
+def get_mood_based_recommendations(mood_key, limit=12):
+    """
+    جلب توصيات بناءً على مزاج المستخدم.
+    """
+    mood_info = MOOD_MAPPING.get(mood_key)
+    if not mood_info:
+        logger.warning(f"[Mood] Invalid mood key: {mood_key}")
+        return []
+
+    queries = mood_info.get("queries", [])
+    if not queries: queries = ["Books"]
+    
+    # خلط الاستعلامات لتنويع البداية
+    random.shuffle(queries)
+    
+    # --- تخصيص التوصيات بناءً على سجل البحث (ميزة احترافية جديدة) ---
+    personalization_reason = None
+    if current_user.is_authenticated:
+        try:
+            # جلب آخر بحث للمستخدم
+            last_search = SearchHistory.query.filter_by(user_id=current_user.id)\
+                .order_by(SearchHistory.created_at.desc()).first()
+            
+            if last_search and last_search.query:
+                # دمج آخر بحث مع تصنيف المزاج
+                # مثال: بحث عن "space" والمزاج "happy" -> "space comedy" أو "space humor"
+                mood_term = queries[0] # نأخذ أول مصطلح مزاج بعد الخلط
+                personalized_query = f"{last_search.query} {mood_term}"
+                
+                # إضافة الاستعلام المخصص في بداية القائمة لتكون له الأولوية
+                queries.insert(0, personalized_query)
+                personalization_reason = f"لأنك مهتم بـ '{last_search.query}' وتشعر بـ {mood_info['title']}"
+                logger.info(f"[Mood] Personalized query added: {personalized_query}")
+        except Exception as e:
+            logger.warning(f"[Mood] Error adding personalization: {e}")
+    # ---------------------------------------------------------------
+
+    
+    all_books = []
+    seen_ids = set()
+    
+    # محاولة البحث باستخدام الاستعلامات المتاحة حتى نجد نتائج
+    for query in queries:
+        try:
+            # البحث في Google Books
+            gb_res = fetch_google_books(query, max_results=limit)
+            items = gb_res[0] if isinstance(gb_res, tuple) else gb_res
+            
+            if not items:
+                continue  # لم نجد نتائج لهذا الاستعلام، نجرب التالي
+            
+            # معالجة النتائج
+            for it in items:
+                if not isinstance(it, dict): continue
+                gid = it.get("id")
+                if not gid or gid in seen_ids: continue
+                seen_ids.add(gid)
+                
+                vi = it.get("volumeInfo") or {}
+                title = vi.get("title")
+                if not title: continue
+                
+                img = (vi.get("imageLinks") or {}).get("thumbnail")
+                if img:
+                    if img.startswith("http://"): img = img.replace("http://", "https://")
+                    if '&edge=curl' in img: img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
+                
+                
+                # تحديد سبب التوصية
+                reason_text = f"{mood_info['emoji']} لأنك تشعر بـ {mood_info['title']}"
+                
+                # إذا كان هذا الكتاب ناتجاً عن الاستعلام المخصص (أول واحد في القائمة)
+                if personalization_reason and query == queries[0]:
+                    reason_text = f"✨ {personalization_reason}"
+                
+                all_books.append({
+                    "id": gid,
+                    "title": title,
+                    "author": ", ".join(vi.get("authors") or []),
+                    "cover": img,
+                    "source": "Mood API",
+                    "reason": reason_text,
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount"),
+                })
+            
+            # إذا وجدنا كتباً كافية، نتوقف عن البحث
+            if all_books:
+                break
+                
+        except Exception as e:
+            logger.warning(f"[Mood] Error with query '{query}': {e}")
+            continue
+
+    return all_books[:limit]
+
+
+def get_recommendations_by_title(title, limit=24):
+    """
+    جلب توصيات بناءً على عنوان كتاب مشابه.
+    1. نبحث عن الكتاب ونأخذ معلوماته.
+    2. نبحث عن كتب لها نفس التصنيف أو المؤلف.
+    """
+    if not title: return []
+    
+    # 1. البحث عن الكتاب المستهدف
+    target_res, _ = fetch_google_books(title, max_results=1) # 👈 تم التصحيح هنا لفك التوبل
+    if not target_res:
+        return []
+        
+    target_book = target_res[0]
+    vi = target_book.get("volumeInfo", {})
+    categories = vi.get("categories", [])
+    authors = vi.get("authors", [])
+    
+    # 2. تكوين استعلام للكتب المشابهة
+    queries = []
+    
+    # تحسين للكتب التقنية: إذا كان التصنيف بالعربي أو مفقود، نحاول استخراجه بالذكاء الاصطناعي
+    if not categories or any(any('\u0600' <= c <= '\u06FF' for c in cat) for cat in categories):
+        try:
+            from .utils import analyze_search_intent_with_ai
+            ai_info = analyze_search_intent_with_ai(vi.get("title", title))
+            if ai_info and ai_info.get("query"):
+                queries.append(ai_info["query"])
+                logger.info(f"[Similar] AI Recommended query for technical book: {ai_info['query']}")
+        except:
+            pass
+
+    # استراتيجية البحث التقليدية
+    if categories:
+        cat = categories[0].split("/")[0].strip()
+        queries.append(f"subject:{cat}")
+    
+    if authors:
+        queries.append(f"inauthor:{authors[0]}")
+        
+    if not queries:
+        queries.append(title)
+        
+    all_books = []
+    seen_ids = set()
+    target_id = target_book.get("id")
+    seen_ids.add(target_id)
+    
+    for q in queries:
+        try:
+            res_items, _ = fetch_google_books(q, max_results=limit) # 👈 تم التصحيح هنا لفك التوبل
+            if not res_items: continue
+            
+            for it in res_items:
+                gid = it.get("id")
+                if not gid or gid in seen_ids: continue
+                seen_ids.add(gid)
+                
+                vi_it = it.get("volumeInfo") or {}
+                
+                img = (vi_it.get("imageLinks") or {}).get("thumbnail")
+                if img:
+                    if img.startswith("http://"): img = img.replace("http://", "https://")
+                    if '&edge=curl' in img: img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
+                
+                reason = "🔥 لأنك أحببت كتاباً مشابهاً"
+                if q.startswith("subject:"):
+                    reason = f"📚 من نفس التصنيف: {categories[0] if categories else 'مواضيع مشابهة'}"
+                elif q.startswith("inauthor:"):
+                    reason = f"✍️ لنفس المؤلف: {authors[0]}"
+                elif q == queries[0] and len(queries) > 1: # إذا كان استعلام AI
+                     reason = "🤖 مقترح ذكي لمجال الكتاب"
+                    
+                all_books.append({
+                    "id": gid,
+                    "title": vi_it.get("title"),
+                    "author": ", ".join(vi_it.get("authors") or []),
+                    "cover": img,
+                    "source": "Similar API",
+                    "reason": reason,
+                    "rating": vi_it.get("averageRating"),
+                    "ratings_count": vi_it.get("ratingsCount"),
+                })
+                
+        except Exception as e:
+            logger.error(f"[Similar] Error fetching similar books for {q}: {e}")
+            
+    random.shuffle(all_books)
+    return all_books[:limit]
 

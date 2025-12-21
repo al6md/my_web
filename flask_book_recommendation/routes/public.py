@@ -404,7 +404,8 @@ def book_detail(gid):
         
         def fetch_google():
             try:
-                g_items, _ = fetch_google_books(search_query, max_results=6)
+                # Increased limit to 40
+                g_items, _ = fetch_google_books(search_query, max_results=40)
                 results = []
                 for it in g_items:
                     sid = it.get("id")
@@ -413,12 +414,24 @@ def book_detail(gid):
                     imgs = vi.get("imageLinks", {}) or {}
                     cover = imgs.get("thumbnail") or ""
                     if cover.startswith("http://"): cover = "https://" + cover[7:]
-                    results.append({"id": sid, "title": vi.get("title"), "author": ", ".join(vi.get("authors", [])), "cover": cover, "source": "google"})
+                    
+                    # Ensure rating is extracted
+                    rating = vi.get("averageRating")
+                    
+                    results.append({
+                        "id": sid, 
+                        "title": vi.get("title"), 
+                        "author": ", ".join(vi.get("authors", [])), 
+                        "cover": cover, 
+                        "source": "google",
+                        "rating": rating,
+                        "ratings_count": vi.get("ratingsCount")
+                    })
                 return results
             except: return []
         
         def fetch_ol():
-            try: return fetch_openlib_books(search_query, limit=4)  # تقليل العدد
+            try: return fetch_openlib_books(search_query, limit=10) # Slight increase
             except: return []
         
         # تشغيل متوازي مع timeout قصير
@@ -429,9 +442,9 @@ def book_detail(gid):
             }
             
             try:
-                for future in as_completed(futures, timeout=5):  # timeout أقصر!
+                for future in as_completed(futures, timeout=6): # Increased timeout slightly
                     try:
-                        results = future.result(timeout=4)
+                        results = future.result(timeout=5)
                         for it in results:
                             sid = it.get("id")
                             if not sid or sid in seen_ids: continue
@@ -445,7 +458,7 @@ def book_detail(gid):
     # خلط النتائج وتحديد العدد
     import random
     random.shuffle(similar)
-    similar = similar[:18]
+    similar = similar[:45] # Increased limit
 
     # -------------------------------------------------
     #   التحقق من حالة الكتاب في مكتبة المستخدم

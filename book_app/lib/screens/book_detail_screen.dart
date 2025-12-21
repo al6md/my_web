@@ -36,7 +36,7 @@ class _BookDetailScreenState extends State<BookDetailScreen>
 
   // Chat state
   final TextEditingController _chatController = TextEditingController();
-  List<Map<String, dynamic>> _chatMessages = [];
+  final List<Map<String, dynamic>> _chatMessages = [];
   bool _isSendingMessage = false;
 
   late TabController _tabController;

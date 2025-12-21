@@ -501,6 +501,7 @@
     margin-bottom: 0.25rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
@@ -781,6 +782,7 @@
     line-height: 1.7;
     display: -webkit-box;
     -webkit-line-clamp: 4;
+    line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -1248,8 +1250,21 @@
       </div>
       <div class="book-info">
         <div class="book-title">{{ book.title }}</div>
+        <div class="book-rating mb-1" id="rating-{{ book.id }}" data-google-id="{{ book.google_id or '' }}"
+          style="font-size: 0.75rem;">
+          {% if book.rating %}
+          <div class="d-flex align-center gap-1" style="color: var(--warning);" title="تقييم Google Books">
+            <i class="ph-fill ph-star"></i>
+            <span class="fw-bold">{{ book.rating }}</span>
+          </div>
+          {% else %}
+          <div class="d-flex align-center gap-1 rating-placeholder" style="color: var(--text-muted);">
+            <i class="ph ph-star"></i>
+            <span>جاري التحميل...</span>
+          </div>
+          {% endif %}
+        </div>
         <div class="book-author">{{ book.author or 'مؤلف غير معروف' }}</div>
-        <div class="book-rating" id="rating-{{ book.id }}" data-google-id="{{ book.google_id or '' }}"></div>
       </div>
     </div>
     {% endfor %}
@@ -1300,6 +1315,14 @@
         </div>
         <div class="book-info">
           <div class="book-title">{{ book.title }}</div>
+          <div class="book-rating mb-1" style="font-size: 0.75rem;">
+            {% if book.rating %}
+            <div class="d-flex align-center gap-1" style="color: var(--warning);">
+              <i class="ph-fill ph-star"></i>
+              <span class="fw-bold">{{ book.rating }}</span>
+            </div>
+            {% endif %}
+          </div>
           <div class="book-author">{{ book.author }}</div>
         </div>
       </a>
@@ -1330,7 +1353,16 @@
         </div>
         <div class="detail-info">
           <h2 class="detail-title" id="detailTitle"></h2>
-          <p class="detail-author" id="detailAuthor"></p>
+          <div class="d-flex align-center gap-2 mb-2">
+            <p class="detail-author mb-0" id="detailAuthor"></p>
+            <div id="detailRatingBadge" style="display: none;">
+              <span class="badge"
+                style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--warning); display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                <i class="ph-fill ph-star"></i>
+                <span id="detailRatingValue"></span>
+              </span>
+            </div>
+          </div>
           <p class="detail-description" id="detailDescription"></p>
         </div>
       </div>
@@ -1403,10 +1435,22 @@
     const fileUrl = card.dataset.fileUrl;
     const status = card.dataset.status;
 
-    document.getElementById('detailTitle').textContent = title;
     document.getElementById('detailAuthor').textContent = author;
     document.getElementById('detailDescription').textContent = description;
     document.getElementById('detailCover').src = cover;
+
+    // Show rating if available in card dataset or dynamically loaded
+    const gridRating = card.querySelector('.book-info .fw-bold')?.textContent;
+    const dynamicRating = card.querySelector('.rating-value')?.textContent;
+    const ratingValue = gridRating || dynamicRating;
+
+    const ratingBadge = document.getElementById('detailRatingBadge');
+    if (ratingValue) {
+      document.getElementById('detailRatingValue').textContent = ratingValue;
+      ratingBadge.style.display = 'block';
+    } else {
+      ratingBadge.style.display = 'none';
+    }
 
     // Set links
     document.getElementById('viewDetailBtn').href = `/books/${bookId}`;
@@ -1590,23 +1634,153 @@
 
     for (const el of ratingElements) {
       const googleId = el.dataset.googleId;
-      if (!googleId) continue;
+      if (!googleId) {
+        // إذا لم يكن هناك google_id، نعرض "لا يوجد تقييم"
+        const placeholder = el.querySelector('.rating-placeholder');
+        if (placeholder) {
+          el.innerHTML = `
+            <div class="d-flex align-center gap-1" style="color: var(--text-muted);">
+              <i class="ph ph-star"></i>
+              <span>لا يوجد تقييم</span>
+            </div>
+          `;
+        }
+        continue;
+      }
 
       try {
+        // 1. Try Local Reviews first
         const res = await fetch(`/public/books/${googleId}/reviews`);
         if (res.ok) {
           const data = await res.json();
           if (data.count > 0) {
             el.innerHTML = `
-              <i class="ph-fill ph-star"></i>
-              <span class="rating-value">${data.average_rating}</span>
-              <span class="rating-count">· ${data.count} تقييم</span>
+              <div class="d-flex align-center gap-1" style="color: var(--warning);" title="تقييم المستخدمين">
+                <i class="ph-fill ph-star"></i>
+                <span class="rating-value fw-bold">${data.average_rating}</span>
+                <span class="rating-count text-muted" style="font-size: 0.7rem;">· ${data.count} تقييم</span>
+              </div>
             `;
+            continue; // Found local rating, skip to next
           }
         }
+
+        // 2. Fallback to Google Rating or OpenLibrary Rating
+        if (googleId.startsWith('ol_')) {
+          await fetchOpenLibRating(googleId, el);
+        } else {
+          await fetchGoogleRating(googleId, el);
+        }
+
       } catch (e) {
-        // Silently ignore errors
+        console.error('Rating fetch error:', e);
+        // Try Google/OL as last resort on error
+        if (googleId.startsWith('ol_')) {
+          await fetchOpenLibRating(googleId, el);
+        } else {
+          await fetchGoogleRating(googleId, el);
+        }
       }
+    }
+  }
+
+  // Fetch rating from Google Books API
+  async function fetchGoogleRating(googleId, container) {
+    try {
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${googleId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.volumeInfo && data.volumeInfo.averageRating) {
+          const rating = data.volumeInfo.averageRating;
+          const count = data.volumeInfo.ratingsCount || 0;
+
+          container.innerHTML = `
+                    <div class="d-flex align-center gap-1" style="color: var(--warning);" title="تقييم Google Books">
+                      <i class="ph-fill ph-star"></i>
+                      <span class="rating-value fw-bold">${rating}</span>
+                      <span class="rating-count text-muted" style="font-size: 0.7rem;">(${count})</span>
+                    </div>
+                  `;
+          return;
+        }
+
+        // 2. Fallback: Try OpenLibrary if ISBN exists
+        if (data.volumeInfo && data.volumeInfo.industryIdentifiers) {
+          const isbns = data.volumeInfo.industryIdentifiers;
+          const isbnObj = isbns.find(i => i.type === 'ISBN_13') || isbns.find(i => i.type === 'ISBN_10');
+          if (isbnObj && isbnObj.identifier) {
+            await fetchOpenLibRatingByISBN(isbnObj.identifier, container);
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore google fetch errors
+    }
+
+    // 3. Final Fallback: "No Rating"
+    renderNoRating(container);
+  }
+
+  // Fetch from OpenLibrary using ISBN
+  async function fetchOpenLibRatingByISBN(isbn, container) {
+    try {
+      const res = await fetch(`https://openlibrary.org/isbn/${isbn}/ratings.json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.summary && data.summary.average) {
+          const rating = data.summary.average.toFixed(1);
+          const count = data.summary.count || 0;
+
+          container.innerHTML = `
+                    <div class="d-flex align-center gap-1" style="color: var(--warning);" title="تقييم OpenLibrary">
+                      <i class="ph-fill ph-star"></i>
+                      <span class="rating-value fw-bold">${rating}</span>
+                      <span class="rating-count text-muted" style="font-size: 0.7rem;">(${count})</span>
+                    </div>
+                  `;
+          return;
+        }
+      }
+    } catch (err) { }
+    renderNoRating(container);
+  }
+
+  // Fetch rating from OpenLibrary API
+  async function fetchOpenLibRating(olId, container) {
+    const cleanId = olId.replace('ol_', '');
+    try {
+      const res = await fetch(`https://openlibrary.org/works/${cleanId}/ratings.json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.summary && data.summary.average) {
+          const rating = data.summary.average.toFixed(1);
+          const count = data.summary.count || 0;
+
+          container.innerHTML = `
+                    <div class="d-flex align-center gap-1" style="color: var(--warning);" title="تقييم OpenLibrary">
+                      <i class="ph-fill ph-star"></i>
+                      <span class="rating-value fw-bold">${rating}</span>
+                      <span class="rating-count text-muted" style="font-size: 0.7rem;">(${count})</span>
+                    </div>
+                  `;
+          return;
+        }
+      }
+    } catch (err) { }
+
+    renderNoRating(container);
+  }
+
+  function renderNoRating(container) {
+    const placeholder = container.querySelector('.rating-placeholder');
+    if (placeholder) {
+      container.innerHTML = `
+            <div class="d-flex align-center gap-1" style="color: var(--text-muted);">
+              <i class="ph ph-star"></i>
+              <span>لا يوجد تقييم</span>
+            </div>
+          `;
     }
   }
 

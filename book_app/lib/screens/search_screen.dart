@@ -21,7 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Map<String, dynamic>> _results = [];
   bool _isLoading = false;
   bool _hasSearched = false;
-  List<String> _recentSearches = [
+  final List<String> _recentSearches = [
     'روايات عربية',
     'تطوير الذات',
     'علم النفس',

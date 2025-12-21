@@ -205,7 +205,7 @@ def book_detail(book_id):
             # استيراد هنا لتجنب Circular Import إذا كان موجوداً
             from ..utils import fetch_google_books
             # نبحث عن كتب مشابهة بالعنوان
-            similar_items, _ = fetch_google_books(book.title, max_results=5)
+            similar_items, _ = fetch_google_books(book.title, max_results=12)
             # تنظيف البيانات
             for item in similar_items:
                 if item['id'] == book.google_id: continue
@@ -219,10 +219,25 @@ def book_detail(book_id):
                     'title': vi.get('title'),
                     'author': ", ".join(vi.get('authors', [])),
                     'cover': cov,
-                    'source': 'google'  # للدلالة على أنه من جوجل
+                    'source': 'google',
+                    'rating': vi.get('averageRating'),
+                    'ratings_count': vi.get('ratingsCount')
                 })
         except Exception as e:
             logger.error(f"Error fetching similar books: {e}")
+
+    # جلب تفاصيل إضافية إذا كان كتاب Google (سنة الإصدار والتقييم العالمي)
+    if book.google_id:
+        try:
+            from ..utils import fetch_book_details
+            details = fetch_book_details(book.google_id)
+            if details:
+                # نستخدم setattr لإضافة الخصائص مؤقتاً للكائن ليتم عرضها في القالب
+                setattr(book, 'rating', details.get('rating'))
+                setattr(book, 'publishedDate', details.get('publishedDate'))
+                setattr(book, 'pageCount', details.get('pageCount'))
+        except Exception as e:
+            logger.error(f"Error fetching extra book details: {e}")
 
     return render_template(
         "book_detail.html",

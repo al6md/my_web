@@ -21,6 +21,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Map<String, dynamic>? _heroBook;
   bool _isLoading = true;
 
+  // Mood State
+  String? _selectedMood;
+  final List<Map<String, dynamic>> _moodBooks = [];
+  final bool _isMoodLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +88,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
           slivers: [
             // Hero Section
             SliverToBoxAdapter(child: _buildHeroSection()),
+
+            // Mood Section
+            SliverToBoxAdapter(child: _buildMoodSection()),
 
             // Book Sections
             if (_isLoading)
@@ -228,6 +236,144 @@ class _ExploreScreenState extends State<ExploreScreen> {
         ],
       ),
     );
+  }
+
+  }
+
+  Widget _buildMoodSection() {
+    final moods = [
+      {'id': 'happy', 'emoji': '😃', 'title': 'سعيد'},
+      {'id': 'sad', 'emoji': '😔', 'title': 'حزين'},
+      {'id': 'adventurous', 'emoji': '🚀', 'title': 'متحمس'},
+      {'id': 'calm', 'emoji': '🧘', 'title': 'هادئ'},
+      {'id': 'curious', 'emoji': '🧐', 'title': 'فضولي'},
+      {'id': 'romantic', 'emoji': '❤️', 'title': 'رومانسي'},
+    ];
+
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              Text(
+                'كيف هو مزاجك اليوم؟',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                  fontFamily: 'Cairo',
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'اختر مزاجك لنقترح لك كتباً تناسب حالتك الحالية',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Moods Grid
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.center,
+            children: moods.map((mood) => _buildMoodCard(mood)).toList(),
+          ),
+        ),
+
+        // Mood Results
+        if (_selectedMood != null) ...[
+          const SizedBox(height: 32),
+          if (_isMoodLoading)
+            const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+          else if (_moodBooks.isNotEmpty)
+            _buildBookSection({
+              'title': 'كتب تناسب مزاجك',
+              'icon': Icons.auto_awesome,
+              'books': _moodBooks,
+            })
+          else
+            const Text(
+              'لا توجد نتائج لهذا المزاج حالياً',
+              style: TextStyle(color: AppTheme.textMuted),
+            ),
+        ],
+        
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  Widget _buildMoodCard(Map<String, String> mood) {
+    final isSelected = _selectedMood == mood['id'];
+    
+    return GestureDetector(
+      onTap: () => _onMoodSelected(mood['id']!),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? AppTheme.primary.withOpacity(0.1) 
+              : AppTheme.bgSurface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : AppTheme.borderSubtle,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected ? [AppTheme.glowPrimary] : null,
+        ),
+        child: Column(
+          children: [
+            Text(
+              mood['emoji']!,
+              style: const TextStyle(fontSize: 32),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              mood['title']!,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onMoodSelected(String moodId) async {
+    setState(() {
+      _selectedMood = moodId;
+      _isMoodLoading = true;
+      _moodBooks = [];
+    });
+
+    try {
+      final books = await _bookService.fetchByMood(moodId);
+      if (mounted) {
+        setState(() {
+          _moodBooks = books;
+          _isMoodLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isMoodLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('حدث خطأ: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildStatItem(String value, String label) {

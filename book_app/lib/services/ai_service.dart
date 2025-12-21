@@ -46,7 +46,7 @@ class AIService {
   // Get "Why you might like this" for a book
   Future<Map<String, dynamic>> getWhyLike(String gid) async {
     final result = await _api.get(
-      '${ApiConfig.aiBookChat(gid).replaceAll('/chat', '/why-like')}',
+      ApiConfig.aiBookChat(gid).replaceAll('/chat', '/why-like'),
       requireAuth: true,
     );
     return result;

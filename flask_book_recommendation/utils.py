@@ -8,11 +8,14 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 dotenv_path = os.path.join(BASE_DIR, '.env')
 load_dotenv(dotenv_path)
 
-API_URL = "https://www.googleapis.com/books/v1/volumes"
-
 # -----------------------------------------------------------
 # 1. Google Books (تم الإصلاح هنا)
 # -----------------------------------------------------------
+API_URL = "https://www.googleapis.com/books/v1/volumes"
+print(f"DEBUG: Loading .env from {dotenv_path}")
+load_dotenv(dotenv_path, override=True)
+print(f"DEBUG: GEMINI_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
+
 def fetch_google_books(query, max_results=12, start_index=0, order_by="relevance"):
     params = {
         "q": query, "maxResults": max_results,
@@ -124,11 +127,13 @@ def generate_ai_description(title: str, author: str = "") -> str:
     # Fallback to Gemini (أبطأ قليلاً)
     if gemini_key:
         try:
+            print(f"DEBUG: Calling Gemini API for {title}...")
+            # Switched to gemini-1.5-flash to avoid 404
             response = requests.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}",
                 headers={"Content-Type": "application/json"},
                 json={"contents": [{"parts": [{"text": prompt}]}]},
-                timeout=4
+                timeout=10
             )
             
             if response.ok:
@@ -137,6 +142,8 @@ def generate_ai_description(title: str, author: str = "") -> str:
                 if desc:
                     print(f"[AI Desc] ✅ Generated (Gemini) for: {title[:25]}...")
                     return desc.strip()
+            else:
+                print(f"[AI Desc] Gemini Failed: {response.status_code} - {response.text}")
         except requests.exceptions.Timeout:
             print(f"[AI Desc] ⏱️ Gemini timeout")
         except Exception as e:
@@ -1082,6 +1089,11 @@ def chat_with_ai(user_message: str, user_context: dict = None) -> dict:
             "books": [],
             "search_query": None
         }
+
+    # Ensure keys are loaded
+    if not os.environ.get("GEMINI_API_KEY") and not os.environ.get("GROQ_API_KEY"):
+        print("DEBUG: Reloading .env in chat_with_ai...")
+        load_dotenv(override=True)
     
     # بناء السياق
     context_info = ""
@@ -1127,9 +1139,15 @@ SEARCH_QUERY: Artificial Intelligence books"""
         if result:
             return _process_ai_response(result)
     
-    # لا يوجد مفتاح متاح
+    # لا يوجد مفتاح متاح أو فشل في الاتصال
+    error_msg = "عذراً، المساعد غير متاح حالياً."
+    if not gemini_key and not groq_key:
+        error_msg += " يرجى إضافة مفتاح API في الإعدادات."
+    else:
+        error_msg += " نواجه ضغطاً على الخوادم، يرجى المحاولة لاحقاً."
+
     return {
-        "reply": "عذراً، المساعد غير متاح حالياً. يرجى إضافة مفتاح API في الإعدادات.",
+        "reply": error_msg,
         "books": [],
         "search_query": None
     }
@@ -1195,39 +1213,47 @@ def _call_gemini_api(api_key: str, prompt: str) -> str:
         }
     }
     
-    try:
-        print("[AI Chat] Using Gemini API (fallback)...")
-        response = requests.post(url, json=payload, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            try:
-                # التحقق الآمن من وجود المرشحات
-                candidates = data.get('candidates', [])
-                if not candidates:
-                    print("[AI Chat] Gemini returned no candidates (Safety filter?)")
+    import time
+    max_retries = 3
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"[AI Chat] Using Gemini API (fallback)... Attempt {attempt+1}")
+            response = requests.post(url, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                try:
+                    # التحقق الآمن من وجود المرشحات
+                    candidates = data.get('candidates', [])
+                    if not candidates:
+                        print("[AI Chat] Gemini returned no candidates (Safety filter?)")
+                        return None
+                        
+                    parts = candidates[0].get('content', {}).get('parts', [])
+                    if not parts:
+                        return None
+                        
+                    ai_text = parts[0].get('text', '').strip()
+                    print(f"[AI Chat] Gemini success!")
+                    return ai_text
+                except (KeyError, IndexError, AttributeError) as e:
+                    print(f"[AI Chat] Gemini parsing error: {e}")
                     return None
-                    
-                parts = candidates[0].get('content', {}).get('parts', [])
-                if not parts:
-                    return None
-                    
-                ai_text = parts[0].get('text', '').strip()
-                print(f"[AI Chat] Gemini success!")
-                return ai_text
-            except (KeyError, IndexError, AttributeError) as e:
-                print(f"[AI Chat] Gemini parsing error: {e}")
+            elif response.status_code == 429:
+                wait_time = (attempt + 1) * 2
+                print(f"[AI Chat] Gemini rate limited. Waiting {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+            else:
+                print(f"[AI Chat] Gemini error: {response.status_code} - {response.text}")
                 return None
-        elif response.status_code == 429:
-            print("[AI Chat] Gemini rate limited")
-            return None
-        else:
-            print(f"[AI Chat] Gemini error: {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            print(f"[AI Chat] Gemini exception: {e}")
             return None
             
-    except Exception as e:
-        print(f"[AI Chat] Gemini exception: {e}")
-        return None
+    return None
 
 
 def _process_ai_response(ai_text: str) -> dict:
