@@ -2,211 +2,6 @@
 {% block title %}المكتبة | ALHAM{% endblock %}
 
 {% block content %}
-<style>
-  /* Layout */
-  .library-container {
-    display: flex;
-    gap: 2rem;
-    padding-top: calc(var(--header-height) + 2rem);
-    padding-bottom: 4rem;
-    min-height: 100vh;
-  }
-
-
-
-  /* Main Content */
-  .library-main {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .library-header-minimal {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-subtle);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  /* Book Grid (Existing) */
-  .library-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .book-item {
-    position: relative;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    transition: all var(--transition-base);
-  }
-
-  .book-item:hover {
-    transform: translateY(-8px);
-  }
-
-  .book-item:hover .book-cover {
-    box-shadow: var(--glow-primary);
-  }
-
-  .book-cover {
-    position: relative;
-    aspect-ratio: 2/3;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    background: var(--bg-elevated);
-    transition: all var(--transition-base);
-  }
-
-  .book-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform var(--transition-smooth);
-  }
-
-  .book-item:hover .book-cover img {
-    transform: scale(1.05);
-  }
-
-  .book-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
-    opacity: 0;
-    transition: opacity var(--transition-base);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 1rem;
-  }
-
-  .book-item:hover .book-overlay {
-    opacity: 1;
-  }
-
-  /* Mobile Responsive */
-  @media (max-width: 991px) {
-    .library-container {
-      flex-direction: column;
-    }
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-
-    to {
-      transform: rotate(360deg);
-    }
-  }
-</style>
-
-<style>
-  /* Layout */
-  .library-container {
-    display: flex;
-    gap: 2rem;
-    padding-top: calc(var(--header-height) + 2rem);
-    padding-bottom: 4rem;
-    min-height: 100vh;
-  }
-
-  /* Sidebar */
-  .library-sidebar {
-    width: 280px;
-    flex-shrink: 0;
-    position: sticky;
-    top: calc(var(--header-height) + 2rem);
-    height: fit-content;
-    max-height: calc(100vh - var(--header-height) - 4rem);
-    overflow-y: auto;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-  }
-
-  /* Custom Scrollbar for Sidebar */
-  .library-sidebar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .library-sidebar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .library-sidebar::-webkit-scrollbar-thumb {
-    background: var(--border-default);
-    border-radius: 10px;
-  }
-
-  .sidebar-section {
-    margin-bottom: 2rem;
-  }
-
-  .sidebar-title {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .sidebar-link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-  }
-
-  .sidebar-link:hover,
-  .sidebar-link.active {
-    background: var(--bg-elevated);
-    color: var(--primary-light);
-    transform: translateX(-4px);
-  }
-
-  .sidebar-link.active {
-    font-weight: 600;
-    background: rgba(102, 126, 234, 0.1);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .sidebar-link i {
-    font-size: 1.1em;
-  }
-
-  /* Mobile Responsive */
-  @media (max-width: 991px) {
-    .library-container {
-      flex-direction: column;
-    }
-
-    .library-sidebar {
-      width: 100%;
-      position: relative;
-      top: 0;
-      max-height: none;
-    }
-  }
-</style>
-
 <div class="container library-container">
 
   <!-- SIDEBAR -->
@@ -354,6 +149,273 @@
     </div>
   </aside>
 
+  <!-- script moved to top to handle race conditions -->
+  <script>
+    // ---------------------------------------------------------
+    // 🔄 نظام طابور لعرض الأغلفة (AI Cover Queue)
+    // ---------------------------------------------------------
+    const coverQueue = [];
+    let isQueueProcessing = false;
+
+    // إضافة غلاف للطابور
+    function queueAiLoad(img, aiUrl) {
+      // 1. إعداد العنصر: إظهار الغلاف المؤقت (العنوان)
+      img.onerror = null;
+      img.style.display = 'none';
+
+      const dynamicCover = img.parentElement.querySelector('.dynamic-cover');
+      if (dynamicCover) {
+        dynamicCover.style.display = 'flex';
+        // إضافة مؤشر تحميل بسيط إذا لم يكن موجوداً
+        if (!dynamicCover.querySelector('.loading-dot')) {
+          dynamicCover.insertAdjacentHTML('beforeend', '<div class="loading-dot" style="margin-top:5px; font-size:10px; opacity:0.7;">waiting...</div>');
+        }
+      }
+
+      // 2. إضافة للطابور
+      coverQueue.push({ img, url: aiUrl, dynamic: dynamicCover });
+
+      // 3. تشغيل المعالج
+      processQueue();
+    }
+
+    // معالجة الطابور (واحدة تلو الأخرى)
+    function processQueue() {
+      if (isQueueProcessing || coverQueue.length === 0) return;
+      isQueueProcessing = true;
+
+      const item = coverQueue.shift();
+
+      // تحديث النص إلى "جاري المعالجة"
+      if (item.dynamic) {
+        const loader = item.dynamic.querySelector('.loading-dot');
+        if (loader) loader.innerHTML = 'generating... <i class="ph ph-spinner" style="animation:spin 1s infinite"></i>';
+      }
+
+      // بدء تحميل الصورة
+      const loaderImg = new Image();
+
+      // الانتقال للتالي سواء نجح أو فشل بعد تأخير بسيط
+      const next = () => {
+        isQueueProcessing = false;
+        setTimeout(processQueue, 1500); // تأخير 1.5 ثانية بين كل طلب لتفادي الضغط
+      };
+
+      loaderImg.onload = () => {
+        // نجاح!
+        item.img.src = item.url;
+        item.img.style.display = 'block';
+        item.img.style.opacity = '1';
+        if (item.dynamic) item.dynamic.style.display = 'none';
+        next();
+      };
+
+      loaderImg.onerror = () => {
+        // فشل - الإبقاء على الغلاف الديناميكي (العنوان)
+        if (item.dynamic) {
+          const loader = item.dynamic.querySelector('.loading-dot');
+          if (loader) loader.remove();
+        }
+        console.log("Failed to load AI cover, keeping title");
+        next();
+      };
+
+      loaderImg.src = item.url;
+    }
+
+    function showDynamicCover(img) {
+      const dynamic = img.parentElement.querySelector('.dynamic-cover');
+      if (dynamic) dynamic.style.display = 'flex';
+      img.style.display = 'none';
+    }
+
+    function handleCoverError(img, aiCoverUrl) {
+      queueAiLoad(img, aiCoverUrl);
+    }
+
+    // Fetch rating on click (for books without rating from backend)
+    async function fetchRatingOnClick(element, bookId) {
+      // Show loading state
+      element.innerHTML = `
+            <i class="ph ph-spinner" style="animation: spin 1s linear infinite; font-size: 0.85rem;"></i>
+            <span style="font-size: 0.75rem;">جاري التحميل...</span>
+        `;
+      element.style.cursor = 'wait';
+
+      // Get book title from nearest parent for OpenLibrary search fallback
+      const bookItem = element.closest('.book-item');
+      const bookTitle = bookItem ? bookItem.querySelector('h5')?.textContent?.trim() : null;
+
+      try {
+        // 1. Try local reviews first (works for ALL sources)
+        const res = await fetch(`/public/books/${bookId}/reviews`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.count > 0) {
+            element.innerHTML = `
+                        <div class="d-flex align-center gap-1" title="تقييم المستخدمين">
+                            <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
+                            <span style="color: var(--text-primary); font-weight: 600; font-size: 0.85rem;">${data.average_rating}</span>
+                            <span class="text-muted" style="font-size: 0.7rem;">· ${data.count} تقييم</span>
+                        </div>
+                    `;
+            element.style.cursor = 'default';
+            element.onclick = null;
+            return;
+          }
+        }
+
+        // 2. Handle OpenLibrary books (ol_*)
+        if (bookId.startsWith('ol_')) {
+          const cleanId = bookId.replace('ol_', '');
+          const olRes = await fetch(`https://openlibrary.org/works/${cleanId}/ratings.json`);
+          if (olRes.ok) {
+            const olData = await olRes.json();
+            if (olData.summary && olData.summary.average) {
+              showRatingPB(element, olData.summary.average.toFixed(1), 'OpenLibrary');
+              return;
+            }
+          }
+        }
+
+        // 3. Handle IT Bookstore books (ISBN-based) - search OpenLibrary by ISBN
+        else if (/^\d{10, 13}$/.test(bookId)) {
+          const olRes = await fetch(`https://openlibrary.org/isbn/${bookId}/ratings.json`);
+          if (olRes.ok) {
+            const olData = await olRes.json();
+            if (olData.summary && olData.summary.average) {
+              showRatingPB(element, olData.summary.average.toFixed(1), 'OpenLibrary');
+              return;
+            }
+          }
+        }
+
+        // 4. Handle Google Books (alphanumeric IDs)
+        else if (!bookId.startsWith('local_') && !bookId.startsWith('gut_') && !bookId.startsWith('arch_')) {
+          const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`);
+          if (gRes.ok) {
+            const data = await gRes.json();
+            if (data.volumeInfo && data.volumeInfo.averageRating) {
+              showRatingPB(element, data.volumeInfo.averageRating, 'Google Books');
+              return;
+            }
+
+            // Try OpenLibrary via ISBN
+            if (data.volumeInfo && data.volumeInfo.industryIdentifiers) {
+              const isbns = data.volumeInfo.industryIdentifiers;
+              const isbnObj = isbns.find(i => i.type === 'ISBN_13') || isbns.find(i => i.type === 'ISBN_10');
+              if (isbnObj && isbnObj.identifier) {
+                const olRes = await fetch(`https://openlibrary.org/isbn/${isbnObj.identifier}/ratings.json`);
+                if (olRes.ok) {
+                  const olData = await olRes.json();
+                  if (olData.summary && olData.summary.average) {
+                    showRatingPB(element, olData.summary.average.toFixed(1), 'OpenLibrary');
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 5. Fallback: Search OpenLibrary by book title (for Archive, Gutenberg, etc.)
+        if (bookTitle) {
+          const searchRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(bookTitle)}&limit=1`);
+          if (searchRes.ok) {
+            const searchData = await searchRes.json();
+            if (searchData.docs && searchData.docs.length > 0) {
+              const doc = searchData.docs[0];
+              if (doc.ratings_average) {
+                showRatingPB(element, doc.ratings_average.toFixed(1), 'OpenLibrary');
+                return;
+              }
+              if (doc.key) {
+                const workKey = doc.key.replace('/works/', '');
+                const ratingsRes = await fetch(`https://openlibrary.org/works/${workKey}/ratings.json`);
+                if (ratingsRes.ok) {
+                  const ratingsData = await ratingsRes.json();
+                  if (ratingsData.summary && ratingsData.summary.average) {
+                    showRatingPB(element, ratingsData.summary.average.toFixed(1), 'OpenLibrary');
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // No rating found
+        showNoRatingPB(element);
+
+      } catch (err) {
+        console.error('Rating fetch error:', err);
+        showNoRatingPB(element);
+      }
+    }
+
+    // Helper function to display rating
+    function showRatingPB(element, rating, source) {
+      element.innerHTML = `
+            <div class="d-flex align-center gap-1" title="تقييم ${source}">
+                <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
+                <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">${rating}</span>
+                <span class="text-muted" style="font-size: 0.75rem;">/ 5</span>
+            </div>
+        `;
+      element.style.cursor = 'default';
+      element.onclick = null;
+    }
+
+    // Helper function to display no rating
+    function showNoRatingPB(element) {
+      element.innerHTML = `
+            <div class="d-flex align-center gap-1" style="color: var(--text-muted);">
+                <i class="ph ph-star" style="font-size: 0.85rem;"></i>
+                <span style="font-size: 0.75rem;">لا يوجد تقييم</span>
+            </div>
+        `;
+      element.style.cursor = 'default';
+      element.onclick = null;
+    }
+
+    // جلب تقييمات المستخدمين من API
+    async function loadUserRatings() {
+      const ratingElements = document.querySelectorAll('.book-rating[data-book-id]');
+
+      for (const el of ratingElements) {
+        const bookId = el.dataset.bookId;
+        if (!bookId) continue;
+
+        // Trying to find google ID if stored in dataset (public_books might use book.id as google_id for google books)
+        // Actually public_books template uses book.id. For Google books source, book.id IS the google_id.
+        const googleId = bookId;
+
+        try {
+          // 1. Try Local Reviews first
+          const res = await fetch(`/public/books/${bookId}/reviews`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.count > 0) {
+              // إذا كان هناك تقييمات من المستخدمين، نعرضها
+              el.innerHTML = `
+                  <div class="d-flex align-center gap-1" title="تقييم المستخدمين">
+                    <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
+                    <span style="color: var(--text-primary); font-weight: 600; font-size: 0.85rem;">${data.average_rating}</span>
+                    <span class="text-muted" style="font-size: 0.7rem;">· ${data.count} تقييم</span>
+                  </div>
+              `;
+              continue;
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+
+    // تحميل التقييمات عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', loadUserRatings);
+  </script>
 
   <!-- MAIN CONTENT -->
   <main class="library-main animate-on-scroll fade-up delay-1">
@@ -383,39 +445,51 @@
         </p>
       </div>
 
-      <!-- Simple Sort (Optional) -->
-      <!-- Could add a dropdown here later -->
+      <div class="d-flex align-center gap-3">
+        <!-- Search Form -->
+        <form action="{{ url_for('public.list_books') }}" method="get" class="search-form-minimal">
+          <input type="text" name="q" placeholder="ابحث عن كتاب، مؤلف..." value="{{ q or '' }}">
+          <button type="submit">
+            <i class="ph ph-magnifying-glass"></i>
+          </button>
+        </form>
+
+        <!-- View Toggle (Grid/List) - Optional Future Feature -->
+        <!-- <div class="view-toggle"> ... </div> -->
+      </div>
     </div>
 
-    <!-- Results Grid -->
+
+    <!-- Books Grid -->
     <div class="library-grid">
       {% set sources = [
-      {'data': items, 'name': 'Google Books'},
-      {'data': ol_items, 'name': 'OpenLibrary'},
-      {'data': ia_items, 'name': 'Internet Archive'},
-      {'data': it_items, 'name': 'IT Bookstore'},
-      {'data': gut_items, 'name': 'Project Gutenberg'}
+      {'data': items},
+      {'data': gut_items},
+      {'data': ia_items},
+      {'data': ol_items},
+      {'data': it_items}
       ] %}
-
       {% for source in sources %}
       {% for book in source.data %}
-      {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
-
-      <div class="book-item">
+      <div class="book-item animate-on-scroll fade-up">
         <a href="{{ url_for('public.book_detail', gid=book.id) }}" class="d-block text-decoration-none">
+
+          <!-- Cover -->
           <div class="book-cover mb-3">
             {% if book.cover %}
             <img src="{{ book.cover }}" alt="{{ book.title }}" loading="lazy"
-              onerror="handleCoverError(this, '{{ ai_cover | e }}')">
-            {% else %}
-            <img src="{{ ai_cover }}" alt="{{ book.title }}" loading="lazy"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            {% endif %}
-
-            <div class="dynamic-cover d-flex align-center justify-center text-center p-2"
-              style="display: none; width: 100%; height: 100%; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
-              <span class="small fw-bold">{{ book.title }}</span>
+              onerror="handleCoverError(this, '{{ ai_cover_url }}')">
+            <div class="dynamic-cover">
+              <span class="fw-bold">{{ book.title[:50] }}{% if book.title|length > 50 %}...{% endif %}</span>
             </div>
+            {% else %}
+            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+              alt="{{ book.title }}" onload="queueAiLoad(this, '{{ ai_cover_url }}')" style="display:none">
+            <!-- Hidden initially, let queue handle it -->
+            <div class="dynamic-cover" style="display:flex">
+              <span class="fw-bold">{{ book.title[:50] }}{% if book.title|length > 50 %}...{% endif %}</span>
+            </div>
+            {% endif %}
 
             <!-- Hover Overlay -->
             <div class="book-overlay">
@@ -454,320 +528,6 @@
       {% endfor %}
       {% endfor %}
     </div>
-
-    <script>
-      function handleCoverError(img, aiCoverUrl) {
-        img.onerror = null;
-        const aiImg = new Image();
-        aiImg.onload = function () { img.src = aiCoverUrl; };
-        aiImg.onerror = function () {
-          img.style.display = 'none';
-          const dynamicCover = img.parentElement.querySelector('.dynamic-cover');
-          if (dynamicCover) dynamicCover.style.display = 'flex';
-        };
-        aiImg.src = aiCoverUrl;
-      }
-
-      // Fetch rating on click (for books without rating from backend)
-      async function fetchRatingOnClick(element, bookId) {
-        // Show loading state
-        element.innerHTML = `
-            <i class="ph ph-spinner" style="animation: spin 1s linear infinite; font-size: 0.85rem;"></i>
-            <span style="font-size: 0.75rem;">جاري التحميل...</span>
-        `;
-        element.style.cursor = 'wait';
-
-        // Get book title from nearest parent for OpenLibrary search fallback
-        const bookItem = element.closest('.book-item');
-        const bookTitle = bookItem ? bookItem.querySelector('h5')?.textContent?.trim() : null;
-
-        try {
-          // 1. Try local reviews first (works for ALL sources)
-          const res = await fetch(`/public/books/${bookId}/reviews`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.count > 0) {
-              element.innerHTML = `
-                        <div class="d-flex align-center gap-1" title="تقييم المستخدمين">
-                            <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
-                            <span style="color: var(--text-primary); font-weight: 600; font-size: 0.85rem;">${data.average_rating}</span>
-                            <span class="text-muted" style="font-size: 0.7rem;">· ${data.count} تقييم</span>
-                        </div>
-                    `;
-              element.style.cursor = 'default';
-              element.onclick = null;
-              return;
-            }
-          }
-
-          // 2. Handle OpenLibrary books (ol_*)
-          if (bookId.startsWith('ol_')) {
-            const cleanId = bookId.replace('ol_', '');
-            const olRes = await fetch(`https://openlibrary.org/works/${cleanId}/ratings.json`);
-            if (olRes.ok) {
-              const olData = await olRes.json();
-              if (olData.summary && olData.summary.average) {
-                showRatingPB(element, olData.summary.average.toFixed(1), 'OpenLibrary');
-                return;
-              }
-            }
-          }
-
-          // 3. Handle IT Bookstore books (ISBN-based) - search OpenLibrary by ISBN
-          else if (/^\d{10,13}$/.test(bookId)) {
-            const olRes = await fetch(`https://openlibrary.org/isbn/${bookId}/ratings.json`);
-            if (olRes.ok) {
-              const olData = await olRes.json();
-              if (olData.summary && olData.summary.average) {
-                showRatingPB(element, olData.summary.average.toFixed(1), 'OpenLibrary');
-                return;
-              }
-            }
-          }
-
-          // 4. Handle Google Books (alphanumeric IDs)
-          else if (!bookId.startsWith('local_') && !bookId.startsWith('gut_') && !bookId.startsWith('arch_')) {
-            const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`);
-            if (gRes.ok) {
-              const data = await gRes.json();
-              if (data.volumeInfo && data.volumeInfo.averageRating) {
-                showRatingPB(element, data.volumeInfo.averageRating, 'Google Books');
-                return;
-              }
-
-              // Try OpenLibrary via ISBN
-              if (data.volumeInfo && data.volumeInfo.industryIdentifiers) {
-                const isbns = data.volumeInfo.industryIdentifiers;
-                const isbnObj = isbns.find(i => i.type === 'ISBN_13') || isbns.find(i => i.type === 'ISBN_10');
-                if (isbnObj && isbnObj.identifier) {
-                  const olRes = await fetch(`https://openlibrary.org/isbn/${isbnObj.identifier}/ratings.json`);
-                  if (olRes.ok) {
-                    const olData = await olRes.json();
-                    if (olData.summary && olData.summary.average) {
-                      showRatingPB(element, olData.summary.average.toFixed(1), 'OpenLibrary');
-                      return;
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          // 5. Fallback: Search OpenLibrary by book title (for Archive, Gutenberg, etc.)
-          if (bookTitle) {
-            const searchRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(bookTitle)}&limit=1`);
-            if (searchRes.ok) {
-              const searchData = await searchRes.json();
-              if (searchData.docs && searchData.docs.length > 0) {
-                const doc = searchData.docs[0];
-                if (doc.ratings_average) {
-                  showRatingPB(element, doc.ratings_average.toFixed(1), 'OpenLibrary');
-                  return;
-                }
-                if (doc.key) {
-                  const workKey = doc.key.replace('/works/', '');
-                  const ratingsRes = await fetch(`https://openlibrary.org/works/${workKey}/ratings.json`);
-                  if (ratingsRes.ok) {
-                    const ratingsData = await ratingsRes.json();
-                    if (ratingsData.summary && ratingsData.summary.average) {
-                      showRatingPB(element, ratingsData.summary.average.toFixed(1), 'OpenLibrary');
-                      return;
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          // No rating found
-          showNoRatingPB(element);
-
-        } catch (err) {
-          console.error('Rating fetch error:', err);
-          showNoRatingPB(element);
-        }
-      }
-
-      // Helper function to display rating
-      function showRatingPB(element, rating, source) {
-        element.innerHTML = `
-            <div class="d-flex align-center gap-1" title="تقييم ${source}">
-                <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
-                <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">${rating}</span>
-                <span class="text-muted" style="font-size: 0.75rem;">/ 5</span>
-            </div>
-        `;
-        element.style.cursor = 'default';
-        element.onclick = null;
-      }
-
-      // Helper function to display no rating
-      function showNoRatingPB(element) {
-        element.innerHTML = `
-            <div class="d-flex align-center gap-1" style="color: var(--text-muted);">
-                <i class="ph ph-star" style="font-size: 0.85rem;"></i>
-                <span style="font-size: 0.75rem;">لا يوجد تقييم</span>
-            </div>
-        `;
-        element.style.cursor = 'default';
-        element.onclick = null;
-      }
-
-      // جلب تقييمات المستخدمين من API
-      async function loadUserRatings() {
-        const ratingElements = document.querySelectorAll('.book-rating[data-book-id]');
-
-        for (const el of ratingElements) {
-          const bookId = el.dataset.bookId;
-          if (!bookId) continue;
-
-          // Trying to find google ID if stored in dataset (public_books might use book.id as google_id for google books)
-          // Actually public_books template uses book.id. For Google books source, book.id IS the google_id.
-          const googleId = bookId;
-
-          try {
-            // 1. Try Local Reviews first
-            const res = await fetch(`/public/books/${bookId}/reviews`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.count > 0) {
-                // إذا كان هناك تقييمات من المستخدمين، نعرضها
-                el.innerHTML = `
-                  <div class="d-flex align-center gap-1" title="تقييم المستخدمين">
-                    <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
-                    <span style="color: var(--text-primary); font-weight: 600; font-size: 0.85rem;">${data.average_rating}</span>
-                    <span class="text-muted" style="font-size: 0.7rem;">· ${data.count} تقييم</span>
-                  </div>
-                `;
-                continue;
-              }
-            }
-
-            // 2. Fallback to Google Rating or OpenLibrary Rating
-            if (el.querySelector('.rating-placeholder')) {
-              if (googleId.startsWith('ol_')) {
-                await fetchOpenLibRating(googleId, el);
-              } else {
-                await fetchGoogleRating(googleId, el);
-              }
-            }
-
-          } catch (e) {
-            console.error(e);
-            if (el.querySelector('.rating-placeholder')) {
-              if (googleId.startsWith('ol_')) {
-                await fetchOpenLibRating(googleId, el);
-              } else {
-                await fetchGoogleRating(googleId, el);
-              }
-            }
-          }
-        }
-      }
-
-      // Fetch rating from Google Books API
-      async function fetchGoogleRating(googleId, container) {
-        // Only fetch if it looks like a Google ID (alphanumeric, no local_ prefix)
-        if (googleId.startsWith('local_') || googleId.startsWith('OL') || googleId.startsWith('ol_')) return;
-
-        try {
-          const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${googleId}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.volumeInfo && data.volumeInfo.averageRating) {
-              const rating = data.volumeInfo.averageRating;
-              const count = data.volumeInfo.ratingsCount || 0;
-
-              container.innerHTML = `
-                        <div class="d-flex align-center gap-1" title="تقييم Google Books">
-                          <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
-                          <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">${rating}</span>
-                          <span class="text-muted" style="font-size: 0.75rem;">/ 5</span>
-                        </div>
-                      `;
-              return;
-            }
-
-            // 2. Fallback: Try OpenLibrary if ISBN exists
-            if (data.volumeInfo && data.volumeInfo.industryIdentifiers) {
-              const isbns = data.volumeInfo.industryIdentifiers;
-              const isbnObj = isbns.find(i => i.type === 'ISBN_13') || isbns.find(i => i.type === 'ISBN_10');
-              if (isbnObj && isbnObj.identifier) {
-                await fetchOpenLibRatingByISBN(isbnObj.identifier, container);
-                return;
-              }
-            }
-          }
-        } catch (err) { }
-
-        renderNoRating(container);
-      }
-
-      // Fetch from OpenLibrary using ISBN
-      async function fetchOpenLibRatingByISBN(isbn, container) {
-        try {
-          const res = await fetch(`https://openlibrary.org/isbn/${isbn}/ratings.json`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.summary && data.summary.average) {
-              const rating = data.summary.average.toFixed(1);
-              const count = data.summary.count || 0;
-
-              container.innerHTML = `
-                        <div class="d-flex align-center gap-1" title="تقييم OpenLibrary">
-                          <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
-                          <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">${rating}</span>
-                          <span class="text-muted" style="font-size: 0.75rem;">/ 5</span>
-                        </div>
-                      `;
-              return;
-            }
-          }
-        } catch (err) { }
-        renderNoRating(container);
-      }
-
-      // Fetch rating from OpenLibrary API
-      async function fetchOpenLibRating(olId, container) {
-        const cleanId = olId.replace('ol_', '');
-        try {
-          const res = await fetch(`https://openlibrary.org/works/${cleanId}/ratings.json`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.summary && data.summary.average) {
-              const rating = data.summary.average.toFixed(1);
-              const count = data.summary.count || 0;
-
-              container.innerHTML = `
-                        <div class="d-flex align-center gap-1" title="تقييم OpenLibrary">
-                          <i class="ph-fill ph-star" style="color: var(--warning); font-size: 0.85rem;"></i>
-                          <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">${rating}</span>
-                          <span class="text-muted" style="font-size: 0.75rem;">/ 5</span>
-                        </div>
-                      `;
-              return;
-            }
-          }
-        } catch (err) { }
-
-        renderNoRating(container);
-      }
-
-      function renderNoRating(container) {
-        const placeholder = container.querySelector('.rating-placeholder');
-        if (placeholder) {
-          container.innerHTML = `
-                <div class="d-flex align-center gap-1" style="color: var(--text-muted);">
-                  <i class="ph ph-star" style="font-size: 0.85rem;"></i>
-                  <span style="font-size: 0.75rem;">لا يوجد تقييم</span>
-                </div>
-              `;
-        }
-      }
-
-      // تحميل التقييمات عند تحميل الصفحة
-      document.addEventListener('DOMContentLoaded', loadUserRatings);
-    </script>
 
     <!-- Pagination -->
     <div class="d-flex justify-center gap-3 mt-5">

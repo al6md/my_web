@@ -60,6 +60,10 @@ def fetch_book_details(book_id, source="google"):
                 if isbn:
                     rating = fetch_openlib_rating(isbn=isbn)
 
+            # Get ISBN
+            isbns = vol.get("industryIdentifiers", [])
+            isbn = next((i["identifier"] for i in isbns if i["type"] in ["ISBN_13", "ISBN_10"]), None)
+
             return {
                 "id": data["id"],
                 "title": vol.get("title", "No Title"),
@@ -70,6 +74,10 @@ def fetch_book_details(book_id, source="google"):
                 "pageCount": vol.get("pageCount"),
                 "rating": rating,
                 "publishedDate": vol.get("publishedDate"),
+                "publisher": vol.get("publisher"),
+                "language": vol.get("language"),
+                "categories": vol.get("categories", []),
+                "isbn": isbn,
                 "source": "google"
             }
     except Exception as e:
@@ -429,14 +437,62 @@ def get_book_cover_smart(title, author=None, isbn=None, source=None):
     
     # 3. AI Cover (Pollinations)
     import urllib.parse
-    prompt = f"Professional book cover for '{title}'"
+    import hashlib
+    
+    # تحسين الـ Prompt ليكون "abstract" و "minimalist"
+    prompt = f"minimalist book cover for '{title}'"
     if author:
         prompt += f" by {author}"
-    prompt += ", elegant design, high quality"
+    
+    # إضافة كلمات مفتاحية تضمن الجودة وتبتعد عن الروبوتات
+    prompt += ", abstract art, elegant design, high quality, 4k"
+    
+    # تخصيص حسب العنوان
+    lower_title = title.lower()
+    if any(w in lower_title for w in ['tech', 'data', 'code', 'algorithm']):
+        prompt += ", geometric shapes, data visualization style, NO ROBOTS, NO FACES"
+    elif any(w in lower_title for w in ['history', 'ancient']):
+        prompt += ", vintage style, paper texture"
+    else:
+        prompt += ", modern typography"
+
     encoded_prompt = urllib.parse.quote(prompt)
-    ai_cover = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=600&nologo=true"
+    seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 10000
+    
+    ai_cover = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=600&nologo=true&seed={seed}&model=flux"
     
     return {"cover_url": ai_cover, "source": "ai_generated"}
+
+
+def generate_ai_cover_url(title, author=None):
+    """
+    توليد رابط غلاف AI مباشرة (بدون بحث)
+    """
+    import urllib.parse
+    import hashlib
+
+    # تحسين الـ Prompt ليكون "abstract" و "minimalist"
+    prompt = f"minimalist book cover for '{title}'"
+    if author:
+        prompt += f" by {author}"
+    
+    # إضافة كلمات مفتاحية تضمن الجودة وتبتعد عن الروبوتات
+    prompt += ", abstract art, elegant design, high quality, 4k"
+    
+    # تخصيص حسب العنوان
+    lower_title = title.lower()
+    if any(w in lower_title for w in ['tech', 'data', 'code', 'algorithm']):
+        prompt += ", geometric shapes, data visualization style, NO ROBOTS, NO FACES"
+    elif any(w in lower_title for w in ['history', 'ancient']):
+        prompt += ", vintage style, paper texture"
+    else:
+        prompt += ", modern typography"
+
+    encoded_prompt = urllib.parse.quote(prompt)
+    # استخدام hash للعنوان لضمان ثبات الصورة لنفس الكتاب
+    seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 10000
+    
+    return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=600&nologo=true&seed={seed}&model=flux"
 
 
 # -----------------------------------------------------------
@@ -1819,11 +1875,42 @@ def analyze_reading_habits(user_id: int) -> dict:
         
         # حالات الكتب
         statuses = BookStatus.query.filter_by(user_id=user_id).all()
+        genre_counter = {}
+        
         for s in statuses:
             if s.status == "finished": stats["finished_books"] += 1
             elif s.status == "favorite": stats["favorite_books"] += 1
             elif s.status == "later": stats["later_books"] += 1
+            
+            # استخراج التصنيفات (محاكاة لأننا لا نملك جدول تصنيفات دقيق محلياً بعد)
+            if s.book:
+                # محاولة استنتاج التصنيف من العنوان أو استخدام تصنيف افتراضي
+                # في التطبيق الحقيقي سنحتاج لجدول BookGenre
+                title_lower = s.book.title.lower()
+                genre = "General"
+                if "python" in title_lower or "code" in title_lower or "programming" in title_lower: genre = "Programming"
+                elif "fiction" in title_lower or "novel" in title_lower or "story" in title_lower: genre = "Fiction"
+                elif "science" in title_lower or "physics" in title_lower: genre = "Science"
+                elif "history" in title_lower: genre = "History"
+                elif "art" in title_lower or "design" in title_lower: genre = "Art"
+                
+                genre_counter[genre] = genre_counter.get(genre, 0) + 1
+
+        # ترتيب التصنيفات
+        stats["top_genres"] = sorted([{"name": k, "count": v} for k, v in genre_counter.items()], key=lambda x: x["count"], reverse=True)[:5]
         
+        # استنتاج المزاج (Mood)
+        # خوارزمية بسيطة: الكتاب العلمي = فضولي، الرواية = حالم، البرمجة = مركز
+        mood_scores = {"curious": 0, "dreamy": 0, "focused": 0, "adventurous": 0}
+        for g in stats["top_genres"]:
+            name = g["name"]
+            if name in ["Science", "History"]: mood_scores["curious"] += g["count"]
+            elif name in ["Fiction", "Art"]: mood_scores["dreamy"] += g["count"]
+            elif name in ["Programming"]: mood_scores["focused"] += g["count"]
+            else: mood_scores["adventurous"] += g["count"]
+            
+        stats["current_mood"] = max(mood_scores, key=mood_scores.get) if any(mood_scores.values()) else "Explorer"
+
         # متوسط التقييمات
         avg_rating = db.session.query(func.avg(UserRatingCF.rating)).filter_by(user_id=user_id).scalar()
         stats["average_rating"] = round(avg_rating, 1) if avg_rating else 0
@@ -1867,23 +1954,24 @@ def _generate_reading_tips(stats: dict) -> list:
     """توليد نصائح مخصصة بناءً على الإحصائيات"""
     tips = []
     
+    # نصيحة التنوع (Smart Recommendation)
+    top_genre = stats["top_genres"][0]["name"] if stats["top_genres"] else None
+    if top_genre == "Programming":
+        tips.append("🚀 لقد ركزت كثيراً على البرمجة مؤخراً، ما رأيك في قليل من الأدب الخيالي (Fiction) لتجديد نشاطك الإبداعي؟")
+    elif top_genre == "Fiction":
+        tips.append("📖 أنت غارق في العوالم الخيالية!، جرب قراءة كتاب في التاريخ أو العلوم لربط الخيال بالواقع.")
+    elif top_genre == "Science":
+        tips.append("🔬 العقل العلمي يحتاج للراحة أحياناً، جرب قراءة سيرة ذاتية ملهمة.")
+    else:
+        tips.append("💡 حاول تنويع قراءتك بين الكتب العلمية والأدبية لتوسيع آفاقك.")
+
     if stats["finished_books"] == 0:
         tips.append("📚 ابدأ بإنهاء كتاب واحد هذا الأسبوع!")
     elif stats["finished_books"] < 5:
         tips.append("🎯 أنت على المسار الصحيح! حاول إنهاء كتاب إضافي هذا الشهر.")
-    else:
-        tips.append("🌟 قارئ نشط! استمر في هذا المعدل الرائع.")
     
     if stats["later_books"] > 10:
         tips.append("📖 لديك قائمة انتظار طويلة! حاول تحديد الأولويات.")
-    
-    if stats["average_rating"] > 4:
-        tips.append("💡 ذوقك في الكتب ممتاز! جرب استكشاف أنواع جديدة.")
-    elif stats["average_rating"] > 0 and stats["average_rating"] < 3:
-        tips.append("🔍 حاول البحث عن توصيات مخصصة لاهتماماتك.")
-    
-    if stats["total_reviews"] == 0:
-        tips.append("✍️ شارك رأيك! كتابة المراجعات تساعد الآخرين.")
     
     return tips
 
@@ -1901,29 +1989,459 @@ def generate_ai_cover(book_info: dict) -> dict:
     author = book_info.get("author", "")
     description = book_info.get("description", "")[:200]
     
-    # بناء prompt للصورة
-    prompt = f"Book cover art for '{title}'"
+    # بناء prompt للصورة - تجريدي وبسيط
+    prompt = f"minimalist book cover design for '{title}'"
     if author:
         prompt += f" by {author}"
-    prompt += ". Professional book cover design, artistic, high quality, detailed illustration"
+    prompt += ". Professional, elegant, abstract art, high quality"
     
-    # إضافة سياق من الوصف
-    if "fiction" in description.lower() or "novel" in description.lower():
+    # إضافة سياق من الوصف مع تجنب الروبوتات
+    lower_desc = description.lower()
+    if "fiction" in lower_desc or "novel" in lower_desc:
         prompt += ", fantasy elements, dramatic lighting"
-    elif "science" in description.lower() or "programming" in description.lower():
-        prompt += ", modern tech aesthetic, clean design"
-    elif "history" in description.lower():
-        prompt += ", historical elements, vintage style"
+    elif "science" in lower_desc or "programming" in lower_desc:
+        # تجنب الروبوتات في الكتب التقنية
+        prompt += ", geometric shapes, modern tech aesthetic, abstract digital art, NO ROBOTS"
+    elif "history" in lower_desc:
+        prompt += ", historical elements, vintage style, paper texture"
     else:
         prompt += ", elegant typography, minimalist"
     
-    # Pollinations.ai URL (مجاني بدون API Key)
+    # Pollinations.ai URL (الرابط الجديد)
     encoded_prompt = urllib.parse.quote(prompt)
-    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=600&nologo=true"
+    import hashlib
+    seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 10000
+    
+    # استخدام الرابط الجديد: https://pollinations.ai/p/
+    image_url = f"https://pollinations.ai/p/{encoded_prompt}?width=400&height=600&nologo=true&seed={seed}&model=flux"
     
     return {
         "success": True,
         "cover_url": image_url,
-        "prompt": prompt
+        "source": "pollinations_ai"
     }
 
+
+
+# -----------------------------------------------------------
+# 🧠 تحليل سلوك المستخدم (User Behavior Analysis)
+# -----------------------------------------------------------
+def get_user_behavior_profile(user_id: int) -> dict:
+    """
+    تحليل شامل لسلوك المستخدم لفهم اهتماماته.
+    
+    يجمع البيانات من:
+    - BookStatus (المفضلة، المنتهية، للقراءة لاحقاً)
+    - SearchHistory (عمليات البحث)
+    - UserRatingCF (التقييمات)
+    - UserBookView (المشاهدات)
+    - UserPreference (الاهتمامات المسجلة)
+    
+    Returns:
+        dict: ملف سلوك المستخدم الشامل
+    """
+    from .models import (
+        BookStatus, SearchHistory, UserRatingCF, UserBookView, 
+        UserPreference, Book, BookReview
+    )
+    from .extensions import db
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
+    from collections import Counter
+    
+    profile = {
+        "favorite_genres": [],
+        "favorite_authors": [],
+        "recent_interests": [],
+        "reading_patterns": {},
+        "behavior_summary": "",
+        "raw_data": {}
+    }
+    
+    try:
+        # 1. جمع الكتب المفضلة والمنتهية
+        favorite_books = []
+        finished_books = []
+        
+        statuses = BookStatus.query.filter_by(user_id=user_id).all()
+        for s in statuses:
+            if s.book:
+                book_info = {
+                    "title": s.book.title,
+                    "author": s.book.author,
+                    "google_id": s.book.google_id
+                }
+                if s.status == "favorite":
+                    favorite_books.append(book_info)
+                elif s.status == "finished":
+                    finished_books.append(book_info)
+        
+        profile["raw_data"]["favorites"] = favorite_books[:10]
+        profile["raw_data"]["finished"] = finished_books[:10]
+        
+        # 2. استخراج المؤلفين المفضلين
+        all_books = favorite_books + finished_books
+        authors = [b["author"] for b in all_books if b.get("author")]
+        author_counts = Counter(authors)
+        profile["favorite_authors"] = [a[0] for a in author_counts.most_common(5)]
+        
+        # 3. جمع عمليات البحث الأخيرة (آخر 30 يوم)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        searches = db.session.query(SearchHistory).filter(
+            SearchHistory.user_id == user_id,
+            SearchHistory.created_at >= thirty_days_ago
+        ).order_by(SearchHistory.created_at.desc()).limit(20).all()
+        
+        search_queries = [s.query for s in searches if s.query]
+        profile["recent_interests"] = list(dict.fromkeys(search_queries))[:10]  # unique
+        
+        # 4. جمع التقييمات العالية (4-5 نجوم)
+        high_ratings = UserRatingCF.query.filter(
+            UserRatingCF.user_id == user_id,
+            UserRatingCF.rating >= 4
+        ).limit(20).all()
+        
+        rated_google_ids = [r.google_id for r in high_ratings]
+        profile["raw_data"]["high_rated_ids"] = rated_google_ids[:10]
+        
+        # 5. جمع اهتمامات المستخدم المسجلة
+        prefs = UserPreference.query.filter_by(user_id=user_id)\
+            .order_by(UserPreference.weight.desc()).limit(10).all()
+        registered_interests = [p.topic for p in prefs if p.topic and not p.topic.startswith("special:")]
+        profile["favorite_genres"] = registered_interests[:5]
+        
+        # 6. أنماط القراءة
+        total_ratings = UserRatingCF.query.filter_by(user_id=user_id).count()
+        avg_rating = db.session.query(func.avg(UserRatingCF.rating))\
+            .filter(UserRatingCF.user_id == user_id).scalar()
+        
+        profile["reading_patterns"] = {
+            "total_rated": total_ratings,
+            "avg_rating": round(float(avg_rating), 1) if avg_rating else 0,
+            "favorites_count": len(favorite_books),
+            "finished_count": len(finished_books)
+        }
+        
+        # 7. توليد ملخص السلوك
+        profile["behavior_summary"] = _generate_behavior_summary(profile)
+        
+    except Exception as e:
+        print(f"[BehaviorProfile] Error: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return profile
+
+
+def _generate_behavior_summary(profile: dict) -> str:
+    """توليد ملخص نصي لسلوك المستخدم"""
+    parts = []
+    
+    if profile.get("favorite_genres"):
+        parts.append(f"مهتم بـ: {', '.join(profile['favorite_genres'][:3])}")
+    
+    if profile.get("favorite_authors"):
+        parts.append(f"يفضل كتابات: {', '.join(profile['favorite_authors'][:2])}")
+    
+    if profile.get("recent_interests"):
+        parts.append(f"بحث مؤخراً عن: {', '.join(profile['recent_interests'][:2])}")
+    
+    patterns = profile.get("reading_patterns", {})
+    if patterns.get("finished_count", 0) > 5:
+        parts.append("قارئ نشط")
+    elif patterns.get("favorites_count", 0) > 10:
+        parts.append("يحفظ الكثير من الكتب")
+    
+    return " | ".join(parts) if parts else "مستخدم جديد"
+
+
+# -----------------------------------------------------------
+# 🤖 التوصيات الذكية بالـ AI
+# -----------------------------------------------------------
+def get_ai_personalized_recommendations(user_id: int, limit: int = 12) -> dict:
+    """
+    توصيات مخصصة باستخدام AI.
+    
+    1. يجلب ملف سلوك المستخدم
+    2. يرسل للـ AI لتحليل الاهتمامات واقتراح مواضيع
+    3. يبحث عن كتب في المواضيع المقترحة
+    4. يضيف أسباب ذكية لكل توصية
+    
+    Returns:
+        dict: {"books": [...], "ai_analysis": "...", "suggested_topics": [...]}
+    """
+    import json
+    
+    result = {
+        "books": [],
+        "ai_analysis": "",
+        "suggested_topics": [],
+        "success": False
+    }
+    
+    try:
+        # 1. جلب ملف السلوك
+        profile = get_user_behavior_profile(user_id)
+        
+        if not profile.get("favorite_genres") and not profile.get("recent_interests"):
+            # مستخدم جديد (Cold Start) - نعرض مزيج ترحيبي
+            default_topics = ["علوم الفضاء", "الذكاء الاصطناعي", "روايات عالمية", "تطوير الذات"]
+            result["ai_analysis"] = "أهلاً بك! بما أننا لا نعرف ذوقك بعد، جهزنا لك مختارات متنوعة لتبدأ رحلتك 🚀"
+            result["suggested_topics"] = default_topics
+            result["books"] = _fetch_books_for_topics(default_topics, limit=limit, user_profile=profile)
+            result["success"] = True
+            return result
+        
+        # 2. طلب تحليل من AI
+        ai_suggestions = _get_ai_topic_suggestions(profile)
+        
+        if ai_suggestions.get("success"):
+            result["ai_analysis"] = ai_suggestions.get("analysis", "")
+            result["suggested_topics"] = ai_suggestions.get("topics", [])
+            
+            # 3. البحث عن كتب في المواضيع المقترحة
+            books = _fetch_books_for_topics(
+                ai_suggestions.get("topics", []),
+                limit=limit,
+                user_profile=profile
+            )
+            result["books"] = books
+            result["success"] = True
+        else:
+            # Fallback: استخدام الاهتمامات المسجلة مباشرة
+            topics = profile.get("favorite_genres", [])[:3] or profile.get("recent_interests", [])[:3]
+            if topics:
+                result["suggested_topics"] = topics
+                result["books"] = _fetch_books_for_topics(topics, limit=limit, user_profile=profile)
+                result["ai_analysis"] = f"توصيات بناءً على اهتماماتك في: {', '.join(topics)}"
+                result["success"] = True
+                
+    except Exception as e:
+        print(f"[AI Recommendations] Error: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return result
+
+
+def _get_ai_topic_suggestions(profile: dict) -> dict:
+    """
+    استخدام AI لتحليل سلوك المستخدم واقتراح مواضيع كتب.
+    """
+    groq_key = os.environ.get("GROQ_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    
+    if not groq_key and not gemini_key:
+        return {"success": False, "error": "No API key"}
+    
+    # بناء البرومبت
+    prompt = f"""أنت خبير توصيات كتب. حلل ملف القارئ التالي واقترح 3 مواضيع كتب جديدة ستعجبه:
+
+📊 ملف القارئ:
+- الاهتمامات المسجلة: {', '.join(profile.get('favorite_genres', [])[:5]) or 'غير محدد'}
+- المؤلفين المفضلين: {', '.join(profile.get('favorite_authors', [])[:3]) or 'غير محدد'}
+- عمليات البحث الأخيرة: {', '.join(profile.get('recent_interests', [])[:5]) or 'لا يوجد'}
+- ملخص السلوك: {profile.get('behavior_summary', 'مستخدم جديد')}
+
+المطلوب:
+1. اكتب تحليلاً قصيراً (جملة واحدة) عن ذوق القارئ
+2. اقترح 3 مواضيع كتب جديدة باللغة الإنجليزية (للبحث في APIs)
+
+أجب بصيغة JSON فقط:
+{{"analysis": "تحليل قصير بالعربي", "topics": ["topic1", "topic2", "topic3"]}}
+"""
+
+    import json
+    import re
+    
+    def parse_json_response(text):
+        try:
+            # محاولة استخراج JSON
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            if match:
+                return json.loads(match.group())
+            return None
+        except:
+            return None
+    
+    # محاولة Groq أولاً
+    if groq_key:
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {groq_key}"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.7,
+                    "max_tokens": 300
+                },
+                timeout=15
+            )
+            if response.ok:
+                content = response.json()["choices"][0]["message"]["content"]
+                parsed = parse_json_response(content)
+                if parsed:
+                    return {"success": True, **parsed}
+        except Exception as e:
+            print(f"[AI Topics] Groq error: {e}")
+    
+    # Fallback إلى Gemini
+    if gemini_key:
+        try:
+            response = requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}",
+                headers={"Content-Type": "application/json"},
+                json={"contents": [{"parts": [{"text": prompt}]}]},
+                timeout=15
+            )
+            if response.ok:
+                text = response.json().get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                parsed = parse_json_response(text)
+                if parsed:
+                    return {"success": True, **parsed}
+        except Exception as e:
+            print(f"[AI Topics] Gemini error: {e}")
+    
+    return {"success": False, "error": "AI call failed"}
+
+
+def _fetch_books_for_topics(topics: list, limit: int = 12, user_profile: dict = None) -> list:
+    """
+    جلب كتب من Google Books للمواضيع المقترحة مع أسباب ذكية.
+    """
+    books = []
+    seen_ids = set()
+    per_topic = max(4, limit // len(topics)) if topics else limit
+    
+    for topic in topics[:3]:
+        try:
+            items, _ = fetch_google_books(topic, max_results=per_topic)
+            for item in items or []:
+                gid = item.get("id")
+                if not gid or gid in seen_ids:
+                    continue
+                seen_ids.add(gid)
+                
+                vi = item.get("volumeInfo", {})
+                imgs = vi.get("imageLinks", {}) or {}
+                cover = imgs.get("thumbnail", "")
+                if cover.startswith("http://"):
+                    cover = "https://" + cover[7:]
+                
+                # توليد سبب ذكي للتوصية
+                reason = _generate_smart_reason(topic, vi, user_profile)
+                
+                books.append({
+                    "id": gid,
+                    "title": vi.get("title"),
+                    "author": ", ".join(vi.get("authors", [])) or "غير معروف",
+                    "cover": cover,
+                    "source": "AI Personalized",
+                    "reason": reason,
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount")
+                })
+                
+                if len(books) >= limit:
+                    break
+                    
+        except Exception as e:
+            print(f"[FetchBooks] Error for topic '{topic}': {e}")
+        
+        if len(books) >= limit:
+            break
+    
+    return books
+
+
+def _generate_smart_reason(topic: str, book_info: dict, user_profile: dict = None) -> str:
+    """
+    توليد سبب ذكي ومخصص للتوصية.
+    """
+    reasons = []
+    
+    # التحقق من المؤلف المفضل
+    if user_profile and user_profile.get("favorite_authors"):
+        book_authors = book_info.get("authors", [])
+        for author in book_authors:
+            if author in user_profile["favorite_authors"]:
+                return f"✍️ من كاتبك المفضل: {author}"
+    
+    # التحقق من التصنيف
+    categories = book_info.get("categories", [])
+    if user_profile and user_profile.get("favorite_genres"):
+        for cat in categories:
+            for genre in user_profile["favorite_genres"]:
+                if genre.lower() in cat.lower():
+                    return f"📚 يتوافق مع اهتمامك بـ {genre}"
+    
+    # سبب عام بناءً على الموضوع
+    return f"🤖 مقترح لأنك مهتم بـ {topic}"
+
+
+# -----------------------------------------------------------
+# 🔄 تحديث التفضيلات تلقائياً
+# -----------------------------------------------------------
+def update_user_preferences_from_behavior(user_id: int, action: str, book_info: dict):
+    """
+    تحديث أوزان UserPreference بناءً على سلوك المستخدم.
+    
+    Args:
+        user_id: معرف المستخدم
+        action: "view", "favorite", "finished", "rated_high", "search"
+        book_info: معلومات الكتاب (categories, author, title, etc.)
+        
+    الأوزان:
+        - view: +1
+        - favorite: +10
+        - finished: +15
+        - rated_high (4-5): +20
+        - search: +5
+    """
+    from .models import UserPreference
+    from .extensions import db
+    
+    weight_map = {
+        "view": 1,
+        "favorite": 10,
+        "finished": 15,
+        "rated_high": 20,
+        "search": 5
+    }
+    
+    weight = weight_map.get(action, 1)
+    
+    # استخراج المواضيع من الكتاب
+    topics = []
+    
+    # من التصنيفات
+    categories = book_info.get("categories", [])
+    if isinstance(categories, str):
+        categories = [categories]
+    topics.extend(categories[:2])
+    
+    # من العنوان (كلمات رئيسية)
+    title = book_info.get("title", "")
+    if title:
+        # استخراج كلمات مهمة (أكثر من 4 حروف)
+        import re
+        words = re.findall(r'\b[A-Za-z\u0600-\u06FF]{5,}\b', title)
+        topics.extend(words[:2])
+    
+    # تحديث الأوزان
+    for topic in topics:
+        if not topic or len(topic) < 3:
+            continue
+            
+        try:
+            pref = UserPreference.query.filter_by(user_id=user_id, topic=topic).first()
+            if pref:
+                pref.weight = (pref.weight or 0) + weight
+            else:
+                pref = UserPreference(user_id=user_id, topic=topic, weight=weight)
+                db.session.add(pref)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[UpdatePrefs] Error: {e}")

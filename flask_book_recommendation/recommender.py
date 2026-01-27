@@ -9,7 +9,7 @@ from flask_login import current_user
 from .models import (
     Book, UserRatingCF, SearchHistory,
     Book, UserRatingCF, SearchHistory,
-    UserPreference, BookEmbedding, BookReview
+    UserPreference, BookEmbedding, BookReview, UserBookView
 )
 from .utils import (
     fetch_google_books, fetch_gutenberg_books,
@@ -18,6 +18,7 @@ from .utils import (
     translate_to_english_with_gemini,
     get_text_embedding,
     fetch_openlib_rating,
+    analyze_search_intent_with_ai  # Need this or similar for AI analysis
 )
 from .extensions import db, cache
 
@@ -150,18 +151,26 @@ def get_trending(limit=12):
             if not b.title or b.title in ['Untitled', 'Unknown']:
                 continue
 
-            # اسم المضيف (اختياري)
+            # معلومات المالك
             owner_name = "مستخدم"
-            if b.owner and b.owner.name:
-                owner_name = b.owner.name
+            owner_id = None
+            if b.owner:
+                owner_id = b.owner.id
+                if b.owner.name:
+                    owner_name = b.owner.name
             
-            books_dicts.append(
-                _book_to_dict(
-                    b,
-                    source="مكتبة المستخدمين",
-                    reason=f"👤 أضافه: {owner_name}",
-                )
+            # بناء القاموس مع إضافة معلومات المالك
+            book_dict = _book_to_dict(
+                b,
+                source="مكتبة المستخدمين",
+                reason=f"👤 أضافه: {owner_name}",
             )
+            
+            # إضافة معلومات المالك للقاموس
+            if book_dict:
+                book_dict['owner_name'] = owner_name
+                book_dict['owner_id'] = owner_id
+                books_dicts.append(book_dict)
             
             if len(books_dicts) >= limit:
                 break
@@ -414,6 +423,342 @@ def get_content_similar(user_id, top_n=30, history_limit=20):
 
     return recs
 
+
+@cache.memoize(timeout=600)  # Cache لمدة 10 دقائق
+def get_view_based_recommendations(user_id, top_n=12, history_limit=10):
+    """
+    توصيات ذكية بناءً على سجل المشاهدات (UserBookView) باستخدام AI Embeddings.
+    
+    الخوارزمية:
+    1. جلب آخر الكتب التي شاهدها المستخدم
+    2. استخراج المتجهات (Embeddings) لهذه الكتب
+    3. حساب "متجه الاهتمام الحالي" (متوسط المتجهات)
+    4. البحث عن أقرب الكتب لهذا المتجه باستخدام Cosine Similarity
+    """
+    try:
+        # 1. جلب آخر الكتب المشاهدة
+        recent_views = (
+            UserBookView.query
+            .filter_by(user_id=user_id)
+            .order_by(UserBookView.last_viewed_at.desc())
+            .limit(history_limit)
+            .all()
+        )
+        
+        if not recent_views:
+            return []
+
+        # استخراج IDs
+        viewed_book_ids = []
+        viewed_google_ids = []
+        for v in recent_views:
+            if v.book_id: viewed_book_ids.append(v.book_id)
+            if v.google_id: viewed_google_ids.append(v.google_id)
+            
+        # تحويل google_id إلى book_id محلي إذا وجد
+        if viewed_google_ids:
+            g_books = Book.query.filter(Book.google_id.in_(viewed_google_ids)).all()
+            for b in g_books:
+                viewed_book_ids.append(b.id)
+                
+        viewed_book_ids = list(set(viewed_book_ids))
+        if not viewed_book_ids:
+            return []
+
+        # 2. جلب Embeddings للكتب المشاهدة
+        seed_embeds = (
+            BookEmbedding.query.filter(BookEmbedding.book_id.in_(viewed_book_ids)).all()
+        )
+        
+        seed_vectors = []
+        for row in seed_embeds:
+            if row.vector is not None:
+                v = np.array(row.vector, dtype=np.float32)
+                if v.ndim == 1:
+                    seed_vectors.append(v)
+                    
+        if not seed_vectors:
+            return []
+
+        # 3. حساب بروفايل الاهتمام (Centroid)
+        interest_profile = np.mean(np.vstack(seed_vectors), axis=0).reshape(1, -1)
+
+        # 4. مقارنة مع باقي الكتب
+        all_embeds = BookEmbedding.query.all()
+        candidate_ids = []
+        candidate_vectors = []
+        
+        for row in all_embeds:
+            # استثناء الكتب التي شاهدها بالفعل
+            if row.book_id in viewed_book_ids:
+                continue
+                
+            if row.vector is not None:
+                v = np.array(row.vector, dtype=np.float32)
+                if v.ndim == 1:
+                    candidate_ids.append(row.book_id)
+                    candidate_vectors.append(v)
+                    
+        if not candidate_vectors:
+            return []
+            
+        mat = np.vstack(candidate_vectors)
+        sims = cosine_similarity(interest_profile, mat)[0]
+        
+        # ترتيب النتائج
+        ranked_indices = np.argsort(sims)[::-1]
+        
+        recs = []
+        for idx in ranked_indices:
+            score = sims[idx]
+            if score < 0.4:  # عتبة تشابه
+                continue
+                
+            b_id = candidate_ids[idx]
+            book = Book.query.get(b_id)
+            if not book:
+                continue
+                
+            recs.append(
+                _book_to_dict(
+                    book,
+                    source="AI Views",
+                    reason=f"👀 🤖 ماتش ذكي: {int(score*100)}%",
+                )
+            )
+            
+            if len(recs) >= top_n:
+                break
+                
+        logger.info(f"[ViewAI] Generated {len(recs)} recommendations based on {len(viewed_book_ids)} viewed books")
+        return recs
+        
+    except Exception as e:
+        logger.error(f"[ViewAI] Error: {e}", exc_info=True)
+        return []
+
+
+# ------------------------------------------------------------------
+# 🧠 Behavior-Based Recommendations – مثل YouTube
+# ------------------------------------------------------------------
+
+
+@cache.memoize(timeout=300)  # Cache لمدة 5 دقائق
+def get_behavior_based_recommendations(user_id, limit=12):
+    """
+    توصيات ذكية مبنية على تحليل سلوك المستخدم (مثل YouTube)
+    
+    الخوارزمية:
+    1. تحليل الكتب المشاهدة → استخراج التصنيفات + المؤلفين
+    2. حساب وزن كل تصنيف/مؤلف (عدد المشاهدات × الحداثة)
+    3. البحث عن كتب من التصنيفات/المؤلفين الأعلى وزناً
+    4. خلط ذكي للنتائج مع تنوع
+    """
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    
+    try:
+        # 1. جلب آخر 50 كتاب مشاهد مع تفاصيلها
+        recent_views = (
+            UserBookView.query
+            .filter_by(user_id=user_id)
+            .order_by(UserBookView.last_viewed_at.desc())
+            .limit(50)
+            .all()
+        )
+        
+        if not recent_views:
+            logger.debug(f"[Behavior] No views found for user {user_id}")
+            return []
+        
+        # 2. تحليل السلوك: استخراج التصنيفات والمؤلفين مع الأوزان
+        category_weights = defaultdict(float)
+        author_weights = defaultdict(float)
+        now = datetime.utcnow()
+        week_ago = now - timedelta(days=7)
+        
+        viewed_google_ids = set()  # لاستثناء الكتب المشاهدة
+        
+        for view in recent_views:
+            # حساب عامل الحداثة (كتب الأسبوع الأخير تحصل على 1.5x)
+            recency_factor = 1.5 if view.last_viewed_at and view.last_viewed_at > week_ago else 1.0
+            view_weight = (view.view_count or 1) * recency_factor
+            
+            if view.google_id:
+                viewed_google_ids.add(view.google_id)
+            
+            # جلب معلومات الكتاب
+            book = None
+            if view.book_id:
+                book = Book.query.get(view.book_id)
+            elif view.google_id:
+                book = Book.query.filter_by(google_id=view.google_id).first()
+            
+            if not book:
+                continue
+            
+            # استخراج التصنيفات
+            categories = book.categories or ""
+            if categories:
+                # التصنيفات قد تكون JSON أو مفصولة بفاصلة
+                try:
+                    import json
+                    cats = json.loads(categories) if categories.startswith('[') else categories.split(',')
+                except:
+                    cats = categories.split(',')
+                
+                for cat in cats:
+                    cat = cat.strip()
+                    if cat and len(cat) > 2:
+                        category_weights[cat] += view_weight
+            
+            # استخراج المؤلف (وزن أعلى 1.5x)
+            if book.author:
+                # أخذ المؤلف الأول فقط
+                first_author = book.author.split(',')[0].strip()
+                if first_author and first_author not in ['Unknown', 'مؤلف غير معروف']:
+                    author_weights[first_author] += view_weight * 1.5
+        
+        # 3. ترتيب التصنيفات والمؤلفين حسب الوزن
+        top_categories = sorted(category_weights.items(), key=lambda x: x[1], reverse=True)[:5]
+        top_authors = sorted(author_weights.items(), key=lambda x: x[1], reverse=True)[:3]
+        
+        logger.info(f"[Behavior] User {user_id} - Top categories: {top_categories[:3]}, Top authors: {top_authors[:2]}")
+        
+        if not top_categories and not top_authors:
+            logger.debug(f"[Behavior] No behavior patterns found for user {user_id}")
+            return []
+        
+        # 4. البحث عن كتب مشابهة بالتوازي
+        all_recs = []
+        seen_ids = set(viewed_google_ids)  # استثناء الكتب المشاهدة
+        
+        def search_by_category(category, weight):
+            """البحث بالتصنيف"""
+            try:
+                items, _ = fetch_google_books(f"subject:{category}", max_results=8)
+                results = []
+                for it in items or []:
+                    gid = it.get("id")
+                    if not gid:
+                        continue
+                    vi = it.get("volumeInfo", {})
+                    title = vi.get("title")
+                    if not title:
+                        continue
+                    imgs = vi.get("imageLinks", {}) or {}
+                    cover = imgs.get("thumbnail") or ""
+                    if cover.startswith("http://"):
+                        cover = "https://" + cover[7:]
+                    
+                    results.append({
+                        "id": gid,
+                        "title": title,
+                        "author": ", ".join(vi.get("authors", [])),
+                        "cover": cover,
+                        "source": "سلوكك",
+                        "reason": f"📚 من تصنيف: {category}",
+                        "rating": vi.get("averageRating"),
+                        "weight": weight,
+                        "type": "category"
+                    })
+                return results
+            except Exception as e:
+                logger.error(f"[Behavior] Category search error for {category}: {e}")
+                return []
+        
+        def search_by_author(author, weight):
+            """البحث بالمؤلف"""
+            try:
+                items, _ = fetch_google_books(f"inauthor:{author}", max_results=6)
+                results = []
+                for it in items or []:
+                    gid = it.get("id")
+                    if not gid:
+                        continue
+                    vi = it.get("volumeInfo", {})
+                    title = vi.get("title")
+                    if not title:
+                        continue
+                    imgs = vi.get("imageLinks", {}) or {}
+                    cover = imgs.get("thumbnail") or ""
+                    if cover.startswith("http://"):
+                        cover = "https://" + cover[7:]
+                    
+                    results.append({
+                        "id": gid,
+                        "title": title,
+                        "author": ", ".join(vi.get("authors", [])),
+                        "cover": cover,
+                        "source": "سلوكك",
+                        "reason": f"✍️ أعمال: {author}",
+                        "rating": vi.get("averageRating"),
+                        "weight": weight * 1.2,  # المؤلف أهم قليلاً
+                        "type": "author"
+                    })
+                return results
+            except Exception as e:
+                logger.error(f"[Behavior] Author search error for {author}: {e}")
+                return []
+        
+        # تشغيل البحث بالتوازي
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = []
+            
+            # البحث بالتصنيفات
+            for cat, weight in top_categories:
+                futures.append(executor.submit(search_by_category, cat, weight))
+            
+            # البحث بالمؤلفين
+            for author, weight in top_authors:
+                futures.append(executor.submit(search_by_author, author, weight))
+            
+            # جمع النتائج
+            for future in as_completed(futures, timeout=10):
+                try:
+                    results = future.result(timeout=8)
+                    for book in results:
+                        if book["id"] not in seen_ids:
+                            seen_ids.add(book["id"])
+                            all_recs.append(book)
+                except Exception as e:
+                    logger.error(f"[Behavior] Future error: {e}")
+        
+        # 5. ترتيب النتائج بشكل ذكي
+        # نجمع بين الوزن والتنوع
+        all_recs.sort(key=lambda x: x.get("weight", 0), reverse=True)
+        
+        # نختار مع تنوع: 60% من التصنيفات، 40% من المؤلفين
+        category_recs = [r for r in all_recs if r.get("type") == "category"]
+        author_recs = [r for r in all_recs if r.get("type") == "author"]
+        
+        final_recs = []
+        cat_count = int(limit * 0.6)
+        auth_count = limit - cat_count
+        
+        final_recs.extend(category_recs[:cat_count])
+        final_recs.extend(author_recs[:auth_count])
+        
+        # إذا لم يكتمل العدد، نكمل من الباقي
+        if len(final_recs) < limit:
+            remaining = [r for r in all_recs if r not in final_recs]
+            final_recs.extend(remaining[:limit - len(final_recs)])
+        
+        # خلط خفيف للتنوع
+        random.shuffle(final_recs)
+        
+        # تنظيف الحقول الإضافية
+        for rec in final_recs:
+            rec.pop("weight", None)
+            rec.pop("type", None)
+        
+        logger.info(f"[Behavior] Generated {len(final_recs)} recommendations for user {user_id}")
+        return final_recs[:limit]
+        
+    except Exception as e:
+        logger.error(f"[Behavior] Error: {e}", exc_info=True)
+        return []
 
 # ------------------------------------------------------------------
 # 3.5) Semantic Search – بحث دلالي بالـ AI
@@ -1147,12 +1492,47 @@ def get_archive_ai_recommendations(user_id, limit=16):
     return books
 
 
-@cache.memoize(timeout=120)  # Cache لمدة 2 دقيقة
+@cache.memoize(timeout=300)  # Cache لمدة 5 دقائق (محسّن للأداء)
 def get_homepage_sections(user_id, recent_query=None):
     """
     ترجع قائمة أقسام لصفحة /explore مع توصيات متنوعة.
     """
+    from .utils import get_ai_personalized_recommendations
+    
     sections = []
+
+    # 🤖 NEW: قسم التوصيات الذكية بالـ AI (الأولوية القصوى)
+    try:
+        ai_recs = get_ai_personalized_recommendations(user_id, limit=12)
+        if ai_recs.get("success") and ai_recs.get("books"):
+            ai_analysis = ai_recs.get("ai_analysis", "")
+            subtitle = ai_analysis if ai_analysis else "توصيات مخصصة بناءً على سلوكك وتفضيلاتك"
+            sections.append({
+                "title": "🤖 مخصص لك بالذكاء الاصطناعي",
+                "subtitle": subtitle,
+                "books": ai_recs["books"],
+                "style": "gradient",  # نمط مميز
+                "icon": "robot",
+                "query": "special:ai-personalized",
+                "ai_topics": ai_recs.get("suggested_topics", [])
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] AI recommendations error: {e}")
+
+    # 💎 Discovery Picks (Surprise Me)
+    try:
+        discovery = get_discovery_picks(limit=12)
+        if discovery:
+            sections.append({
+                "title": "✨ اكتشافات اليوم",
+                "subtitle": "عناوين متنوعة اخترناها لك لتجربة قراءة مختلفة",
+                "books": discovery,
+                "style": "info",
+                "icon": "compass",
+                "query": "special:discovery"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Discovery error: {e}")
 
     # 0) قسم "لأنك بحثت عن..." (جديد - الأولوية القصوى)
     last_query_text, last_search_books = get_last_search_recommendations(user_id, limit=20)
@@ -1210,14 +1590,169 @@ def get_homepage_sections(user_id, recent_query=None):
 
     # D) Trending – الرائج الآن
     community_trend = get_trending(limit=24)
-    sections.append({
-        "title": "🔥 الرائج في مجتمع القرّاء",
-        "subtitle": "كتب يقرأها ويضيفها أصدقاؤك في المنصة",
-        "books": community_trend,
-        "style": "warning",
-        "icon": "fire",
-        "query": "special:trending"
-    })
+    if community_trend:
+        sections.append({
+            "title": "🔥 الرائج في مجتمع القرّاء",
+            "subtitle": "كتب يقرأها ويضيفها أصدقاؤك في المنصة",
+            "books": community_trend,
+            "style": "warning",
+            "icon": "fire",
+            "query": "special:trending"
+        })
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 🆕 NEW: إضافة جميع الخوارزميات المفقودة
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    # E) 💎 Hidden Gems - الجواهر المخفية
+    try:
+        hidden_gems = get_hidden_gems(limit=12)
+        if hidden_gems:
+            sections.append({
+                "title": "💎 جواهر مخفية",
+                "subtitle": "كتب رائعة لم تحظَ بالشهرة التي تستحقها بعد",
+                "books": hidden_gems,
+                "style": "gold",
+                "icon": "diamond",
+                "query": "special:hidden-gems"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Hidden Gems error: {e}")
+
+    # F) 🧭 Genre Explorer - استكشف تصنيفاً جديداً
+    try:
+        genre_explorer = get_genre_explorer(user_id, limit=12)
+        if genre_explorer:
+            sections.append({
+                "title": "🧭 استكشف تصنيفاً جديداً",
+                "subtitle": "وسّع آفاقك مع تصنيفات لم تجربها من قبل",
+                "books": genre_explorer,
+                "style": "accent",
+                "icon": "compass",
+                "query": "special:genre-explorer"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Genre Explorer error: {e}")
+
+    # G) 📚 Because You Read - لأنك قرأت كتاباً معيناً
+    try:
+        because_result = get_because_you_read(user_id, limit=12)
+        if because_result and because_result.get('recommendations'):
+            source_book = because_result.get('source_book', {})
+            source_title = source_book.get('title', 'كتاب')
+            sections.append({
+                "title": f"📚 لأنك قرأت «{source_title[:30]}»",
+                "subtitle": "كتب مشابهة لما أحببته مؤخراً",
+                "books": because_result['recommendations'],
+                "style": "success",
+                "icon": "heart",
+                "query": "special:because-you-read"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Because You Read error: {e}")
+
+    # H) 👥 Similar Users Favorites - مفضلات قراء مشابهين
+    try:
+        similar_users = get_similar_users_favorites(user_id, limit=12)
+        if similar_users:
+            sections.append({
+                "title": "👥 مفضلات قراء مشابهين",
+                "subtitle": "كتب يحبها مستخدمون لديهم ذوق مشابه لذوقك",
+                "books": similar_users,
+                "style": "primary",
+                "icon": "users-three",
+                "query": "special:similar-users"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Similar Users error: {e}")
+
+    # I) 📈 Trending by Period - رائج هذا الأسبوع
+    try:
+        weekly_trending = get_trending_by_period('week', limit=12)
+        if weekly_trending:
+            sections.append({
+                "title": "📈 رائج هذا الأسبوع",
+                "subtitle": "أكثر الكتب شعبية في الأيام السبعة الماضية",
+                "books": weekly_trending,
+                "style": "danger",
+                "icon": "trend-up",
+                "query": "special:weekly-trending"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Weekly Trending error: {e}")
+
+    # J) ⭐ Top Rated - الأعلى تقييماً
+    try:
+        top_rated = get_top_rated(limit=12)
+        if top_rated:
+            sections.append({
+                "title": "⭐ الأعلى تقييماً",
+                "subtitle": "أفضل الكتب حسب تقييمات المجتمع",
+                "books": top_rated,
+                "style": "gold",
+                "icon": "star",
+                "query": "special:top-rated"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Top Rated error: {e}")
+
+    # K) 🌐 Archive AI - من أرشيف الإنترنت
+    try:
+        archive_recs = get_archive_ai_recommendations(user_id, limit=12)
+        if archive_recs:
+            sections.append({
+                "title": "🌐 كنوز من أرشيف الإنترنت",
+                "subtitle": "كتب نادرة ومجانية من Internet Archive",
+                "books": archive_recs,
+                "style": "info",
+                "icon": "globe",
+                "query": "special:archive"
+            })
+    except Exception as e:
+        logger.error(f"[Homepage] Archive AI error: {e}")
+
+    # L) 🆕 Cold Start - للمستخدمين الجدد بدون سجل
+    if len(sections) < 2:
+        # إذا لم نجد توصيات كافية، نعرض كتب من موضوعات متنوعة
+        try:
+            default_topics = ["programming", "science fiction", "history", "psychology"]
+            cold_start_books = []
+            
+            for topic in default_topics[:2]:
+                topic_result = fetch_google_books(topic, max_results=8)
+                items = topic_result[0] if isinstance(topic_result, tuple) else topic_result
+                
+                for it in items or []:
+                    if not isinstance(it, dict): continue
+                    gid = it.get("id")
+                    if not gid: continue
+                    
+                    vi = it.get("volumeInfo") or {}
+                    img = (vi.get("imageLinks") or {}).get("thumbnail")
+                    if img:
+                        if img.startswith("http://"): img = img.replace("http://", "https://")
+                    
+                    cold_start_books.append({
+                        "id": gid,
+                        "title": vi.get("title"),
+                        "author": ", ".join(vi.get("authors") or []),
+                        "cover": img,
+                        "source": "Google Books",
+                        "reason": f"🌟 موصى به في {topic}",
+                        "rating": vi.get("averageRating"),
+                    })
+            
+            if cold_start_books:
+                sections.insert(0, {
+                    "title": "🌟 اكتشف كتباً رائعة",
+                    "subtitle": "ابدأ رحلتك في القراءة مع هذه الاقتراحات",
+                    "books": cold_start_books[:16],
+                    "style": "gradient",
+                    "icon": "compass",
+                    "query": "special:discover"
+                })
+        except Exception as e:
+            logger.error(f"[Homepage] Cold start error: {e}")
 
     return sections
 
@@ -1342,7 +1877,206 @@ def get_all_libraries_showcase(query="books", limit_per_source=6):
 
 
 # ------------------------------------------------------------------
-# Top Rated �   ا� أع� �0  ت� �`�`�& ا�9 
+# 5) Hybrid Recommendations - التوصية الهجينة الذكية
+# ------------------------------------------------------------------
+
+def get_hybrid_recommendations(user_id, book, limit=12):
+    """
+    توصيات هجينة للكتاب الحالي:
+    1. تحاول Collaborative Filtering
+    2. تحاول Content-Based (AI Embeddings)
+    3. تحاول Metadata (نفس المؤلف / نفس التصنيف)
+    4. Fallback إلى البحث التقليدي
+    """
+    if not book: return []
+    
+    recs = []
+    seen_ids = {book.google_id} if book.google_id else {f"local_{book.id}"}
+    
+    # --- 1. Collaborative Filtering (Item-based) ---
+    try:
+        if book.google_id:
+            fans = UserRatingCF.query.filter(
+                UserRatingCF.google_id == book.google_id, 
+                UserRatingCF.rating >= 4
+            ).limit(20).all()
+            
+            fan_ids = [f.user_id for f in fans if f.user_id != user_id]
+            if fan_ids:
+                suggested_ratings = UserRatingCF.query.filter(
+                    UserRatingCF.user_id.in_(fan_ids),
+                    UserRatingCF.rating >= 4,
+                    UserRatingCF.google_id != book.google_id
+                ).limit(limit * 2).all()
+                
+                from collections import Counter
+                gids = [r.google_id for r in suggested_ratings]
+                common_gids = [gid for gid, count in Counter(gids).most_common(limit)]
+                
+                for gid in common_gids:
+                    if gid in seen_ids: continue
+                    b = Book.query.filter_by(google_id=gid).first()
+                    if b:
+                        recs.append(_book_to_dict(b, source="Community", reason="👥 أحبه قراء آخرون لهم نفس ذوقك"))
+                        seen_ids.add(gid)
+    except Exception as e:
+        logger.error(f"[Hybrid] CF error: {e}")
+
+    # --- 2. More by Same Author (High Priority for Hybrid) ---
+    if len(recs) < limit and book.author and book.author not in ['Unknown', 'غير معروف']:
+        try:
+            author_recs = get_author_books(book.author, exclude_book_id=book.google_id, limit=limit//2)
+            for r in author_recs:
+                if r['id'] not in seen_ids:
+                    r['reason'] = f"✍️ للمؤلف {book.author}"
+                    recs.append(r)
+                    seen_ids.add(r['id'])
+        except Exception as e:
+            logger.error(f"[Hybrid] Author fallback error: {e}")
+
+    # --- 3. Content-Based (AI Embeddings) ---
+    if len(recs) < limit:
+        try:
+            current_embedding = None
+            if hasattr(book, 'id') and book.id:
+                emb_entry = BookEmbedding.query.filter_by(book_id=book.id).first()
+                if emb_entry and emb_entry.vector:
+                    current_embedding = np.array(emb_entry.vector, dtype=np.float32).reshape(1, -1)
+            
+            if current_embedding is not None:
+                all_embeds = BookEmbedding.query.all()
+                vectors = []
+                b_ids = []
+                for row in all_embeds:
+                    if hasattr(book, 'id') and row.book_id == book.id: continue
+                    if row.vector:
+                        vectors.append(np.array(row.vector, dtype=np.float32))
+                        b_ids.append(row.book_id)
+                
+                if vectors:
+                    mat = np.vstack(vectors)
+                    sims = cosine_similarity(current_embedding, mat)[0]
+                    indices = np.argsort(sims)[::-1][:limit]
+                    
+                    for idx in indices:
+                        score = sims[idx]
+                        if score < 0.6: continue
+                        target_book = Book.query.get(b_ids[idx])
+                        if not target_book: continue
+                        bid = target_book.google_id or f"local_{target_book.id}"
+                        if bid in seen_ids: continue
+                        recs.append(_book_to_dict(target_book, source="AI Similarity", reason=f"🤖 محتوى مشابه ({score:.0%})"))
+                        seen_ids.add(bid)
+                        if len(recs) >= limit: break
+        except Exception as e:
+            logger.error(f"[Hybrid] Content-based error: {e}")
+
+    # --- 4. Search Fallback (Keyword based) ---
+    if len(recs) < limit:
+        try:
+            query = book.title
+            gb_res = fetch_google_books(query, max_results=limit)
+            items = gb_res[0] if isinstance(gb_res, tuple) else gb_res
+            for it in items or []:
+                gid = it.get("id")
+                if not gid or gid in seen_ids: continue
+                vi = it.get("volumeInfo") or {}
+                if gid == book.google_id or vi.get("title") == book.title: continue
+                
+                img = (vi.get("imageLinks") or {}).get("thumbnail")
+                if img:
+                    if img.startswith("http://"): img = img.replace("http://", "https://")
+                    if '&edge=curl' in img: img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
+
+                recs.append({
+                    "id": gid,
+                    "title": vi.get("title"),
+                    "author": ", ".join(vi.get("authors") or []),
+                    "cover": img,
+                    "source": "Google Books",
+                    "reason": "📚 كتب ذات صلة",
+                    "rating": vi.get("averageRating"),
+                })
+                seen_ids.add(gid)
+                if len(recs) >= limit: break
+        except Exception as e:
+            logger.error(f"[Hybrid] Metadata fallback error: {e}")
+
+    return recs[:limit]
+
+
+def get_author_books(author_name, exclude_book_id=None, limit=8):
+    """
+    جلب كتب أخرى لنفس المؤلف.
+    """
+    if not author_name or author_name.lower() in ['unknown', 'غير معروف']:
+        return []
+
+    books_dicts = []
+    seen_ids = set()
+    if exclude_book_id:
+        seen_ids.add(exclude_book_id)
+
+    # 1. بحث محلي (Local DB)
+    try:
+        local_books = Book.query.filter(
+            Book.author.ilike(f"%{author_name}%"),
+            Book.google_id != exclude_book_id # التقريب
+        ).limit(5).all()
+        
+        for b in local_books:
+            bid = b.google_id or f"local_{b.id}"
+            if bid in seen_ids: continue
+            
+            books_dicts.append(_book_to_dict(b, source="Local", reason=f"✍️ للمؤلف {author_name}"))
+            seen_ids.add(bid)
+    except Exception as e:
+        logger.error(f"[AuthorBooks] Local search error: {e}")
+
+    # 2. بحث Google Books API
+    # نستخدم inauthor: operator
+    try:
+        query = f"inauthor:\"{author_name}\""
+        gb_res = fetch_google_books(query, max_results=limit)
+        items = gb_res[0] if isinstance(gb_res, tuple) else gb_res
+        
+        for it in items or []:
+            if not isinstance(it, dict): continue
+            gid = it.get("id")
+            if not gid or gid in seen_ids: continue
+            
+            vi = it.get("volumeInfo") or {}
+            
+            # تأكد من تطابق اسم المؤلف تقريباً لضمان الدقة
+            authors = vi.get("authors", [])
+            if not any(author_name.lower() in a.lower() for a in authors):
+                continue
+
+            img = (vi.get("imageLinks") or {}).get("thumbnail")
+            if img:
+                if img.startswith("http://"): img = img.replace("http://", "https://")
+                if '&edge=curl' in img: img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
+
+            books_dicts.append({
+                "id": gid,
+                "title": vi.get("title"),
+                "author": ", ".join(authors),
+                "cover": img,
+                "source": "Google Books",
+                "reason": f"✍️ للمؤلف {author_name}",
+                "rating": vi.get("averageRating"),
+            })
+            seen_ids.add(gid)
+            if len(books_dicts) >= limit: break
+            
+    except Exception as e:
+        logger.error(f"[AuthorBooks] API error: {e}")
+
+    return books_dicts[:limit]
+
+
+# ------------------------------------------------------------------
+# Top Rated    ا أع 0  ت ``& ا9 
 # ------------------------------------------------------------------
 
 @cache.memoize(timeout=60)  # Cache for 1 minute
@@ -1637,3 +2371,561 @@ def get_recommendations_by_title(title, limit=24):
     random.shuffle(all_books)
     return all_books[:limit]
 
+
+# ------------------------------------------------------------------
+# 5) Hybrid AI Behavioral Analysis
+# ------------------------------------------------------------------
+
+def log_user_view(user_id, book):
+    """
+    تسجيل مشاهدة المستخدم للكتاب.
+    يتم استدعاؤها عند فتح صفحة التفاصيل.
+    """
+    try:
+        if not user_id: return
+        
+        # استخراج المعرفات
+        b_id = getattr(book, 'id', None)
+        g_id = getattr(book, 'google_id', None)
+        
+        # إذا كان الكتاب محلياً فقط، g_id قد يكون None
+        # إذا كان من Google، قد يكون له id محلي أيضاً إذا تم حفظه
+        
+        # محاولة العثور على سجل سابق
+        criteria = {'user_id': user_id}
+        if g_id:
+            criteria['google_id'] = g_id
+        elif b_id:
+            criteria['book_id'] = b_id
+        else:
+            return # لا يوجد معرف
+
+        # البحث بمرونة
+        view = None
+        if g_id:
+            view = UserBookView.query.filter_by(user_id=user_id, google_id=g_id).first()
+        if not view and b_id:
+            view = UserBookView.query.filter_by(user_id=user_id, book_id=b_id).first()
+            
+        if view:
+            view.view_count += 1
+            view.last_viewed_at = datetime.utcnow()
+        else:
+            view = UserBookView(
+                user_id=user_id,
+                book_id=b_id if hasattr(book, 'id') and isinstance(book.id, int) else None,
+                google_id=g_id,
+                view_count=1
+            )
+            db.session.add(view)
+            
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"[LogView] Error: {e}")
+
+def analyze_user_profile_with_ai(user_id):
+    """
+    تحليل سلوك المستخدم باستخدام Generative AI (Gemini).
+    يقرأ: المشاهدات، التقييمات، المفضلة، البحث.
+    يكتب: تحديث UserPreference.
+    """
+    import os
+    import json
+    import requests
+    from datetime import timedelta
+    
+    # 1. جمع البيانات
+    try:
+        # أ. المشاهدات الأخيرة (آخر 20)
+        views = UserBookView.query.filter_by(user_id=user_id).order_by(UserBookView.last_viewed_at.desc()).limit(15).all()
+        viewed_books = []
+        for v in views:
+            # نحاول نجيب العنوان
+            title = "Unknown"
+            if v.book: title = v.book.title
+            elif v.google_id:
+                 b = Book.query.filter_by(google_id=v.google_id).first()
+                 if b: title = b.title
+                 # إذا لم يكن في قاعدة بياناتنا، يمكننا تجاهل الاسم أو جلبه لاحقاً، لكن للسرعة سنكتفي بالمتاح
+            
+            if title != "Unknown":
+                viewed_books.append(title)
+        
+        # ب. التقييمات العالية
+        ratings = UserRatingCF.query.filter_by(user_id=user_id).filter(UserRatingCF.rating >= 4).limit(10).all()
+        rated_books = [] # نحتاج عناوين
+        # اختصاراً، سنعتمد على المشاهدات والبحث لأنها الأغنى حالياً
+
+        # ج. سجل البحث
+        searches = SearchHistory.query.filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(10).all()
+        search_terms = [s.query for s in searches if s.query]
+
+        if not viewed_books and not search_terms:
+            return # لا توجد بيانات كافية
+
+        # 2. بناء الـ Prompt
+        prompt = f"""
+        Analyze this user's reading behavior and suggest interests.
+        
+        Viewed Books: {", ".join(viewed_books)}
+        Search Terms: {", ".join(search_terms)}
+        
+        Task:
+        1. Identify 5 core topics/genres this user is interested in.
+        2. Format as JSON list of objects: {{"topic": "topic_name", "weight": float_1_to_3, "reason_en": "reason", "reason_ar": "reason_in_arabic"}}
+        3. Topics should be broad enough for book search (e.g. "Science Fiction", "Python Programming").
+        """
+
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if not gemini_key: return
+
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}",
+            headers={"Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"response_mime_type": "application/json"}
+            },
+            timeout=10
+        )
+        
+        if response.ok:
+            data = response.json()
+            text_resp = data['candidates'][0]['content']['parts'][0]['text']
+            suggestions = json.loads(text_resp)
+            
+            # 3. تحديث التفضيلات
+            # نحذف التفضيلات القديمة التي تم استنتاجها آلياً (يمكننا تمييزها بوزن معين أو إضافة حقل source مستقبلاً)
+            # حالياً سنقوم بالتحديث/الإضافة
+            
+            for item in suggestions:
+                topic = item.get("topic")
+                weight = item.get("weight", 1.0)
+                
+                if not topic: continue
+                
+                # البحث عن تفضيل موجود
+                pref = UserPreference.query.filter_by(user_id=user_id, topic=topic).first()
+                if pref:
+                    # تحديث الوزن (Max 5.0)
+                    pref.weight = min(5.0, (pref.weight + weight) / 2 + 1) # معادلة بسيطة
+                else:
+                    new_pref = UserPreference(user_id=user_id, topic=topic, weight=weight)
+                    db.session.add(new_pref)
+            
+            db.session.commit()
+            logger.info(f"[AI Analysis] Updated preferences for user {user_id}")
+
+    except Exception as e:
+        logger.error(f"[AI Analysis] Error: {e}")
+def get_discovery_picks(limit=10):
+    """
+    مختارات عشوائية متنوعة تظهر للمستخدم لإثراء تجربته.
+    """
+    from .utils import fetch_google_books
+    discovery_topics = ["Philosophy of Life", "Future History", "Minimalism", "Classic Adventures", "Scientific Mysteries"]
+    topic = random.choice(discovery_topics)
+    try:
+        gb_res = fetch_google_books(topic, max_results=limit)
+        items = gb_res[0] if isinstance(gb_res, tuple) else gb_res
+        books = []
+        for it in items or []:
+            vi = it.get("volumeInfo", {})
+            img = (vi.get("imageLinks") or {}).get("thumbnail")
+            if img:
+                if img.startswith("http://"): img = img.replace("http://", "https://")
+                if '&edge=curl' in img: img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
+            
+            books.append({
+                "id": it.get("id"),
+                "title": vi.get("title"),
+                "author": ", ".join(vi.get("authors", [])),
+                "cover": img,
+                "source": "Discovery",
+                "reason": f"✨ اكتشاف جديد: في مجال {topic}",
+                "rating": vi.get("averageRating")
+            })
+        return books
+    except:
+        return []
+
+def rerank_search_results(user_id, books):
+    """
+    إعادة ترتيب نتائج البحث بناءً على اهتمامات المستخدم.
+    """
+    if not user_id or not books: return books
+    
+    try:
+        from .models import UserPreference
+        prefs = UserPreference.query.filter_by(user_id=user_id).all()
+        if not prefs: return books
+        
+        pref_map = {p.topic.lower(): p.weight for p in prefs}
+        
+        def calculate_score(book):
+            score = 0.0
+            title = (book.get("title") or "").lower()
+            author = (book.get("author") or "").lower()
+            
+            for topic, weight in pref_map.items():
+                if topic in title: score += weight * 1.5
+                if topic in author: score += weight
+            
+            # احتفظ بالترتيب الأصلي كعامل ثانوي
+            return score
+            
+        # Re-sort books based on score
+        # Note: We use stable sort (sort books by score preserved original order for equal scores)
+        sorted_books = sorted(books, key=calculate_score, reverse=True)
+        return sorted_books
+    except Exception as e:
+        logger.error(f"[Reranking] Error: {e}")
+        return books
+
+
+# ------------------------------------------------------------------
+# NEW: Trending by Time Period
+# ------------------------------------------------------------------
+@cache.memoize(timeout=300)
+def get_trending_by_period(period='week', limit=12):
+    """
+    جلب الكتب الرائجة بناءً على فترة زمنية محددة.
+    
+    Args:
+        period: 'day', 'week', 'month', 'all'
+        limit: عدد النتائج
+    """
+    from datetime import datetime, timedelta
+    from .models import BookStatus, UserBookView
+    
+    try:
+        # تحديد الفترة الزمنية
+        now = datetime.utcnow()
+        if period == 'day':
+            start_date = now - timedelta(days=1)
+            period_label = "اليوم"
+        elif period == 'week':
+            start_date = now - timedelta(weeks=1)
+            period_label = "هذا الأسبوع"
+        elif period == 'month':
+            start_date = now - timedelta(days=30)
+            period_label = "هذا الشهر"
+        else:
+            start_date = None
+            period_label = "كل الأوقات"
+        
+        # جمع الكتب من BookStatus (favorites, finished)
+        query = db.session.query(
+            BookStatus.book_id,
+            func.count(BookStatus.id).label('count')
+        ).filter(
+            BookStatus.status.in_(['favorite', 'finished'])
+        )
+        
+        if start_date:
+            query = query.filter(BookStatus.created_at >= start_date)
+        
+        popular_books = query.group_by(BookStatus.book_id).order_by(
+            func.count(BookStatus.id).desc()
+        ).limit(limit * 2).all()
+        
+        books = []
+        seen_ids = set()
+        
+        for book_id, count in popular_books:
+            if len(books) >= limit:
+                break
+            book = Book.query.get(book_id)
+            if book and book.google_id not in seen_ids:
+                seen_ids.add(book.google_id)
+                books.append(_book_to_dict(
+                    book, 
+                    source="Trending",
+                    reason=f"🔥 رائج {period_label} ({count} قارئ)"
+                ))
+        
+        # إضافة من UserBookView إذا لم نحصل على كفاية
+        if len(books) < limit:
+            view_query = db.session.query(
+                UserBookView.book_id,
+                func.sum(UserBookView.view_count).label('views')
+            )
+            
+            if start_date:
+                view_query = view_query.filter(UserBookView.last_viewed_at >= start_date)
+            
+            popular_views = view_query.group_by(UserBookView.book_id).order_by(
+                func.sum(UserBookView.view_count).desc()
+            ).limit(limit).all()
+            
+            for book_id, views in popular_views:
+                if len(books) >= limit:
+                    break
+                book = Book.query.get(book_id)
+                if book and book.google_id not in seen_ids:
+                    seen_ids.add(book.google_id)
+                    books.append(_book_to_dict(
+                        book,
+                        source="Trending",
+                        reason=f"👀 الأكثر مشاهدة {period_label}"
+                    ))
+        
+        logger.info(f"[Trending] Found {len(books)} books for period '{period}'")
+        return books
+        
+    except Exception as e:
+        logger.error(f"[Trending by Period] Error: {e}")
+        return []
+
+
+# ------------------------------------------------------------------
+# NEW: "Because You Read X" Personalized Recommendations
+# ------------------------------------------------------------------
+@cache.memoize(timeout=300)
+def get_because_you_read(user_id, limit=12):
+    """
+    توصيات بناءً على كتاب قرأه المستخدم مؤخراً.
+    
+    Returns:
+        dict: {
+            'source_book': {...},  # الكتاب المرجع
+            'recommendations': [...]  # التوصيات
+        }
+    """
+    from .models import BookStatus
+    
+    if not user_id:
+        return {'source_book': None, 'recommendations': []}
+    
+    try:
+        # اختيار كتاب عشوائي من المكتبة (مفضل أو منتهي)
+        user_books = BookStatus.query.filter(
+            BookStatus.user_id == user_id,
+            BookStatus.status.in_(['favorite', 'finished'])
+        ).order_by(func.random()).limit(5).all()
+        
+        if not user_books:
+            return {'source_book': None, 'recommendations': []}
+        
+        # اختيار واحد عشوائياً
+        status_entry = random.choice(user_books)
+        source_book = Book.query.get(status_entry.book_id)
+        
+        if not source_book:
+            return {'source_book': None, 'recommendations': []}
+        
+        # جلب توصيات مشابهة
+        recs = get_hybrid_recommendations(user_id, source_book, limit=limit)
+        
+        # تحديث السبب ليذكر الكتاب المرجع
+        for rec in recs:
+            rec['reason'] = f"📖 لأنك قرأت: {source_book.title[:30]}..."
+        
+        source_dict = _book_to_dict(source_book, source="Reference")
+        
+        logger.info(f"[BecauseYouRead] Generated {len(recs)} recs based on '{source_book.title}'")
+        return {
+            'source_book': source_dict,
+            'recommendations': recs
+        }
+        
+    except Exception as e:
+        logger.error(f"[BecauseYouRead] Error: {e}")
+        return {'source_book': None, 'recommendations': []}
+
+
+# ------------------------------------------------------------------
+# NEW: Similar Users' Favorites
+# ------------------------------------------------------------------
+@cache.memoize(timeout=600)
+def get_similar_users_favorites(user_id, limit=12):
+    """
+    جلب الكتب المفضلة لدى مستخدمين لهم ذوق مشابه.
+    """
+    from .models import BookStatus
+    
+    if not user_id:
+        return []
+    
+    try:
+        # 1. جلب كتب المستخدم الحالي (favorites)
+        user_favorites = BookStatus.query.filter(
+            BookStatus.user_id == user_id,
+            BookStatus.status == 'favorite'
+        ).all()
+        
+        user_book_ids = {s.book_id for s in user_favorites}
+        
+        if not user_book_ids:
+            return []
+        
+        # 2. إيجاد مستخدمين آخرين لديهم نفس الكتب المفضلة
+        similar_users = db.session.query(
+            BookStatus.user_id,
+            func.count(BookStatus.id).label('overlap')
+        ).filter(
+            BookStatus.book_id.in_(user_book_ids),
+            BookStatus.status == 'favorite',
+            BookStatus.user_id != user_id
+        ).group_by(BookStatus.user_id).order_by(
+            func.count(BookStatus.id).desc()
+        ).limit(10).all()
+        
+        if not similar_users:
+            return []
+        
+        similar_user_ids = [u[0] for u in similar_users]
+        
+        # 3. جلب الكتب المفضلة لدى هؤلاء المستخدمين (التي لا يملكها المستخدم الحالي)
+        their_favorites = BookStatus.query.filter(
+            BookStatus.user_id.in_(similar_user_ids),
+            BookStatus.status == 'favorite',
+            ~BookStatus.book_id.in_(user_book_ids)
+        ).all()
+        
+        # عدّ التكرارات
+        from collections import Counter
+        book_counts = Counter(s.book_id for s in their_favorites)
+        top_book_ids = [bid for bid, _ in book_counts.most_common(limit)]
+        
+        books = []
+        for book_id in top_book_ids:
+            book = Book.query.get(book_id)
+            if book:
+                count = book_counts[book_id]
+                books.append(_book_to_dict(
+                    book,
+                    source="Similar Users",
+                    reason=f"❤️ أحبه {count} قارئ يشبهونك في الذوق"
+                ))
+        
+        logger.info(f"[SimilarUsers] Found {len(books)} favorites from similar users")
+        return books
+        
+    except Exception as e:
+        logger.error(f"[SimilarUsers] Error: {e}")
+        return []
+
+
+# ------------------------------------------------------------------
+# NEW (Phase 2): Hidden Gems
+# ------------------------------------------------------------------
+@cache.memoize(timeout=300)
+def get_hidden_gems(limit=12):
+    """
+    جلب الكتب التي لها تقييم عالٍ (>= 4.0) ولكن عدد مشاهدات منخفض.
+    """
+    from .models import UserRatingCF, UserBookView
+    
+    try:
+        # 1. تجميع التقييمات المحلية
+        high_rated_subquery = db.session.query(
+            UserRatingCF.google_id,
+            func.avg(UserRatingCF.rating).label('avg_rating'),
+            func.count(UserRatingCF.id).label('rating_count')
+        ).group_by(UserRatingCF.google_id).having(func.avg(UserRatingCF.rating) >= 4.0).subquery()
+        
+        # 2. ربط مع المشاهدات
+        # نريد كتباً بتقييم عالٍ ولكن مشاهدات قليلة (أقل من 50 مشاهدة مثلاً) أو معدومة
+        
+        # سنجلب الكتب المرشحة أولاً
+        candidates = db.session.query(
+            high_rated_subquery.c.google_id,
+            high_rated_subquery.c.avg_rating
+        ).all()
+        
+        results = []
+        for gid, rating in candidates:
+            if len(results) >= limit: break
+            
+            # التحقق من المشاهدات
+            # نجمع مشاهدات هذا الكتاب لكل المستخدمين
+            views_sum = db.session.query(func.sum(UserBookView.view_count))\
+                .filter(UserBookView.google_id == gid).scalar() or 0
+                
+            if views_sum < 50: # شرط "جوهرة مخفية"
+                # جلب تفاصيل الكتاب
+                # نحاول إيجاده في Book أولاً (إذا تم تخزينه)
+                book = Book.query.filter_by(google_id=gid).first()
+                if book:
+                    # تحويله
+                    book_dict = _book_to_dict(
+                        book, 
+                        source="Hidden Gem", 
+                        reason=f"💎 جوهرة مخفية (تقييم {rating:.1f}/5)"
+                    )
+                    results.append(book_dict)
+                else:
+                    # إذا لم يكن في Local DB، قد نحتاج لجلبه من API
+                    # في النسخة الحالية، نكتفي بالموجود محلياً لتفادي البطء
+                    pass
+
+        logger.info(f"[Hidden Gems] Found {len(results)} books")
+        return results
+        
+    except Exception as e:
+        logger.error(f"[Hidden Gems] Error: {e}")
+        return []
+
+
+# ------------------------------------------------------------------
+# NEW (Phase 2): Genre Explorer
+# ------------------------------------------------------------------
+def get_genre_explorer(user_id, limit=12):
+    """
+    اقتراح تصنيف جديد لم يستكشفه المستخدم من قبل.
+    """
+    if not user_id: return None
+    
+    try:
+        from .models import UserPreference
+        
+        # 1. معرفة اهتمامات المستخدم الحالية
+        user_prefs = UserPreference.query.filter_by(user_id=user_id).all()
+        known_topics = {p.topic.lower() for p in user_prefs}
+        
+        # قائمة تصنيفات واسعة (باللغة الإنجليزية للبحث)
+        ALL_GENRES = [
+            "History", "Science Fiction", "Philosophy", "Psychology", 
+            "Biography", "Business", "Art", "Travel", "Cooking", 
+            "Poetry", "Mystery", "Horror", "Health", "Science",
+            "Technology", "Religion", "Politics", "Self-Help"
+        ]
+        
+        # استبعاد المعروفة
+        new_genres = [g for g in ALL_GENRES if g.lower() not in known_topics]
+        
+        if not new_genres:
+            # إذا استكشف كل شيء، نختار عشوائياً
+            target_genre = random.choice(ALL_GENRES)
+        else:
+            target_genre = random.choice(new_genres)
+            
+        # 2. البحث عن كتب في هذا التصنيف
+        # نستخدم دالة fetch_google_books
+        books, _ = fetch_google_books(f"subject:{target_genre}", max_results=limit)
+        
+        results = []
+        for b in books:
+            vi = b.get("volumeInfo", {})
+            img = (vi.get("imageLinks") or {}).get("thumbnail", "")
+            if img.startswith("http://"): img = img.replace("http://", "https://")
+            
+            results.append({
+                "id": b.get("id"),
+                "title": vi.get("title"),
+                "author": ", ".join(vi.get("authors", [])),
+                "cover": img,
+                "rating": vi.get("averageRating"),
+                "source": "Genre Explorer",
+                "reason": f"🚀 اكتشف مجالاً جديداً: {target_genre}"
+            })
+            
+        return {
+            "genre": target_genre,
+            "books": results
+        }
+        
+    except Exception as e:
+        logger.error(f"[Genre Explorer] Error: {e}")
+        return None

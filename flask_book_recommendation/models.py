@@ -21,6 +21,15 @@ class Book(db.Model):
     description = db.Column(db.Text)
     cover_url = db.Column(db.String(1000))
     
+    # تفاصيل إضافية (تمت إضافتها حديثاً)
+    publisher = db.Column(db.String(255))
+    published_date = db.Column(db.String(50))
+    page_count = db.Column(db.Integer)
+    isbn = db.Column(db.String(20))
+    language = db.Column(db.String(10))
+    categories = db.Column(db.Text)  # JSON or comma-separated
+    notes = db.Column(db.Text)       # ملاحظات المستخدم الخاصة
+    
     # --- التعديل هنا: حذفنا unique=True ---
     google_id = db.Column(db.String(128), nullable=True, index=True)
     
@@ -133,6 +142,14 @@ class BookStatus(db.Model):
     # one of: favorite / later / finished
     status = db.Column(db.String(20), nullable=False, index=True)
 
+    # 🆕 تتبع تقدم القراءة
+    reading_progress = db.Column(db.Integer, default=0)  # نسبة مئوية 0-100
+    last_read_at = db.Column(db.DateTime, nullable=True)  # آخر وقت قراءة
+
+    # 🆕 تواريخ تتبع القراءة
+    started_at = db.Column(db.DateTime, nullable=True)   # تاريخ بدء القراءة
+    finished_at = db.Column(db.DateTime, nullable=True)  # تاريخ إتمام القراءة
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     __table_args__ = (
@@ -173,3 +190,66 @@ class BookReview(db.Model):
 
     def __repr__(self):
         return f"<BookReview user={self.user_id} rating={self.rating}>"
+
+class UserBookView(db.Model):
+    """
+    نموذج لتتبع مشاهدات الكتب من قبل المستخدمين.
+    يساعد في فهم سلوك المستخدم لتحسين التوصيات.
+    """
+    __tablename__ = "user_book_views"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    
+    # يمكن أن يكون الكتاب محلياً (book_id) أو من Google Books (google_id)
+    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=True, index=True)
+    google_id = db.Column(db.String(128), nullable=True, index=True)
+    
+    # عدد مرات المشاهدة
+    view_count = db.Column(db.Integer, default=1)
+    
+    # توقيت آخر مشاهدة
+    last_viewed_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
+
+    user = db.relationship("User", backref=db.backref("book_views", lazy="dynamic"))
+    book = db.relationship("Book", backref=db.backref("views", lazy="dynamic"))
+
+    __table_args__ = (
+        # فهرس مركب للبحث السريع عن مشاهدات مستخدم لكتاب معين
+        db.Index("idx_user_view_book", "user_id", "book_id"),
+        db.Index("idx_user_view_google", "user_id", "google_id"),
+    )
+
+    def __repr__(self):
+        return f"<UserBookView user={self.user_id} book={self.book_id or self.google_id} count={self.view_count}>"
+
+
+class BookQuote(db.Model):
+    """نموذج اقتباسات الكتب - يسمح للمستخدمين بحفظ اقتباسات من الكتب"""
+    __tablename__ = "book_quotes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # المستخدم الذي أضاف الاقتباس
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    user = db.relationship("User", backref=db.backref("quotes", lazy="dynamic"))
+    
+    # الكتاب (يمكن أن يكون book_id للمحلية أو google_id للخارجية)
+    book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=True, index=True)
+    google_id = db.Column(db.String(128), nullable=True, index=True)
+    book = db.relationship("Book", backref=db.backref("quotes", lazy="dynamic"))
+    
+    # نص الاقتباس ورقم الصفحة
+    quote_text = db.Column(db.Text, nullable=False)
+    page_number = db.Column(db.Integer, nullable=True)
+    
+    # التواريخ
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    __table_args__ = (
+        db.Index("idx_user_book_quote", "user_id", "book_id"),
+        db.Index("idx_user_google_quote", "user_id", "google_id"),
+    )
+
+    def __repr__(self):
+        return f"<BookQuote user={self.user_id} book={self.book_id or self.google_id}>"

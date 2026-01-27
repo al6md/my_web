@@ -10,7 +10,7 @@ from flask_jwt_extended import (
     get_jwt
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from ...extensions import db
+from ...extensions import db, csrf
 from ...models import User, UserPreference
 
 api_auth_bp = Blueprint('api_auth', __name__, url_prefix='/auth')
@@ -20,6 +20,7 @@ blacklisted_tokens = set()
 
 
 @api_auth_bp.route('/register', methods=['POST'])
+@csrf.exempt
 def register():
     """
     تسجيل مستخدم جديد
@@ -73,6 +74,7 @@ def register():
 
 
 @api_auth_bp.route('/login', methods=['POST'])
+@csrf.exempt
 def login():
     """
     تسجيل الدخول
@@ -128,6 +130,7 @@ def login():
 
 
 @api_auth_bp.route('/logout', methods=['POST'])
+@csrf.exempt
 @jwt_required()
 def logout():
     """

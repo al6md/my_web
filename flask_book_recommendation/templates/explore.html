@@ -2,194 +2,10 @@
 
 {% block title %}استكشف | ALHAM - توصيات ذكية{% endblock %}
 
+{% block head %}
+{% endblock %}
+
 {% block content %}
-<style>
-    /* Hero for Aurora */
-    .explore-hero {
-        padding: calc(var(--header-height) + 3rem) 0 4rem;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .explore-hero::before {
-        content: '';
-        position: absolute;
-        top: -20%;
-        right: -10%;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
-        border-radius: 50%;
-        animation: float 8s ease-in-out infinite;
-    }
-
-    .explore-hero::after {
-        content: '';
-        position: absolute;
-        bottom: -20%;
-        left: -10%;
-        width: 500px;
-        height: 500px;
-        background: radial-gradient(circle, rgba(244, 114, 182, 0.15) 0%, transparent 70%);
-        border-radius: 50%;
-        animation: float 8s ease-in-out infinite reverse;
-    }
-
-    /* Scroll Container */
-    .scroll-container {
-        display: flex;
-        gap: 1.25rem;
-        overflow-x: auto;
-        padding: 1rem 0;
-        scroll-behavior: smooth;
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-    .scroll-container::-webkit-scrollbar {
-        display: none;
-    }
-
-    .scroll-container .book-card {
-        flex: 0 0 160px;
-        min-width: 160px;
-    }
-
-    .book-card {
-        position: relative;
-        transition: all var(--transition-base);
-    }
-
-    .book-card:hover {
-        transform: translateY(-8px);
-    }
-
-    .book-cover-wrap {
-        position: relative;
-        aspect-ratio: 2/3;
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        margin-bottom: 0.75rem;
-        transition: all var(--transition-base);
-    }
-
-    .book-card:hover .book-cover-wrap {
-        box-shadow: var(--glow-primary);
-    }
-
-    .book-cover-wrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform var(--transition-smooth);
-    }
-
-    .book-card:hover .book-cover-wrap img {
-        transform: scale(1.05);
-    }
-
-    /* Make book-card clickable */
-    .book-card a {
-        cursor: pointer;
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Navigation Buttons */
-    .scroll-nav-btn {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 10;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-subtle);
-        box-shadow: var(--shadow-lg);
-        pointer-events: auto;
-    }
-
-    .scroll-nav-btn:hover {
-        box-shadow: var(--glow-primary);
-    }
-
-    /* Scroll wrapper to contain nav buttons */
-    .scroll-wrapper {
-        position: relative;
-        padding: 0 25px;
-    }
-
-    /* Mood Section Styles */
-    .mood-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        cursor: pointer;
-        transition: all var(--transition-base);
-        text-align: center;
-        flex: 1;
-        min-width: 120px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .mood-card:hover {
-        transform: translateY(-5px);
-        border-color: var(--accent-cyan);
-        box-shadow: var(--glow-cyan);
-    }
-
-    .mood-card.active {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(244, 114, 182, 0.1));
-        border-color: var(--accent-cyan);
-        box-shadow: var(--glow-primary);
-    }
-
-    .mood-emoji {
-        font-size: 2.5rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .mood-title {
-        font-weight: 600;
-        color: var(--text-primary);
-    }
-
-    #mood-results-section {
-        display: none;
-        margin-top: 3rem;
-        padding-top: 3rem;
-        border-top: 1px solid var(--border-subtle);
-    }
-
-    .loading-shimmer {
-        background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-    }
-
-    @keyframes shimmer {
-        0% {
-            background-position: 200% 0;
-        }
-
-        100% {
-            background-position: -200% 0;
-        }
-    }
-
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
-</style>
-
 <!-- Hero Section -->
 <section class="explore-hero">
     <div class="container" style="position: relative; z-index: 10;">
@@ -197,21 +13,22 @@
             <!-- Badge -->
             <div class="animate-on-scroll fade-up">
                 <span class="d-inline-flex align-center gap-2"
-                    style="padding: 0.5rem 1rem; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); color: var(--accent-cyan); font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem;">
+                    style="padding: 0.625rem 1.25rem; background: var(--bg-surface-1); border: 1px solid var(--primary-200); border-radius: var(--radius-full); color: var(--primary-600); font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);">
                     <i class="ph-fill ph-sparkle"></i>
                     مدعوم بالذكاء الاصطناعي
                 </span>
             </div>
 
             <!-- Title -->
-            <h1 class="animate-on-scroll fade-up delay-1" style="margin-bottom: 1.5rem;">
+            <h1 class="animate-on-scroll fade-up delay-1" style="margin-bottom: 1.5rem; font-weight: 800;">
                 اكتشف كتابك القادم
                 <br>
                 <span class="text-gradient">بذكاء وإلهام</span>
             </h1>
 
             <!-- Subtitle -->
-            <p class="animate-on-scroll fade-up delay-2 text-secondary mb-5" style="font-size: 1.2rem;">
+            <p class="animate-on-scroll fade-up delay-2 text-muted mb-5"
+                style="font-size: 1.2rem; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.8;">
                 خوارزميات ذكية تحلل اهتماماتك وتقترح لك الكتب المثالية من آلاف العناوين المتاحة
             </p>
 
@@ -230,46 +47,49 @@
             </div>
 
             <!-- Stats -->
-            <div class="d-flex justify-center gap-5 flex-wrap mt-5 animate-on-scroll fade-up">
-                <div class="text-center">
+            <div class="d-flex justify-center gap-5 flex-wrap mt-5 animate-on-scroll fade-up text-center">
+                <div>
                     <div class="text-gradient fw-bold" style="font-size: 2rem;">+١٠٠٠</div>
                     <div class="text-muted small">كتاب متاح</div>
                 </div>
-                <div class="text-center">
+                <div>
                     <div class="text-gradient fw-bold" style="font-size: 2rem;">AI</div>
                     <div class="text-muted small">توصيات ذكية</div>
                 </div>
-                <div class="text-center">
+                <div>
                     <div class="text-gradient fw-bold" style="font-size: 2rem;">٢٤/٧</div>
                     <div class="text-muted small">متاح دائماً</div>
                 </div>
             </div>
         </div>
 
-        <!-- Featured Book Card -->
+        <!-- Featured Book Card (Hero) -->
         {% if hero %}
-        <div class="d-flex justify-center mt-5 animate-on-scroll scale-in">
-            <div class="card d-flex flex-wrap align-center gap-4 p-4" style="max-width: 700px;">
-                <div style="width: 120px; flex-shrink: 0;">
-                    <img src="{{ hero.cover }}" alt="{{ hero.title }}" class="float" loading="lazy"
-                        style="width: 100%; border-radius: var(--radius-md); box-shadow: var(--shadow-lg);"
-                        onerror="this.src='https://via.placeholder.com/120x180/1a1a2e/667eea?text=📚'">
+        <div class="d-flex justify-center mt-5 animate-on-scroll fade-up delay-2" style="margin-top: 4rem !important;">
+            <div class="hero-featured-card">
+                <div class="hero-book-cover">
+                    <img src="{{ hero.cover }}" alt="{{ hero.title }}" loading="lazy"
+                        onerror="this.src='https://via.placeholder.com/140x210/1e293b/6366f1?text=Book'">
                 </div>
-                <div class="flex-grow-1" style="text-align: right;">
+                <div style="text-align: right; flex: 1;">
                     <span class="d-inline-flex align-center gap-1 fw-bold small mb-2" style="color: var(--warning);">
                         <i class="ph-fill ph-star-four"></i>
                         ترشيح اليوم لك
                     </span>
-                    <h3 class="mb-2" style="font-size: 1.25rem; color: var(--text-primary);">{{ hero.title }}</h3>
-                    <div class="d-flex align-center gap-2 mb-3">
+                    <h3 class="mb-2" style="font-size: 1.5rem; color: var(--text-main);">{{ hero.title }}</h3>
+                    <div class="d-flex align-center gap-3 mb-3 flex-wrap">
                         <p class="text-muted mb-0">{{ hero.author }}</p>
                         {% if hero.rating %}
-                        <div class="d-flex align-center gap-1" style="font-size: 0.85rem; color: var(--warning);">
+                        <div class="d-flex align-center gap-1"
+                            style="padding: 0.25rem 0.75rem; background: rgba(245, 158, 11, 0.15); border-radius: var(--radius-full); font-size: 0.85rem; color: var(--warning);">
                             <i class="ph-fill ph-star"></i>
                             <span class="fw-bold">{{ hero.rating }}</span>
                         </div>
                         {% endif %}
                     </div>
+                    <p class="text-muted small mb-4 line-clamp-2">
+                        {{ hero.desc or 'كتاب مميز يستحق القراءة.' }}
+                    </p>
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="{{ url_for('public.book_detail', gid=hero.id) }}" class="btn btn-primary btn-sm">
                             <i class="ph ph-eye"></i>
@@ -289,19 +109,17 @@
 <!-- Recommendation Tabs Section -->
 <section class="container py-5">
     <div class="text-center mb-5 animate-on-scroll fade-up">
-        <h2 class="mb-3" style="color: var(--text-primary);">كيف تريد أن <span class="text-gradient">نلهمك اليوم</span>؟
-        </h2>
+        <h2 class="mb-3">كيف تريد أن <span class="text-gradient">نلهمك اليوم</span>؟</h2>
 
         <!-- Tabs -->
-        <div class="d-inline-flex p-1 rounded-pill mt-3"
-            style="background: var(--bg-surface); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);">
-            <button class="btn btn-sm rounded-pill px-4 py-2 tab-btn active" data-tab="mood"
-                style="transition: all 0.3s;">
-                <i class="ph ph-smiley me-1"></i> حسب مزاجي
+        <div class="tab-container mt-4">
+            <button class="tab-btn active" data-tab="mood">
+                <i class="ph ph-smiley"></i>
+                حسب مزاجي
             </button>
-            <button class="btn btn-sm rounded-pill px-4 py-2 tab-btn" data-tab="book"
-                style="transition: all 0.3s; color: var(--text-secondary);">
-                <i class="ph ph-heart me-1"></i> آخر كتاب أعجبني
+            <button class="tab-btn" data-tab="book">
+                <i class="ph ph-book-open"></i>
+                آخر كتاب أعجبني
             </button>
         </div>
     </div>
@@ -338,25 +156,26 @@
 
     <!-- Book Tab Content -->
     <div id="tab-book" class="tab-content animate-on-scroll fade-up" style="display: none;">
-        <div class="card mx-auto p-5 text-center" style="max-width: 600px; border-top: 4px solid var(--primary);">
-            <h4 class="mb-4" style="color: var(--text-primary);">ما هو الكتاب الذي قرأته مؤخراً ونال إعجابك؟</h4>
+        <div class="glass-card mx-auto p-5 text-center" style="max-width: 600px;">
+            <div class="d-flex align-center justify-center mb-4"
+                style="width: 70px; height: 70px; background: var(--gradient-primary); border-radius: var(--radius-lg); color: white; font-size: 1.75rem; margin: 0 auto; box-shadow: var(--glow-primary);">
+                <i class="ph-fill ph-book-bookmark"></i>
+            </div>
+            <h4 class="mb-4">ما هو الكتاب الذي قرأته مؤخراً ونال إعجابك؟</h4>
 
             <form id="book-rec-form" onsubmit="handleBookRec(event)">
-                <div class="input-group mb-4">
-                    <span class="input-group-text bg-transparent border-end-0">
-                        <i class="ph ph-book-open text-primary"></i>
-                    </span>
-                    <input type="text" id="rec-book-input" class="form-control form-control-lg border-start-0"
-                        placeholder="مثال: شيفرة دافنشي..." required>
+                <div class="d-flex gap-2 mb-4">
+                    <input type="text" id="rec-book-input" class="form-control" placeholder="مثال: شيفرة دافنشي..."
+                        required style="font-size: 1.1rem;">
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                <button type="submit" class="btn btn-primary w-100 mb-3">
                     <i class="ph ph-sparkle"></i>
-                    اقترح لي!
+                    اقترح لي كتباً مشابهة
                 </button>
 
                 <p class="text-muted small mb-0">
-                    <i class="ph-fill ph-info text-primary"></i>
+                    <i class="ph-fill ph-info" style="color: var(--primary-500);"></i>
                     سيقوم الذكاء الاصطناعي بتحليل الكتاب واقتراح كتب بنفس الأسلوب.
                 </p>
             </form>
@@ -365,44 +184,57 @@
 
     <!-- Results Section (Shared) -->
     <div id="mood-results-section" class="animate-on-scroll fade-up" style="display: none;">
-        <div class="d-flex justify-between align-center mb-4 flex-wrap gap-3">
+        <div class="section-header">
             <div class="d-flex align-center gap-3">
-                <div id="mood-icon-indicator" class="btn-icon"
-                    style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; cursor: default; box-shadow: var(--glow-primary);">
+                <div id="mood-icon-indicator" class="section-icon primary">
                     <i class="ph ph-sparkle"></i>
                 </div>
-                <h2 id="mood-result-title" class="mb-0" style="font-size: 1.5rem; color: var(--text-primary);">كتب
-                    مقترحة لك</h2>
+                <div>
+                    <h2 id="mood-result-title" class="mb-0" style="font-size: 1.5rem;">كتب مقترحة لك</h2>
+                </div>
             </div>
         </div>
 
-        <div class="scroll-wrapper" style="position: relative;">
-            <button class="btn-icon scroll-nav-btn" onclick="scrollSection(this, 1)" style="right: -20px;">
+        <div class="scroll-wrapper">
+            <button class="scroll-nav-btn" onclick="scrollSection(this, 1)" style="right: -20px;">
                 <i class="ph ph-caret-right"></i>
             </button>
-
             <div id="mood-books-container" class="scroll-container">
-                <!-- Books will be injected here -->
+                <!-- Books injected via JS -->
             </div>
-
-            <button class="btn-icon scroll-nav-btn" onclick="scrollSection(this, -1)" style="left: -20px;">
+            <button class="scroll-nav-btn" onclick="scrollSection(this, -1)" style="left: -20px;">
                 <i class="ph ph-caret-left"></i>
             </button>
         </div>
     </div>
 </section>
 
-<!-- Book Sections -->
+<!-- Book Sections (Algorithms) -->
 <div class="container py-5" id="explore-sections">
     {% for section in sections %}
     <div class="mb-5 animate-on-scroll fade-up">
-        <div class="d-flex justify-between align-center mb-4 flex-wrap gap-3">
+        <div class="section-header">
             <div class="d-flex align-center gap-3">
-                <div class="btn-icon"
-                    style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; cursor: default; box-shadow: var(--glow-primary);">
+                {% set icon_class = 'primary' %}
+                {% if section.style == 'gold' %}
+                {% set icon_class = 'gold' %}
+                {% elif section.style == 'danger' %}
+                {% set icon_class = 'rose' %}
+                {% elif section.style == 'success' %}
+                {% set icon_class = 'teal' %}
+                {% elif section.style == 'accent' %}
+                {% set icon_class = 'purple' %}
+                {% endif %}
+
+                <div class="section-icon {{ icon_class }}">
                     <i class="ph ph-{{ section.icon if section.icon else 'sparkle' }}"></i>
                 </div>
-                <h2 class="mb-0" style="font-size: 1.5rem; color: var(--text-primary);">{{ section.title }}</h2>
+                <div>
+                    <h2 class="mb-0" style="font-size: 1.4rem;">{{ section.title }}</h2>
+                    {% if section.subtitle %}
+                    <p class="text-muted small mb-0 mt-1">{{ section.subtitle }}</p>
+                    {% endif %}
+                </div>
             </div>
             <a href="{{ url_for('public.list_books', q=section.query) }}" class="btn btn-ghost btn-sm">
                 عرض الكل
@@ -410,63 +242,71 @@
             </a>
         </div>
 
-        <div class="scroll-wrapper" style="position: relative;">
-            <button class="btn-icon scroll-nav-btn" onclick="scrollSection(this, 1)" style="right: -20px;">
+        <div class="scroll-wrapper">
+            <button class="scroll-nav-btn" onclick="scrollSection(this, 1)" style="right: -20px;">
                 <i class="ph ph-caret-right"></i>
             </button>
 
             <div class="scroll-container">
                 {% for book in section.books %}
-                {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
-
                 <div class="book-card">
                     <a href="{{ url_for('public.book_detail', gid=book.id) }}"
                         style="display: block; text-decoration: none;">
-                        <div class="book-cover-wrap">
+                        <div class="book-cover-wrap" data-title="{{ book.title }}"
+                            data-author="{{ book.author or '' }}">
                             {% if book.cover %}
                             <img src="{{ book.cover }}" alt="{{ book.title }}" loading="lazy"
-                                onerror="handleCoverError(this, '{{ ai_cover | e }}')">
-                            <div class="dynamic-cover d-flex align-center justify-center text-center p-2"
-                                style="display: none; width: 100%; height: 100%; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
-                                <span class="small fw-bold">{{ book.title }}</span>
-                            </div>
+                                onerror="handleCoverError(this)">
                             {% else %}
-                            <img src="{{ ai_cover }}" alt="{{ book.title }}" loading="lazy"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="dynamic-cover d-flex align-center justify-center text-center p-2"
-                                style="display: none; width: 100%; height: 100%; position: absolute; inset: 0; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
-                                <span class="small fw-bold">{{ book.title }}</span>
+                            <div class="book-placeholder" data-loading="true">
+                                <i class="ph ph-book-open"></i>
+                                <span>جاري التحميل...</span>
                             </div>
                             {% endif %}
                         </div>
-                        <div>
-                            <h5 class="text-truncate mb-1" style="font-size: 0.95rem; color: var(--text-primary);">
-                                {{ book.title }}
-                            </h5>
-                            <div class="book-rating mb-1" data-book-id="{{ book.id }}" style="font-size: 0.8rem;">
+                        <div class="mt-2" style="padding: 0.25rem;">
+                            <h5 class="text-truncate mb-1" style="font-size: 0.95rem; color: var(--text-main);">{{
+                                book.title }}</h5>
+                            <div class="d-flex align-center justify-between">
+                                <p class="small text-muted mb-0 text-truncate" style="max-width: 100px;">{{ book.author
+                                    or 'غير معروف' }}</p>
                                 {% if book.rating %}
-                                <div class="d-flex align-center gap-1" title="تقييم Google Books"
+                                <div class="d-flex align-center gap-1"
                                     style="font-size: 0.75rem; color: var(--warning);">
                                     <i class="ph-fill ph-star"></i>
                                     <span class="fw-bold">{{ book.rating }}</span>
                                 </div>
-                                {% else %}
-                                <div class="d-flex align-center gap-1 rating-placeholder"
-                                    onclick="fetchRatingOnClick(this, '{{ book.id }}')" title="انقر لتحميل التقييم"
-                                    style="color: var(--text-muted); font-size: 0.75rem; cursor: pointer;">
-                                    <i class="ph ph-star"></i>
-                                    <span>لا يوجد تقييم</span>
-                                </div>
                                 {% endif %}
                             </div>
-                            <p class="small text-muted mb-0 text-truncate">{{ book.author or 'غير معروف' }}</p>
+                            {% if book.reason %}
+                            <p class="mt-1" style="font-size: 0.75rem; color: var(--primary-500); font-weight: 500;">
+                                <i class="ph-fill ph-check-circle"></i> {{ book.reason }}
+                            </p>
+                            {% endif %}
+                            {% if book.owner_name %}
+                            <div class="d-flex align-center gap-2 mt-1" style="font-size: 0.7rem;">
+                                <span class="d-flex align-center gap-1" style="color: var(--success);">
+                                    <i class="ph-fill ph-user"></i>
+                                    {{ book.owner_name }}
+                                </span>
+                                {% if book.owner_id %}
+                                <a href="{{ url_for('public.user_library', user_id=book.owner_id) }}"
+                                    class="d-flex align-center gap-1"
+                                    style="color: var(--primary-400); text-decoration: none;"
+                                    onclick="event.stopPropagation();">
+                                    <i class="ph ph-books"></i>
+                                    المكتبة
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                     </a>
                 </div>
                 {% endfor %}
             </div>
 
-            <button class="btn-icon scroll-nav-btn" onclick="scrollSection(this, -1)" style="left: -20px;">
+            <button class="scroll-nav-btn" onclick="scrollSection(this, -1)" style="left: -20px;">
                 <i class="ph ph-caret-left"></i>
             </button>
         </div>
@@ -474,15 +314,12 @@
     {% else %}
     <!-- Empty State -->
     <div class="text-center py-5 animate-on-scroll fade-up">
-        <div class="card mx-auto" style="max-width: 500px;">
-            <div class="mb-4">
-                <div class="btn-icon mx-auto mb-3"
-                    style="width: 80px; height: 80px; font-size: 2rem; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; box-shadow: var(--glow-primary);">
-                    <i class="ph ph-brain"></i>
-                </div>
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="ph ph-brain"></i>
             </div>
-            <h3 class="mb-2" style="color: var(--text-primary);">جاري تدريب الخوارزميات...</h3>
-            <p class="text-secondary mb-4">ابحث في المكتبة لتبدأ رحلة التوصيات الذكية</p>
+            <h3 class="mb-2">جاري تدريب الخوارزميات...</h3>
+            <p class="text-muted mb-4">ابحث في المكتبة لتبدأ رحلة التوصيات الذكية وتساعدنا في فهم ذوقك.</p>
             <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
                 <i class="ph ph-magnifying-glass"></i>
                 استكشف المكتبة
@@ -492,61 +329,92 @@
     {% endfor %}
 </div>
 
-<!-- Features Section -->
-<section class="container py-5 mb-5"
-    style="background: var(--bg-surface); border-radius: var(--radius-xl); padding: 3rem; border: 1px solid var(--border-subtle);">
-    <div class="text-center mb-5 animate-on-scroll fade-up">
-        <h2 class="mb-3" style="color: var(--text-primary);">لماذا <span class="text-gradient">مكتبة الإلهام</span>؟
-        </h2>
-        <p class="text-secondary">تجربة قراءة فريدة مع أحدث تقنيات الذكاء الاصطناعي</p>
-    </div>
+<style>
+    .book-placeholder {
+        width: 100%;
+        height: 100%;
+        min-height: 200px;
+        background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        text-align: center;
+    }
 
-    <div class="grid-3 text-center">
-        <div class="animate-on-scroll fade-up delay-1">
-            <div class="btn-icon mx-auto mb-4"
-                style="width: 70px; height: 70px; font-size: 1.75rem; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; box-shadow: var(--glow-primary);">
-                <i class="ph-fill ph-brain"></i>
-            </div>
-            <h4 class="mb-2" style="color: var(--text-primary);">توصيات ذكية</h4>
-            <p class="text-secondary mb-0 small">خوارزميات AI متقدمة تحلل ذوقك وتقترح كتب مناسبة</p>
-        </div>
+    .book-placeholder i {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.8;
+    }
 
-        <div class="animate-on-scroll fade-up delay-2">
-            <div class="btn-icon mx-auto mb-4"
-                style="width: 70px; height: 70px; font-size: 1.75rem; background: linear-gradient(135deg, var(--accent-magenta), var(--accent-purple)); color: white; box-shadow: var(--glow-magenta);">
-                <i class="ph-fill ph-chats-circle"></i>
-            </div>
-            <h4 class="mb-2" style="color: var(--text-primary);">تحدث مع الكتب</h4>
-            <p class="text-secondary mb-0 small">اسأل أي سؤال عن محتوى الكتاب واحصل على إجابات فورية</p>
-        </div>
-
-        <div class="animate-on-scroll fade-up delay-3">
-            <div class="btn-icon mx-auto mb-4"
-                style="width: 70px; height: 70px; font-size: 1.75rem; background: linear-gradient(135deg, var(--accent-cyan), var(--primary)); color: white; box-shadow: var(--glow-cyan);">
-                <i class="ph-fill ph-sparkle"></i>
-            </div>
-            <h4 class="mb-2" style="color: var(--text-primary);">ملخصات AI</h4>
-            <p class="text-secondary mb-0 small">ملخصات ذكية لكل كتاب لمساعدتك في اتخاذ القرار</p>
-        </div>
-    </div>
-</section>
+    .book-placeholder span {
+        font-size: 0.75rem;
+        opacity: 0.9;
+        font-weight: 600;
+    }
+</style>
 
 <script>
     // --- Helper Functions ---
-    // Handle cover error
-    function handleCoverError(img, aiCoverUrl) {
+    function handleCoverError(img) {
         img.onerror = null;
-        const aiImg = new Image();
-        aiImg.onload = function () { img.src = aiCoverUrl; };
-        aiImg.onerror = function () {
-            img.style.display = 'none';
-            const dynamicCover = img.nextElementSibling;
-            if (dynamicCover) dynamicCover.style.display = 'flex';
-        };
-        aiImg.src = aiCoverUrl;
+        img.style.display = 'none';
+        const wrapper = img.closest('.book-cover-wrap');
+        if (wrapper) {
+            // Try to load from smart-cover API
+            const title = wrapper.dataset.title || '';
+            const author = wrapper.dataset.author || '';
+            if (title) {
+                loadSmartCover(wrapper, title, author);
+            } else {
+                showPlaceholder(wrapper);
+            }
+        }
     }
 
-    // Scroll Horizontal Sections
+    function showPlaceholder(wrapper) {
+        wrapper.innerHTML = `
+            <div class="book-placeholder">
+                <i class="ph ph-book-open"></i>
+                <span>📚</span>
+            </div>
+        `;
+    }
+
+    async function loadSmartCover(wrapper, title, author) {
+        try {
+            const url = `/public/api/smart-cover?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success && data.cover_url) {
+                wrapper.innerHTML = `<img src="${data.cover_url}" alt="${title}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=book-placeholder><i class=ph ph-book-open></i><span>📚</span></div>'">`;
+            } else {
+                showPlaceholder(wrapper);
+            }
+        } catch (e) {
+            showPlaceholder(wrapper);
+        }
+    }
+
+    // Load covers for books without images on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.book-placeholder[data-loading="true"]').forEach(placeholder => {
+            const wrapper = placeholder.closest('.book-cover-wrap');
+            if (wrapper) {
+                const title = wrapper.dataset.title || '';
+                const author = wrapper.dataset.author || '';
+                if (title) {
+                    loadSmartCover(wrapper, title, author);
+                }
+            }
+        });
+    });
+
     function scrollSection(btn, direction) {
         const wrapper = btn.closest('.scroll-wrapper');
         const container = wrapper.querySelector('.scroll-container');
@@ -554,34 +422,38 @@
         container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
     }
 
-    // Render Books Helper
     function renderBooks(books, container) {
         container.innerHTML = books.map(book => {
             const aiCover = `/public/generate_book_cover?title=${encodeURIComponent(book.title)}&author=${encodeURIComponent(book.author || '')}`;
+            const coverSrc = book.cover || aiCover;
+
             return `
-            <div class="book-card">
+            <div class="book-card animate-on-scroll fade-up">
                 <a href="/public/books/${book.id}" style="display: block; text-decoration: none;">
                     <div class="book-cover-wrap">
-                        <img src="${book.cover || aiCover}" alt="${book.title}" loading="lazy" 
-                                onerror="this.src='${aiCover}'">
+                        <img src="${coverSrc}" alt="${book.title}" loading="lazy" 
+                                onerror="handleCoverError(this, '${aiCover}')">
                     </div>
-                    <div>
-                        <h5 class="text-truncate mb-1" style="font-size: 0.95rem; color: var(--text-primary);">${book.title}</h5>
-                        <div class="book-rating mb-1" data-book-id="${book.id}" style="font-size: 0.8rem;">
-                            ${book.rating ? `
+                    <div class="mt-2" style="padding: 0.25rem;">
+                        <h5 class="text-truncate mb-1" style="font-size: 0.95rem; color: var(--text-main);">${book.title}</h5>
+                         <div class="d-flex align-center justify-between">
+                             <p class="small text-muted mb-0 text-truncate" style="max-width: 100px;">${book.author || 'غير معروف'}</p>
+                             ${book.rating ? `
                                 <div class="d-flex align-center gap-1" style="font-size: 0.75rem; color: var(--warning);">
                                     <i class="ph-fill ph-star"></i>
                                     <span class="fw-bold">${book.rating}</span>
                                 </div>
                             ` : ''}
                         </div>
-                        <p class="small text-muted mb-0 text-truncate">${book.author || 'غير معروف'}</p>
-                        ${book.reason ? `<p class="mt-1" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 600;">${book.reason}</p>` : ''}
+                        ${book.reason ? `<p class="mt-1" style="font-size: 0.75rem; color: var(--primary-500); font-weight: 500;"><i class="ph-fill ph-sparkle"></i> ${book.reason}</p>` : ''}
                     </div>
                 </a>
             </div>
             `;
         }).join('');
+
+        const elements = container.querySelectorAll('.animate-on-scroll');
+        setTimeout(() => elements.forEach(el => el.classList.add('is-visible')), 100);
     }
 
     // --- Tab Switching Logic ---
@@ -593,415 +465,87 @@
     const moodResultTitle = document.getElementById('mood-result-title');
     const moodIconIndicator = document.getElementById('mood-icon-indicator');
 
-    function updateTabStyles() {
-        tabBtns.forEach(b => {
-            if (b.classList.contains('active')) {
-                b.style.background = 'var(--primary)';
-                b.style.color = 'white';
-                b.style.borderColor = 'var(--primary)';
-            } else {
-                b.style.background = 'transparent';
-                b.style.color = 'var(--text-secondary)';
-                b.style.borderColor = 'transparent';
-            }
-        });
-    }
-
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            updateTabStyles();
 
             const tab = btn.dataset.tab;
             if (tab === 'mood') {
                 moodContent.style.display = 'block';
                 bookContent.style.display = 'none';
-                resultsSection.style.display = 'none';
             } else {
                 moodContent.style.display = 'none';
                 bookContent.style.display = 'block';
-                resultsSection.style.display = 'none';
             }
         });
     });
-    // Init Tabs
-    updateTabStyles();
 
-
-    // --- Mood Selection Logic ---
-    const moodCards = document.querySelectorAll('.mood-card');
-    moodCards.forEach(card => {
+    // --- Mood Selection ---
+    document.querySelectorAll('.mood-card').forEach(card => {
         card.addEventListener('click', async () => {
-            const mood = card.dataset.mood;
-            const moodTitle = card.querySelector('.mood-title').innerText;
-            const moodEmoji = card.querySelector('.mood-emoji').innerText;
-
-            moodCards.forEach(c => c.classList.remove('active'));
+            // UI Feedback
+            document.querySelectorAll('.mood-card').forEach(c => c.classList.remove('active'));
             card.classList.add('active');
 
+            const mood = card.dataset.mood;
+            const moodName = card.querySelector('.mood-title').textContent;
+
+            // Show loading in results
             resultsSection.style.display = 'block';
-            moodResultTitle.innerText = `كتب تناسب مزاجك الـ ${moodTitle}`;
-            moodIconIndicator.innerHTML = `<span style="font-size: 1.2rem;">${moodEmoji}</span>`;
-
-            // Loading
-            moodBooksContainer.innerHTML = Array(6).fill(0).map(() => `
-                <div class="book-card">
-                    <div class="book-cover-wrap loading-shimmer" style="height: 240px;"></div>
-                    <div class="loading-shimmer" style="height: 20px; width: 80%; margin-bottom: 5px;"></div>
+            moodResultTitle.textContent = `نختار لك كتباً للمزاج: ${moodName}`;
+            moodBooksContainer.innerHTML = `
+                <div class="d-flex justify-center align-center w-100 py-5">
+                    <div class="loading-shimmer" style="width: 200px; height: 10px;"></div>
                 </div>
-            `).join('');
+            `;
 
-            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
             try {
-                const res = await fetch(`/api/books/mood-recommendations?mood=${mood}`);
-                const data = await res.json();
-                if (data.success && data.books.length > 0) {
-                    renderBooks(data.books, moodBooksContainer);
-                } else {
-                    moodBooksContainer.innerHTML = '<p class="text-center py-4 w-100 text-muted">لم نجد كتباً تناسب هذا المزاج حالياً..</p>';
-                }
-            } catch (err) {
-                console.error(err);
-                moodBooksContainer.innerHTML = '<p class="text-center py-4 w-100 text-danger">حدث خطأ أثناء جلب التوصيات.</p>';
+                // Fetch recommended books
+                const response = await fetch(`/public/api/recommend_by_mood?mood=${mood}`);
+                const data = await response.json();
+
+                renderBooks(data.books, moodBooksContainer);
+            } catch (error) {
+                console.error('Error fetching mood recommendations:', error);
+                moodBooksContainer.innerHTML = '<p class="text-center text-muted">عذراً، حدث خطأ أثناء تحميل التوصيات.</p>';
             }
         });
     });
 
-    // --- Book Recommendation Logic ---
-    async function handleBookRec(e) {
-        e.preventDefault();
+    // --- Book Recommendation (Because You Read) ---
+    async function handleBookRec(event) {
+        event.preventDefault();
         const input = document.getElementById('rec-book-input');
-        const title = input.value.trim();
-        if (!title) return;
+        const bookName = input.value.trim();
+        if (!bookName) return;
 
+        // Show loading
         resultsSection.style.display = 'block';
-        moodResultTitle.innerText = `لأنك أحببت "${title}"`;
-        moodIconIndicator.innerHTML = '<i class="ph-fill ph-heart"></i>';
-
-        // Loading
-        moodBooksContainer.innerHTML = Array(6).fill(0).map(() => `
-             <div class="book-card">
-                <div class="book-cover-wrap loading-shimmer" style="height: 240px;"></div>
-                <div class="loading-shimmer" style="height: 20px; width: 80%; margin-bottom: 5px;"></div>
+        moodResultTitle.textContent = `كتب مشابهة لـ: ${bookName}`;
+        moodBooksContainer.innerHTML = `
+            <div class="d-flex justify-center align-center w-100 py-5">
+                <div class="loading-shimmer" style="width: 200px; height: 10px;"></div>
             </div>
-        `).join('');
-
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        `;
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         try {
-            const res = await fetch(`/api/books/recommend-by-book?title=${encodeURIComponent(title)}`);
-            const data = await res.json();
+            const response = await fetch(`/public/api/recommend_similar_book?title=${encodeURIComponent(bookName)}`);
+            const data = await response.json();
 
-            if (data.success && data.books.length > 0) {
+            if (data.books && data.books.length > 0) {
                 renderBooks(data.books, moodBooksContainer);
             } else {
-                moodBooksContainer.innerHTML = '<p class="text-center w-100 text-muted py-4">لم نجد كتباً مشابهة تماماً، حاول استخدام عنوان آخر مشهور.</p>';
+                moodBooksContainer.innerHTML = '<p class="text-center text-muted">لم نتمكن من العثور على توصيات دقيقة لهذا الكتاب. جرب كتاباً آخر مشهور.</p>';
             }
-        } catch (err) {
-            console.error(err);
-            moodBooksContainer.innerHTML = '<p class="text-center w-100 text-danger py-4">حدث خطأ في الاتصال.</p>';
+        } catch (error) {
+            console.error('Error:', error);
+            moodBooksContainer.innerHTML = '<p class="text-center text-muted">عذراً، حدث خطأ أثناء الاتصال.</p>';
         }
     }
-
-    // Fetch rating on click (for books without rating from backend)
-    async function fetchRatingOnClick(element, bookId) {
-        // Show loading state
-        element.innerHTML = `
-            <i class="ph ph-spinner" style="animation: spin 1s linear infinite;"></i>
-            <span>جاري التحميل...</span>
-        `;
-        element.style.cursor = 'wait';
-
-        // Get book title from nearest parent for OpenLibrary search fallback
-        const bookCard = element.closest('.book-card');
-        const bookTitle = bookCard ? bookCard.querySelector('h5')?.textContent?.trim() : null;
-
-        try {
-            // 1. Try local reviews first (works for ALL sources)
-            const res = await fetch(`/public/books/${bookId}/reviews`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.count > 0) {
-                    element.innerHTML = `
-                        <div class="d-flex align-center gap-1" title="تقييم المستخدمين" style="font-size: 0.75rem; color: var(--warning);">
-                            <i class="ph-fill ph-star"></i>
-                            <span class="fw-bold">${data.average_rating}</span>
-                            <span class="text-muted" style="font-size: 0.7rem;">· ${data.count} تقييم</span>
-                        </div>
-                    `;
-                    element.style.cursor = 'default';
-                    element.onclick = null;
-                    return;
-                }
-            }
-
-            // 2. Handle OpenLibrary books (ol_*)
-            if (bookId.startsWith('ol_')) {
-                const cleanId = bookId.replace('ol_', '');
-                const olRes = await fetch(`https://openlibrary.org/works/${cleanId}/ratings.json`);
-                if (olRes.ok) {
-                    const olData = await olRes.json();
-                    if (olData.summary && olData.summary.average) {
-                        showRating(element, olData.summary.average.toFixed(1), 'OpenLibrary');
-                        return;
-                    }
-                }
-            }
-
-            // 3. Handle IT Bookstore books (ISBN-based) - search OpenLibrary by ISBN
-            else if (/^\d{10,13}$/.test(bookId)) {
-                const olRes = await fetch(`https://openlibrary.org/isbn/${bookId}/ratings.json`);
-                if (olRes.ok) {
-                    const olData = await olRes.json();
-                    if (olData.summary && olData.summary.average) {
-                        showRating(element, olData.summary.average.toFixed(1), 'OpenLibrary');
-                        return;
-                    }
-                }
-            }
-
-            // 4. Handle Google Books (alphanumeric IDs)
-            else if (!bookId.startsWith('local_') && !bookId.startsWith('gut_') && !bookId.startsWith('arch_')) {
-                const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`);
-                if (gRes.ok) {
-                    const data = await gRes.json();
-                    if (data.volumeInfo && data.volumeInfo.averageRating) {
-                        showRating(element, data.volumeInfo.averageRating, 'Google Books');
-                        return;
-                    }
-
-                    // Try OpenLibrary via ISBN
-                    if (data.volumeInfo && data.volumeInfo.industryIdentifiers) {
-                        const isbns = data.volumeInfo.industryIdentifiers;
-                        const isbnObj = isbns.find(i => i.type === 'ISBN_13') || isbns.find(i => i.type === 'ISBN_10');
-                        if (isbnObj && isbnObj.identifier) {
-                            const olRes = await fetch(`https://openlibrary.org/isbn/${isbnObj.identifier}/ratings.json`);
-                            if (olRes.ok) {
-                                const olData = await olRes.json();
-                                if (olData.summary && olData.summary.average) {
-                                    showRating(element, olData.summary.average.toFixed(1), 'OpenLibrary');
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 5. Fallback: Search OpenLibrary by book title (for Archive, Gutenberg, etc.)
-            if (bookTitle) {
-                const searchRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(bookTitle)}&limit=1`);
-                if (searchRes.ok) {
-                    const searchData = await searchRes.json();
-                    if (searchData.docs && searchData.docs.length > 0) {
-                        const doc = searchData.docs[0];
-                        // Check if search result has ratings_average
-                        if (doc.ratings_average) {
-                            showRating(element, doc.ratings_average.toFixed(1), 'OpenLibrary');
-                            return;
-                        }
-                        // Try to get work key and fetch ratings
-                        if (doc.key) {
-                            const workKey = doc.key.replace('/works/', '');
-                            const ratingsRes = await fetch(`https://openlibrary.org/works/${workKey}/ratings.json`);
-                            if (ratingsRes.ok) {
-                                const ratingsData = await ratingsRes.json();
-                                if (ratingsData.summary && ratingsData.summary.average) {
-                                    showRating(element, ratingsData.summary.average.toFixed(1), 'OpenLibrary');
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // No rating found
-            showNoRating(element);
-
-        } catch (err) {
-            console.error('Rating fetch error:', err);
-            showNoRating(element);
-        }
-    }
-
-    // Helper function to display rating
-    function showRating(element, rating, source) {
-        element.innerHTML = `
-            <div class="d-flex align-center gap-1" title="تقييم ${source}" style="font-size: 0.75rem; color: var(--warning);">
-                <i class="ph-fill ph-star"></i>
-                <span class="fw-bold">${rating}</span>
-            </div>
-        `;
-        element.style.cursor = 'default';
-        element.onclick = null;
-    }
-
-    // Helper function to display no rating
-    function showNoRating(element) {
-        element.innerHTML = `
-            <div class="d-flex align-center gap-1" style="color: var(--text-muted); font-size: 0.75rem;">
-                <i class="ph ph-star"></i>
-                <span>لا يوجد تقييم</span>
-            </div>
-        `;
-        element.style.cursor = 'default';
-        element.onclick = null;
-    }
-
-    // Load Ratings (Existing)
-    async function loadUserRatings() {
-        const ratingElements = document.querySelectorAll('.book-rating[data-book-id]');
-        for (const el of ratingElements) {
-            const bookId = el.dataset.bookId;
-            if (!bookId) continue;
-
-            // Trying to find google ID if stored in dataset
-            // For explore page, book.id comes from db or API. If from Google API, it is the google ID.
-            const googleId = bookId;
-
-            try {
-                // 1. Try Local Reviews first
-                const res = await fetch(`/public/books/${bookId}/reviews`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.count > 0) {
-                        el.innerHTML = `
-                            <div class="d-flex align-center gap-1" title="تقييم المستخدمين" style="font-size: 0.75rem; color: var(--warning);">
-                                <i class="ph-fill ph-star"></i>
-                                <span class="fw-bold">${data.average_rating}</span>
-                                <span class="text-muted" style="font-size: 0.7rem;">· ${data.count} تقييم</span>
-                            </div>
-                        `;
-                        continue;
-                    }
-                }
-
-                // 2. Fallback to Google Rating or OpenLibrary Rating
-                if (el.querySelector('.rating-placeholder')) {
-                    if (googleId.startsWith('ol_')) {
-                        await fetchOpenLibRating(googleId, el);
-                    } else {
-                        await fetchGoogleRating(googleId, el);
-                    }
-                }
-
-            } catch (e) {
-                if (el.querySelector('.rating-placeholder')) {
-                    if (googleId.startsWith('ol_')) {
-                        await fetchOpenLibRating(googleId, el);
-                    } else {
-                        await fetchGoogleRating(googleId, el);
-                    }
-                }
-            }
-        }
-    }
-
-    // Fetch rating from Google Books API
-    async function fetchGoogleRating(googleId, container) {
-        // Only fetch if it looks like a Google ID
-        if (googleId.startsWith('local_') || googleId.startsWith('OL') || googleId.startsWith('ol_')) return;
-
-        try {
-            const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${googleId}`);
-            if (res.ok) {
-                const data = await res.json();
-
-                // 1. Try Google Rating
-                if (data.volumeInfo && data.volumeInfo.averageRating) {
-                    const rating = data.volumeInfo.averageRating;
-                    const count = data.volumeInfo.ratingsCount || 0;
-
-                    container.innerHTML = `
-                      <div class="d-flex align-center gap-1" title="تقييم Google Books" style="font-size: 0.75rem; color: var(--warning);">
-                        <i class="ph-fill ph-star"></i>
-                        <span class="fw-bold">${rating}</span>
-                        <span class="text-muted" style="font-size: 0.7rem;">/ 5</span>
-                      </div>
-                    `;
-                    return;
-                }
-
-                // 2. Fallback: Try OpenLibrary if ISBN exists
-                if (data.volumeInfo && data.volumeInfo.industryIdentifiers) {
-                    const isbns = data.volumeInfo.industryIdentifiers;
-                    const isbnObj = isbns.find(i => i.type === 'ISBN_13') || isbns.find(i => i.type === 'ISBN_10');
-                    if (isbnObj && isbnObj.identifier) {
-                        await fetchOpenLibRatingByISBN(isbnObj.identifier, container);
-                        return;
-                    }
-                }
-            }
-        } catch (err) { }
-
-        renderNoRating(container);
-    }
-
-    // Fetch from OpenLibrary using ISBN
-    async function fetchOpenLibRatingByISBN(isbn, container) {
-        try {
-            const res = await fetch(`https://openlibrary.org/isbn/${isbn}/ratings.json`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.summary && data.summary.average) {
-                    const rating = data.summary.average.toFixed(1);
-                    const count = data.summary.count || 0;
-
-                    container.innerHTML = `
-                      <div class="d-flex align-center gap-1" title="تقييم OpenLibrary" style="font-size: 0.75rem; color: var(--warning);">
-                        <i class="ph-fill ph-star"></i>
-                        <span class="fw-bold">${rating}</span>
-                        <span class="text-muted" style="font-size: 0.7rem;">/ 5</span>
-                      </div>
-                    `;
-                    return;
-                }
-            }
-        } catch (err) { }
-        renderNoRating(container);
-    }
-
-    // Fetch rating from OpenLibrary API (using Work ID)
-    async function fetchOpenLibRating(olId, container) {
-        const cleanId = olId.replace('ol_', '');
-        try {
-            const res = await fetch(`https://openlibrary.org/works/${cleanId}/ratings.json`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.summary && data.summary.average) {
-                    const rating = data.summary.average.toFixed(1);
-                    const count = data.summary.count || 0;
-
-                    container.innerHTML = `
-                      <div class="d-flex align-center gap-1" title="تقييم OpenLibrary" style="font-size: 0.75rem; color: var(--warning);">
-                        <i class="ph-fill ph-star"></i>
-                        <span class="fw-bold">${rating}</span>
-                        <span class="text-muted" style="font-size: 0.7rem;">/ 5</span>
-                      </div>
-                    `;
-                    return;
-                }
-            }
-        } catch (err) { }
-
-        renderNoRating(container);
-    }
-
-    function renderNoRating(container) {
-        const placeholder = container.querySelector('.rating-placeholder');
-        if (placeholder) {
-            container.innerHTML = `
-                <div class="d-flex align-center gap-1" style="color: var(--text-muted); font-size: 0.75rem;">
-                    <i class="ph ph-star"></i>
-                    <span>لا يوجد تقييم</span>
-                </div>
-            `;
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', loadUserRatings);
 </script>
 {% endblock %}

@@ -289,30 +289,48 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const items = document.querySelectorAll('.interest-item');
+        const checkboxes = document.querySelectorAll('.interest-checkbox');
         const countDisplay = document.getElementById('selectedCount');
         const startBtn = document.getElementById('startBtn');
         const progressBar = document.getElementById('progressBar');
         const minRequired = 3;
 
-        items.forEach(item => {
-            item.addEventListener('click', function () {
-                const checkbox = this.querySelector('.interest-checkbox');
-                checkbox.checked = !checkbox.checked;
-                this.classList.toggle('selected', checkbox.checked);
+        // Function to update UI based on current state
+        function updateUI() {
+            const checkedBoxes = document.querySelectorAll('.interest-checkbox:checked');
+            const count = checkedBoxes.length;
 
-                // Update counter
-                const count = document.querySelectorAll('.interest-checkbox:checked').length;
-                countDisplay.textContent = count;
+            // Update counter
+            countDisplay.textContent = count;
 
-                // Update progress bar
-                const progress = Math.min((count / minRequired) * 100, 100);
-                progressBar.style.width = progress + '%';
+            // Update progress bar
+            const progress = Math.min((count / minRequired) * 100, 100);
+            progressBar.style.width = progress + '%';
 
-                // Enable/disable button
-                startBtn.disabled = count < minRequired;
+            // Enable/disable button
+            startBtn.disabled = count < minRequired;
+        }
+
+        checkboxes.forEach(checkbox => {
+            // Listen for CHANGE event on the checkbox itself
+            checkbox.addEventListener('change', function () {
+                const parentLabel = this.closest('.interest-item');
+                if (this.checked) {
+                    parentLabel.classList.add('selected');
+                } else {
+                    parentLabel.classList.remove('selected');
+                }
+                updateUI();
             });
+
+            // Initialize state (in case browser remembers selection on reload)
+            if (checkbox.checked) {
+                checkbox.closest('.interest-item').classList.add('selected');
+            }
         });
+
+        // Initial UI update
+        updateUI();
     });
 </script>
 {% endblock %}

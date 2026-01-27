@@ -262,3 +262,124 @@ def get_stats():
             'reviews': reviews_count
         }
     })
+
+
+@api_user_bp.route('/book-view', methods=['POST'])
+@jwt_required()
+def log_book_view():
+    """
+    تسجيل مشاهدة كتاب لتحسين التوصيات
+    POST /api/user/book-view
+    Body: {"google_id": "abc123", "source": "google", "book_info": {...}}
+    """
+    from ...models import UserBookView, Book
+    from ...utils import update_user_preferences_from_behavior
+    
+    user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+    
+    google_id = data.get('google_id')
+    book_id = data.get('book_id')
+    source = data.get('source', 'unknown')
+    book_info = data.get('book_info', {})
+    
+    if not google_id and not book_id:
+        return jsonify({
+            'success': False,
+            'error': 'يجب تحديد google_id أو book_id'
+        }), 400
+    
+    try:
+        # البحث عن مشاهدة سابقة
+        if google_id:
+            view = UserBookView.query.filter_by(user_id=user_id, google_id=google_id).first()
+        else:
+            view = UserBookView.query.filter_by(user_id=user_id, book_id=book_id).first()
+        
+        if view:
+            # تحديث عدد المشاهدات
+            view.view_count = (view.view_count or 0) + 1
+        else:
+            # إنشاء مشاهدة جديدة
+            view = UserBookView(
+                user_id=user_id,
+                google_id=google_id,
+                book_id=book_id,
+                view_count=1
+            )
+            db.session.add(view)
+        
+        db.session.commit()
+        
+        # تحديث التفضيلات تلقائياً
+        if book_info:
+            try:
+                update_user_preferences_from_behavior(user_id, "view", book_info)
+            except Exception as e:
+                print(f"[BookView] Preferences update error: {e}")
+        
+        return jsonify({
+            'success': True,
+            'view_count': view.view_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[BookView] Error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'حدث خطأ في تسجيل المشاهدة'
+        }), 500
+
+
+@api_user_bp.route('/behavior-profile', methods=['GET'])
+@jwt_required()
+def get_behavior_profile():
+    """
+    ملف سلوك المستخدم - تحليل الاهتمامات والأنماط
+    GET /api/user/behavior-profile
+    """
+    from ...utils import get_user_behavior_profile
+    
+    user_id = int(get_jwt_identity())
+    
+    try:
+        profile = get_user_behavior_profile(user_id)
+        return jsonify({
+            'success': True,
+            'profile': profile
+        })
+    except Exception as e:
+        print(f"[BehaviorProfile API] Error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'حدث خطأ في تحليل السلوك'
+        }), 500
+
+
+@api_user_bp.route('/ai-recommendations', methods=['GET'])
+@jwt_required()
+def get_ai_recommendations():
+    """
+    توصيات مخصصة بالذكاء الاصطناعي
+    GET /api/user/ai-recommendations?limit=12
+    """
+    from ...utils import get_ai_personalized_recommendations
+    
+    user_id = int(get_jwt_identity())
+    limit = request.args.get('limit', 12, type=int)
+    
+    try:
+        result = get_ai_personalized_recommendations(user_id, limit=limit)
+        return jsonify({
+            'success': result.get('success', False),
+            'books': result.get('books', []),
+            'ai_analysis': result.get('ai_analysis', ''),
+            'suggested_topics': result.get('suggested_topics', [])
+        })
+    except Exception as e:
+        print(f"[AI Recommendations API] Error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'حدث خطأ في جلب التوصيات'
+        }), 500

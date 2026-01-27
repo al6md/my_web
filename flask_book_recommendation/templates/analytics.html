@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}رادار القراءة | إحصائياتك{% endblock %}
+
+{% block content %}
+<style>
+    .analytics-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        height: 100%;
+        transition: transform 0.3s ease;
+    }
+
+    .analytics-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    /* Mood Badge */
+    .mood-badge {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        border-radius: var(--radius-full);
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-top: 1rem;
+    }
+
+    .mood-focused {
+        background: rgba(102, 126, 234, 0.1);
+        color: var(--primary);
+        border: 1px solid var(--primary);
+    }
+
+    .mood-dreamy {
+        background: rgba(244, 114, 182, 0.1);
+        color: var(--accent-pink);
+        border: 1px solid var(--accent-pink);
+    }
+
+    .mood-curious {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--accent-cyan);
+        border: 1px solid var(--accent-cyan);
+    }
+
+    .mood-adventurous {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+        border: 1px solid var(--warning);
+    }
+</style>
+
+<div class="container py-5">
+    <!-- Header -->
+    <div class="text-center mb-5 animate-on-scroll fade-up">
+        <h1 class="mb-3">رادار القراءة <span class="text-gradient">الشخصي</span></h1>
+        <p class="text-secondary text-lg">تحليل ذكي لعاداتك في القراءة يساعدك على اكتشاف نفسك</p>
+    </div>
+
+    <!-- AI Smart Tip -->
+    {% if stats.ai_tips %}
+    <div class="card p-4 mb-5 animate-on-scroll scale-in" style="border-left: 5px solid var(--accent-purple);">
+        <div class="d-flex gap-3 align-items-start">
+            <div class="btn-icon" style="background: var(--accent-purple); color: white; flex-shrink: 0;">
+                <i class="ph-fill ph-lightbulb"></i>
+            </div>
+            <div>
+                <h4 class="mb-2">نصيحة ذكية لك:</h4>
+                <p class="mb-0 text-lg">{{ stats.ai_tips[0] }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Key Stats -->
+    <div class="grid-4 mb-5">
+        <div class="analytics-card text-center animate-on-scroll fade-up delay-1">
+            <div class="stat-value">{{ stats.total_books }}</div>
+            <div class="text-muted mt-2">كتاب في مكتبتك</div>
+        </div>
+        <div class="analytics-card text-center animate-on-scroll fade-up delay-2">
+            <div class="stat-value">{{ stats.finished_books }}</div>
+            <div class="text-muted mt-2">كتاب أنهيته</div>
+        </div>
+        <div class="analytics-card text-center animate-on-scroll fade-up delay-3">
+            <div class="stat-value">{{ stats.average_rating }}</div>
+            <div class="text-muted mt-2">متوسط تقييمك</div>
+        </div>
+        <div class="analytics-card text-center animate-on-scroll fade-up delay-4">
+            <div class="stat-value">{{ stats.current_mood }}</div>
+            <div class="text-muted mt-2">مزاجك الغالب</div>
+            <div class="mood-badge mood-{{ stats.current_mood | lower }}">
+                {% if stats.current_mood == 'Focused' %}🧐 مركز
+                {% elif stats.current_mood == 'Dreamy' %}✨ حالم
+                {% elif stats.current_mood == 'Curious' %}🔍 فضولي
+                {% else %}🚀 مغامر{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-4 mb-5">
+        <!-- Genre Distribution -->
+        <div class="col-md-6 animate-on-scroll fade-up">
+            <div class="card p-4 h-100">
+                <h3 class="mb-4 text-center">توزيع اهتماماتك</h3>
+                <div class="chart-container">
+                    <canvas id="genreChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Activity -->
+        <div class="col-md-6 animate-on-scroll fade-up delay-1">
+            <div class="card p-4 h-100">
+                <h3 class="mb-4 text-center">نشاط القراءة (آخر 6 أشهر)</h3>
+                <div class="chart-container">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Data from Backend
+    const genres = {{ stats.top_genres | tojson }};
+    const activity = {{ stats.monthly_activity | tojson }};
+
+    // 1. Genre Chart (Doughnut)
+    const genreCtx = document.getElementById('genreChart').getContext('2d');
+    new Chart(genreCtx, {
+        type: 'doughnut',
+        data: {
+            labels: genres.map(g => g.name),
+            datasets: [{
+                data: genres.map(g => g.count),
+                backgroundColor: [
+                    '#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // 2. Activity Chart (Line)
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: activity.map(a => a.month),
+            datasets: [{
+                label: 'كتب تم إنهاؤها',
+                data: activity.map(a => a.count),
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}

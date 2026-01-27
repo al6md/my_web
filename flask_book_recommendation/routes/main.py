@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from ..extensions import db, csrf
 # في أعلى ملف main.py
-from ..models import Book, UserRatingCF, BookEmbedding, UserPreference, SearchHistory # <--- أضفنا آخر اثنين
+from ..models import Book, UserRatingCF, BookEmbedding, UserPreference, SearchHistory, BookReview, BookQuote
 # استيراد الدوال الموحدة
 from ..utils import (
     fetch_openlib_detail, fetch_gutenberg_detail, fetch_archive_detail, fetch_itbook_detail, fetch_book_details,
@@ -23,6 +23,7 @@ from ..utils import (
     translate_to_english_with_gemini,
     chat_with_ai  # مساعد AI للكتب
 )
+from ..recommender import log_user_view
 
 
 
@@ -154,22 +155,74 @@ def books():
 
     # ============ القوائم الثلاث (المفضلة وغيرها) ============
     statuses = BookStatus.query.filter_by(user_id=current_user.id).all()
+    
+    # 🆕 إنشاء قاموس للحالات والتقدم
+    status_map = {}
+    for s in statuses:
+        status_map[s.book_id] = {
+            'status': s.status,
+            'progress': s.reading_progress or 0,
+            'last_read': s.last_read_at,
+            'created_at': s.created_at
+        }
 
     favorites_ids = [s.book_id for s in statuses if s.status == "favorite"]
     later_ids     = [s.book_id for s in statuses if s.status == "later"]
     finished_ids  = [s.book_id for s in statuses if s.status == "finished"]
+    reading_ids   = [s.book_id for s in statuses if s.status == "reading"]
+    on_hold_ids   = [s.book_id for s in statuses if s.status == "on_hold"]
+    dropped_ids   = [s.book_id for s in statuses if s.status == "dropped"]
 
-    # هنا أيضاً يجب التأكد أننا نعرض الكتب حتى لو بحثنا
-    # لكن عادة القوائم الجانبية (المفضلة..) لا تتأثر ببحث الجدول الرئيسي
     favorites = Book.query.filter(Book.id.in_(favorites_ids)).all() if favorites_ids else []
     later     = Book.query.filter(Book.id.in_(later_ids)).all()     if later_ids else []
     finished  = Book.query.filter(Book.id.in_(finished_ids)).all()  if finished_ids else []
+    reading_books = Book.query.filter(Book.id.in_(reading_ids)).all() if reading_ids else []
+    on_hold_books = Book.query.filter(Book.id.in_(on_hold_ids)).all() if on_hold_ids else []
+    dropped_books = Book.query.filter(Book.id.in_(dropped_ids)).all() if dropped_ids else []
+    
+    # 🆕 إضافة بيانات الحالة والتقدم لكل كتاب
+    for book in my_books:
+        book_status_data = status_map.get(book.id, {})
+        book.status = book_status_data.get('status')
+        book.reading_progress = book_status_data.get('progress', 0)
+        book.last_read_at = book_status_data.get('last_read')
+        book.status_created_at = book_status_data.get('created_at')
+        
+        # حساب وقت القراءة المقدر (بافتراض 2 دقيقة لكل صفحة)
+        if book.page_count:
+            book.estimated_read_time = book.page_count * 2  # دقائق
+        else:
+            book.estimated_read_time = None
+    
+    # 🆕 إحصائيات القراءة الشاملة
+    reading_stats = {
+        'total_books': len(my_books),
+        'finished_count': len(finished_ids),
+        'favorite_count': len(favorites_ids),
+        'later_count': len(later_ids),
+        'reading_count': len(reading_ids),
+        'on_hold_count': len(on_hold_ids),
+        'dropped_count': len(dropped_ids),
+        'in_progress': len([b for b in my_books if status_map.get(b.id, {}).get('progress', 0) > 0 and status_map.get(b.id, {}).get('progress', 0) < 100]),
+        'total_pages': sum(b.page_count or 0 for b in my_books),
+        'avg_progress': round(sum(status_map.get(b.id, {}).get('progress', 0) for b in my_books) / max(len(my_books), 1), 1)
+    }
+    
+    # 🆕 جمع التصنيفات الفريدة للفلترة
+    all_categories = set()
+    all_languages = set()
+    for book in my_books:
+        if book.categories:
+            for cat in book.categories.split(','):
+                all_categories.add(cat.strip())
+        if book.language:
+            all_languages.add(book.language)
 
     # ============ توصيات الذكاء الاصطناعي ============
     recs = get_cf_recommendations(current_user.id, top_n=8)
     
     # ============ المكتبات الخمس ============
-    from ..recommender import get_all_libraries_showcase
+    from ..recommender import get_all_libraries_showcase, get_hybrid_recommendations, get_author_books # Added imports
     library_sections = get_all_libraries_showcase(query="programming books", limit_per_source=8)
 
     return render_template(
@@ -178,8 +231,14 @@ def books():
         favorites=favorites,
         later=later,
         finished=finished,
+        reading_books=reading_books,
+        on_hold_books=on_hold_books,
+        dropped_books=dropped_books,
         cf_recs=recs,
-        library_sections=library_sections
+        library_sections=library_sections,
+        reading_stats=reading_stats,
+        all_categories=sorted(all_categories),
+        all_languages=sorted(all_languages)
     )
 
 
@@ -187,6 +246,12 @@ def books():
 @login_required
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
+
+    # 🆕 تسجيل المشاهدة (Implicit Tracking)
+    try:
+        log_user_view(current_user.id, book)
+    except Exception as e:
+        logger.error(f"Failed to log view: {e}")
     
     # التحقق من الملكية (اختياري - حسب منطق التطبيق)
     # هنا نسمح برؤية أي كتاب، لكن التعديل مقيد
@@ -198,54 +263,92 @@ def book_detail(book_id):
     book_status_obj = BookStatus.query.filter_by(user_id=current_user.id, book_id=book.id).first()
     book_status = book_status_obj.status if book_status_obj else None
     
-    # جلب كتب مشابهة إذا كان كتاب Google
-    similar = []
-    if book.google_id:
-        try:
-            # استيراد هنا لتجنب Circular Import إذا كان موجوداً
-            from ..utils import fetch_google_books
-            # نبحث عن كتب مشابهة بالعنوان
-            similar_items, _ = fetch_google_books(book.title, max_results=12)
-            # تنظيف البيانات
-            for item in similar_items:
-                if item['id'] == book.google_id: continue
-                vi = item.get('volumeInfo', {})
-                imgs = vi.get('imageLinks', {})
-                cov = imgs.get('thumbnail') or imgs.get('smallThumbnail')
-                if cov and cov.startswith('http://'): cov = cov.replace('http://', 'https://')
-                
-                similar.append({
-                    'id': item['id'],
-                    'title': vi.get('title'),
-                    'author': ", ".join(vi.get('authors', [])),
-                    'cover': cov,
-                    'source': 'google',
-                    'rating': vi.get('averageRating'),
-                    'ratings_count': vi.get('ratingsCount')
-                })
-        except Exception as e:
-            logger.error(f"Error fetching similar books: {e}")
+    # ---------------------------------------------------------
+    # 🆕 التوصيات الهجينة (Hybrid Recommendations)
+    # ---------------------------------------------------------
+    from ..recommender import get_hybrid_recommendations, get_author_books
 
-    # جلب تفاصيل إضافية إذا كان كتاب Google (سنة الإصدار والتقييم العالمي)
+    # 1. كتب قد تعجبك (You Might Also Like)
+    similar = get_hybrid_recommendations(current_user.id, book, limit=12)
+
+    # 2. المزيد لنفس المؤلف (More by this Author)
+    author_books = []
+    if book.author and book.author != "Unknown":
+         author_books = get_author_books(book.author, exclude_book_id=book.google_id, limit=8)
+
+    # جلب تفاصيل إضافية وتحديث قاعدة البيانات إذا كانت ناقصة
     if book.google_id:
         try:
             from ..utils import fetch_book_details
             details = fetch_book_details(book.google_id)
             if details:
-                # نستخدم setattr لإضافة الخصائص مؤقتاً للكائن ليتم عرضها في القالب
-                setattr(book, 'rating', details.get('rating'))
-                setattr(book, 'publishedDate', details.get('publishedDate'))
-                setattr(book, 'pageCount', details.get('pageCount'))
+                # تحديث قاعدة البيانات
+                changed = False
+                if not book.published_date and details.get('publishedDate'):
+                    book.published_date = details.get('publishedDate')
+                    changed = True
+                if not book.page_count and details.get('pageCount'):
+                    book.page_count = details.get('pageCount')
+                    changed = True
+                if not book.categories and details.get('categories'):
+                    # Convert list to string safely
+                    cats = details.get('categories')
+                    if isinstance(cats, list):
+                        book.categories = ", ".join(cats)
+                    else:
+                        book.categories = str(cats)
+                    changed = True
+                if not book.publisher and details.get('publisher'):
+                    book.publisher = details.get('publisher')
+                    changed = True
+                if not book.language and details.get('language'):
+                    book.language = details.get('language')
+                    changed = True
+                
+                # تخزين التقييم العالمي للعرض فقط (غير موجود في جدول الكتب)
+                setattr(book, 'global_rating', details.get('rating'))
+                setattr(book, 'global_ratings_count', details.get('ratingsCount'))
+
+                if changed:
+                    db.session.commit()
         except Exception as e:
             logger.error(f"Error fetching extra book details: {e}")
+
+    # جلب المراجعات (للكتب المشتركة عبر Google ID)
+    reviews = []
+    if book.google_id:
+        reviews = BookReview.query.filter_by(google_id=book.google_id).order_by(BookReview.created_at.desc()).limit(20).all()
+
+    # جلب اقتباسات المستخدم
+    quotes = BookQuote.query.filter_by(user_id=current_user.id, book_id=book.id).order_by(BookQuote.created_at.desc()).all()
 
     return render_template(
         "book_detail.html",
         book=book,
         user_rating=user_rating,
         book_status=book_status,
-        similar=similar
+        status_entry=book_status_obj,
+        similar=similar,
+        author_books=author_books,
+        reviews=reviews,
+        quotes=quotes
     )
+
+
+@main_bp.post("/books/<int:book_id>/notes")
+@login_required
+def save_notes(book_id):
+    book = Book.query.get_or_404(book_id)
+    if book.owner_id != current_user.id:
+        # Check if user owns logic or return 403
+        flash("غير مصرح لك بتعديل ملاحظات هذا الكتاب", "danger")
+        return redirect(url_for("main.book_detail", book_id=book.id))
+    
+    notes = request.form.get("notes")
+    book.notes = notes
+    db.session.commit()
+    flash("تم حفظ الملاحظات بنجاح ✨", "success")
+    return redirect(url_for("main.book_detail", book_id=book.id))
 
 
 @main_bp.route("/books/<int:book_id>/read")
@@ -288,12 +391,17 @@ def book_read(book_id):
 @csrf.exempt
 @login_required
 def set_book_status(book_id, status):
-    if status not in ['favorite', 'later', 'finished']:
+    allowed_statuses = ['favorite', 'later', 'finished', 'reading', 'on_hold', 'dropped']
+    if status not in allowed_statuses:
         flash("حالة غير معروفة", "danger")
         return redirect(url_for("main.book_detail", book_id=book_id))
         
     book = Book.query.get_or_404(book_id)
     
+    # التقاط الوقت الحالي
+    from datetime import datetime
+    now = datetime.utcnow()
+
     # التحقق هل الحالة موجودة مسبقاً
     s = BookStatus.query.filter_by(user_id=current_user.id, book_id=book.id).first()
     
@@ -303,18 +411,81 @@ def set_book_status(book_id, status):
             db.session.delete(s)
             flash(f"تمت إزالة الكتاب من قائمة {status}", "info")
         else:
+            # منطق تحديث التواريخ
+            if status == 'reading' and s.status != 'reading':
+                if not s.started_at:
+                    s.started_at = now
+            
+            if status == 'finished' and s.status != 'finished':
+                s.finished_at = now
+                s.reading_progress = 100
+            elif status != 'finished' and s.status == 'finished':
+                s.finished_at = None # إعادة تعيين إذا خرج من المنتهية
+                if status == 'reading':
+                     s.reading_progress = s.reading_progress # Keep as is or reset? Usually keep.
+                else:
+                     pass
+
             # تغيير الحالة
             s.status = status
             flash(f"تم تغيير الحالة إلى {status}", "success")
     else:
         # إنشاء حالة جديدة
         s = BookStatus(user_id=current_user.id, book_id=book.id, status=status)
+        
+        if status == 'reading':
+            s.started_at = now
+        elif status == 'finished':
+            s.finished_at = now
+            s.reading_progress = 100
+            
         db.session.add(s)
         flash(f"تمت الإضافة إلى قائمة {status}", "success")
         
     db.session.commit()
-    return redirect(url_for("main.books"))
+    # return redirect(url_for("main.books"))
+    return redirect(request.referrer or url_for("main.books"))
 
+
+@main_bp.post("/books/<int:book_id>/progress")
+@csrf.exempt
+@login_required
+def update_reading_progress(book_id):
+    """تحديث نسبة تقدم القراءة للكتاب"""
+    from flask import jsonify
+    from datetime import datetime
+    
+    book = Book.query.get_or_404(book_id)
+    
+    try:
+        progress = int(request.form.get("progress") or request.json.get("progress", 0))
+    except (ValueError, TypeError):
+        progress = 0
+    
+    # ضمان أن النسبة بين 0 و 100
+    progress = max(0, min(100, progress))
+    
+    # البحث عن حالة الكتاب أو إنشاء واحدة جديدة
+    status = BookStatus.query.filter_by(user_id=current_user.id, book_id=book.id).first()
+    
+    if not status:
+        status = BookStatus(user_id=current_user.id, book_id=book.id, status="later")
+        db.session.add(status)
+    
+    status.reading_progress = progress
+    status.last_read_at = datetime.utcnow()
+    
+    # إذا وصل لـ 100% تلقائياً نحوله لـ finished
+    if progress >= 100 and status.status != "finished":
+        status.status = "finished"
+    
+    db.session.commit()
+    
+    return jsonify({
+        "success": True,
+        "progress": progress,
+        "status": status.status
+    })
 
 @main_bp.post("/books/<int:book_id>/rate")
 @login_required
@@ -368,6 +539,31 @@ def update_book(book_id: int):
     return redirect(url_for("main.books"))
 
 
+@main_bp.post("/books/<int:book_id>/generate_cover")
+@login_required
+def generate_book_cover(book_id):
+    """توليد غلاف للكتاب باستخدام AI"""
+    book = Book.query.get_or_404(book_id)
+    
+    # التحقق من الملكية
+    if book.owner_id != current_user.id:
+        flash("غير مصرح لك بتعديل هذا الكتاب", "danger")
+        return redirect(url_for("main.book_detail", book_id=book.id))
+    
+    # استدعاء دالة التوليد
+    from ..utils import generate_ai_cover_url
+    new_cover = generate_ai_cover_url(book.title, book.author)
+    
+    if new_cover:
+        book.cover_url = new_cover
+        db.session.commit()
+        flash("تم توليد الغلاف بنجاح ✨", "success")
+    else:
+        flash("فشل توليد الغلاف", "error")
+        
+    return redirect(url_for("main.book_detail", book_id=book.id))
+
+
 @main_bp.post("/books/<int:book_id>/delete")
 @login_required
 def delete_book(book_id: int):
@@ -376,6 +572,95 @@ def delete_book(book_id: int):
         flash("ليس لديك صلاحية", "danger"); return redirect(url_for("main.books"))
     db.session.delete(b); db.session.commit(); flash("تم الحذف", "info")
     return redirect(url_for("main.books"))
+
+
+# ---------------------------------------------------------------------------
+#                 إدارة الاقتباسات (Quotes)
+# ---------------------------------------------------------------------------
+
+@main_bp.post("/books/<int:book_id>/quotes")
+@csrf.exempt
+@login_required
+def save_quote(book_id):
+    """حفظ اقتباس جديد للكتاب"""
+    from flask import jsonify
+    
+    book = Book.query.get_or_404(book_id)
+    
+    data = request.get_json() if request.is_json else request.form
+    quote_text = data.get("quote_text", "").strip()
+    
+    if not quote_text:
+        return jsonify({"success": False, "error": "الاقتباس فارغ"}), 400
+    
+    page_number = data.get("page_number")
+    if page_number:
+        try:
+            page_number = int(page_number)
+        except ValueError:
+            page_number = None
+    
+    quote = BookQuote(
+        user_id=current_user.id,
+        book_id=book.id,
+        google_id=book.google_id,
+        quote_text=quote_text,
+        page_number=page_number
+    )
+    db.session.add(quote)
+    db.session.commit()
+    
+    return jsonify({
+        "success": True,
+        "quote": {
+            "id": quote.id,
+            "text": quote.quote_text,
+            "page": quote.page_number,
+            "created_at": quote.created_at.strftime("%Y-%m-%d %H:%M")
+        }
+    })
+
+
+@main_bp.delete("/quotes/<int:quote_id>")
+@csrf.exempt
+@login_required
+def delete_quote(quote_id):
+    """حذف اقتباس"""
+    from flask import jsonify
+    
+    quote = BookQuote.query.get_or_404(quote_id)
+    
+    if quote.user_id != current_user.id:
+        return jsonify({"success": False, "error": "غير مصرح"}), 403
+    
+    db.session.delete(quote)
+    db.session.commit()
+    
+    return jsonify({"success": True})
+
+
+@main_bp.get("/books/<int:book_id>/quotes")
+@login_required
+def get_quotes(book_id):
+    """جلب اقتباسات الكتاب"""
+    from flask import jsonify
+    
+    book = Book.query.get_or_404(book_id)
+    
+    quotes = BookQuote.query.filter_by(
+        user_id=current_user.id,
+        book_id=book.id
+    ).order_by(BookQuote.created_at.desc()).all()
+    
+    return jsonify({
+        "success": True,
+        "quotes": [{
+            "id": q.id,
+            "text": q.quote_text,
+            "page": q.page_number,
+            "created_at": q.created_at.strftime("%Y-%m-%d %H:%M")
+        } for q in quotes]
+    })
 
 
 # ... (باقي الكود كما هو) ...

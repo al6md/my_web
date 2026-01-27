@@ -4,7 +4,7 @@ import json
 import os
 from flask import Blueprint, render_template, request, abort, session, flash, redirect, url_for, jsonify
 from flask_login import current_user, login_required
-from ..models import Book, SearchHistory, UserPreference, BookReview
+from ..models import Book, SearchHistory, UserPreference, BookReview, UserBookView
 from ..extensions import db, csrf, cache
 from datetime import datetime
 import requests
@@ -12,13 +12,17 @@ import random
 import urllib.parse
 
 from ..utils import (
-    fetch_google_books, fetch_book_details, 
-    fetch_gutenberg_books, fetch_gutenberg_detail,
-    fetch_archive_books, fetch_archive_detail,
-    fetch_openlib_books, fetch_openlib_detail,
-    fetch_itbook_books, fetch_itbook_detail,
     translate_to_english_with_gemini, analyze_search_intent_with_ai,
-    generate_quiz_with_ai
+    generate_quiz_with_ai, generate_ai_description,
+    fetch_google_books, fetch_gutenberg_books, fetch_archive_books,
+    fetch_openlib_books, fetch_itbook_books,
+    fetch_gutenberg_detail, fetch_archive_detail, fetch_openlib_detail, fetch_itbook_detail,
+    fetch_book_details
+)
+from ..recommender import (
+    get_homepage_sections, get_topic_based, get_cf_similar, 
+    get_content_similar, get_trending, get_hybrid_recommendations,
+    get_author_books, rerank_search_results, get_discovery_picks
 )
 
 public_bp = Blueprint("public", __name__, url_prefix="/public")
@@ -308,13 +312,11 @@ def list_books():
                 except Exception as e:
                     print(f"API timeout/error: {e}")
 
-    # -----------------------------------------------------
-    # Return
-    # -----------------------------------------------------
-    # display_total = max(raw_total, 1000) # Removed artificial floor for better pagination control? 
-    # Actually, keep it but ensure 'shown' is accurate.
+    # 4. Reranking (إذا كان المستخدم مسجلاً)
+    if current_user.is_authenticated and not q.startswith("special:"):
+        clean_items = rerank_search_results(current_user.id, clean_items)
+
     display_total = max(raw_total, 100) 
-    
     shown = len(clean_items) + len(gut_items) + len(ia_items) + len(ol_items) + len(it_items)
 
     return render_template(
@@ -326,7 +328,7 @@ def list_books():
         it_items=it_items,
         q=q, cat=cat, sort=sort, per=per, start=start,
         total=display_total, shown=shown, categories=CATEGORIES,
-        interests_exhausted=interests_exhausted,  # 🆕 إرسال حالة انتهاء الاهتمامات
+        interests_exhausted=interests_exhausted,
     )
 
 
@@ -369,6 +371,9 @@ def book_detail(gid):
                 "pageCount": d.get("pageCount"),
                 "categories": d.get("categories") or [],
                 "rating": d.get("rating"),
+                "publisher": d.get("publisher"),
+                "language": d.get("language"),
+                "isbn": d.get("isbn"),
             }
 
     if not book_data: abort(404)
@@ -388,77 +393,138 @@ def book_detail(gid):
             print(f"[AI Desc] Error generating description: {e}")
 
     # -------------------------------------------------
-    #   اقتراحات متشابهة (محسّن للسرعة)
+    #   اقتراحات متشابهة (محسّن: تصنيفات + مؤلف + بحث دلالي)
     # -------------------------------------------------
     similar = []
+    author_books = []  # 🆕 كتب من نفس المؤلف
     seen_ids = {book_data["id"]}
     title = (book_data.get("title") or "").strip()
     categories = book_data.get("categories", [])
-    
-    # استخدام العنوان مباشرة بدون ترجمة AI (أسرع!)
-    search_query = title[:50]  # أول 50 حرف فقط
+    author = (book_data.get("author") or "").strip()
     
     # جلب من مصادر متعددة بشكل متوازي
-    if search_query:
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    
+    def fetch_by_title():
+        """البحث بالعنوان"""
+        try:
+            search_query = title[:50]
+            g_items, _ = fetch_google_books(search_query, max_results=20)
+            results = []
+            for it in g_items:
+                sid = it.get("id")
+                if not sid: continue
+                vi = it.get("volumeInfo", {}) or {}
+                imgs = vi.get("imageLinks", {}) or {}
+                cover = imgs.get("thumbnail") or ""
+                if cover.startswith("http://"): cover = "https://" + cover[7:]
+                results.append({
+                    "id": sid, 
+                    "title": vi.get("title"), 
+                    "author": ", ".join(vi.get("authors", [])), 
+                    "cover": cover, 
+                    "source": "google",
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount"),
+                    "reason": "📖 عنوان مشابه"
+                })
+            return ("title", results)
+        except: return ("title", [])
+    
+    def fetch_by_category():
+        """🆕 البحث بالتصنيف"""
+        try:
+            if not categories:
+                return ("category", [])
+            cat = categories[0].split("/")[0].strip()
+            g_items, _ = fetch_google_books(f"subject:{cat}", max_results=15)
+            results = []
+            for it in g_items:
+                sid = it.get("id")
+                if not sid: continue
+                vi = it.get("volumeInfo", {}) or {}
+                imgs = vi.get("imageLinks", {}) or {}
+                cover = imgs.get("thumbnail") or ""
+                if cover.startswith("http://"): cover = "https://" + cover[7:]
+                results.append({
+                    "id": sid, 
+                    "title": vi.get("title"), 
+                    "author": ", ".join(vi.get("authors", [])), 
+                    "cover": cover, 
+                    "source": "google",
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount"),
+                    "reason": f"📚 من تصنيف: {cat}"
+                })
+            return ("category", results)
+        except: return ("category", [])
+    
+    def fetch_by_author():
+        """🆕 البحث بالمؤلف"""
+        try:
+            if not author or author == "مؤلف غير معروف":
+                return ("author", [])
+            # أخذ اسم المؤلف الأول فقط
+            first_author = author.split(",")[0].strip()
+            g_items, _ = fetch_google_books(f"inauthor:{first_author}", max_results=12)
+            results = []
+            for it in g_items:
+                sid = it.get("id")
+                if not sid: continue
+                vi = it.get("volumeInfo", {}) or {}
+                imgs = vi.get("imageLinks", {}) or {}
+                cover = imgs.get("thumbnail") or ""
+                if cover.startswith("http://"): cover = "https://" + cover[7:]
+                results.append({
+                    "id": sid, 
+                    "title": vi.get("title"), 
+                    "author": ", ".join(vi.get("authors", [])), 
+                    "cover": cover, 
+                    "source": "google",
+                    "rating": vi.get("averageRating"),
+                    "ratings_count": vi.get("ratingsCount"),
+                    "reason": f"✍️ من نفس المؤلف"
+                })
+            return ("author", results)
+        except: return ("author", [])
+    
+    def fetch_ol():
+        try: return ("openlib", fetch_openlib_books(title[:30], limit=8) or [])
+        except: return ("openlib", [])
+    
+    # تشغيل متوازي مع 4 استراتيجيات
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [
+            executor.submit(fetch_by_title),
+            executor.submit(fetch_by_category),
+            executor.submit(fetch_by_author),
+            executor.submit(fetch_ol),
+        ]
         
-        def fetch_google():
-            try:
-                # Increased limit to 40
-                g_items, _ = fetch_google_books(search_query, max_results=40)
-                results = []
-                for it in g_items:
-                    sid = it.get("id")
-                    if not sid: continue
-                    vi = it.get("volumeInfo", {}) or {}
-                    imgs = vi.get("imageLinks", {}) or {}
-                    cover = imgs.get("thumbnail") or ""
-                    if cover.startswith("http://"): cover = "https://" + cover[7:]
-                    
-                    # Ensure rating is extracted
-                    rating = vi.get("averageRating")
-                    
-                    results.append({
-                        "id": sid, 
-                        "title": vi.get("title"), 
-                        "author": ", ".join(vi.get("authors", [])), 
-                        "cover": cover, 
-                        "source": "google",
-                        "rating": rating,
-                        "ratings_count": vi.get("ratingsCount")
-                    })
-                return results
-            except: return []
-        
-        def fetch_ol():
-            try: return fetch_openlib_books(search_query, limit=10) # Slight increase
-            except: return []
-        
-        # تشغيل متوازي مع timeout قصير
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {
-                executor.submit(fetch_google): "google",
-                executor.submit(fetch_ol): "openlibrary",
-            }
-            
-            try:
-                for future in as_completed(futures, timeout=6): # Increased timeout slightly
-                    try:
-                        results = future.result(timeout=5)
-                        for it in results:
-                            sid = it.get("id")
-                            if not sid or sid in seen_ids: continue
-                            seen_ids.add(sid)
+        try:
+            for future in as_completed(futures, timeout=8):
+                try:
+                    source, results = future.result(timeout=6)
+                    for it in results:
+                        sid = it.get("id")
+                        if not sid or sid in seen_ids: continue
+                        seen_ids.add(sid)
+                        
+                        # فصل كتب المؤلف عن المشابهة
+                        if source == "author":
+                            author_books.append(it)
+                        else:
                             similar.append(it)
-                    except Exception as e:
-                        pass  # تجاهل الأخطاء للسرعة
-            except:
-                pass  # استمر بما لدينا
-
+                except Exception as e:
+                    pass
+        except:
+            pass
+    
     # خلط النتائج وتحديد العدد
     import random
     random.shuffle(similar)
-    similar = similar[:45] # Increased limit
+    similar = similar[:40]
+    author_books = author_books[:12]  # حد أقصى لكتب المؤلف
 
     # -------------------------------------------------
     #   التحقق من حالة الكتاب في مكتبة المستخدم
@@ -474,13 +540,66 @@ def book_detail(gid):
             status_entry = BookStatus.query.filter_by(user_id=current_user.id, book_id=local_book.id).first()
             if status_entry:
                 current_status = status_entry.status
+        
+        # -------------------------------------------------
+        #   📊 تسجيل مشاهدة الكتاب (لقسم "شاهدته مؤخراً" + تحليل السلوك)
+        # -------------------------------------------------
+        try:
+            # إذا الكتاب غير موجود محلياً، نحفظه لتحليل السلوك
+            if not local_book and book_data:
+                try:
+                    # حفظ الكتاب كـ "مشاهد" (بدون owner_id = ليس في مكتبة المستخدم)
+                    # لكن مع البيانات الكافية لتحليل السلوك
+                    local_book = Book.query.filter_by(google_id=gid).first()
+                    if not local_book:
+                        local_book = Book(
+                            google_id=gid,
+                            title=book_data.get("title", ""),
+                            author=book_data.get("author", ""),
+                            description=book_data.get("desc", ""),
+                            cover_url=book_data.get("cover", ""),
+                            categories=",".join(book_data.get("categories", [])) if isinstance(book_data.get("categories"), list) else book_data.get("categories", ""),
+                            owner_id=None  # لا يملكه أحد
+                        )
+                        db.session.add(local_book)
+                        db.session.flush()  # للحصول على ID
+                        print(f"📚 [AutoSave] Saved book {gid} to DB for behavior analysis")
+                except Exception as save_err:
+                    print(f"⚠️ [AutoSave] Could not save book: {save_err}")
+            
+            # البحث عن مشاهدة سابقة
+            view = UserBookView.query.filter_by(user_id=current_user.id, google_id=gid).first()
+            
+            if view:
+                # تحديث عدد المشاهدات ووقت آخر مشاهدة
+                view.view_count = (view.view_count or 0) + 1
+                view.last_viewed_at = datetime.utcnow()
+                # تحديث book_id إذا تم حفظ الكتاب للتو
+                if local_book and not view.book_id:
+                    view.book_id = local_book.id
+            else:
+                # إنشاء سجل مشاهدة جديد
+                view = UserBookView(
+                    user_id=current_user.id,
+                    google_id=gid,
+                    book_id=local_book.id if local_book else None,
+                    view_count=1
+                )
+                db.session.add(view)
+            
+            db.session.commit()
+            print(f"👁️ [BookView] Recorded view for user {current_user.id}, book {gid}")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ [BookView] Error recording view: {e}")
 
     return render_template(
         "public_book_detail.html",
         book=book_data,
         similar=similar,
+        author_books=author_books,  # 🆕 كتب من نفس المؤلف
         personal_recs=personal_recs,
-        current_status=current_status, # تمرير الحالة للقالب
+        current_status=current_status,
     )
 
 @public_bp.route("/books/<gid>/add-to-shelf/<status>", methods=["POST"])
@@ -1195,63 +1314,282 @@ def get_openlibrary_cover():
 @csrf.exempt
 def generate_book_cover():
     """
-    توليد غلاف كتاب بالذكاء الاصطناعي مع دعم خاص للغة العربية
+    توليد غلاف كتاب باستخدام Gemini Imagen API
+    مع prompts احترافية مخصصة لكل نوع من الكتب
     """
     import urllib.parse
-    import re
-    from flask import redirect
-
+    import hashlib
+    import os
+    import base64
+    from flask import redirect, send_file
+    
     title = request.args.get("title", "Book").strip()
     author = request.args.get("author", "").strip()
     
-    # 1. التحقق من اللغة العربية
-    def is_arabic(text):
-        return bool(re.search(r'[\u0600-\u06FF]', text))
-
-    is_arabic_book = is_arabic(title) or is_arabic(author)
+    # إنشاء hash للـ caching
+    cache_key = hashlib.md5(f"{title}_{author}".encode()).hexdigest()[:16]
+    cache_dir = os.path.join(os.path.dirname(__file__), "..", "static", "images", "generated")
+    cache_path = os.path.join(cache_dir, f"{cache_key}.jpg")
     
-    # 2. بناء Prompt ذكي
-    if is_arabic_book:
-        # Prompt مخصص للكتب العربية
-        prompt = f"Book cover for '{title}'"
-        if author:
-            prompt += f" by {author}"
-        
-        # كلمات مفتاحية للتصميم العربي/الإسلامي
-        keywords = [
-            "Arabic calligraphy style",
-            "Islamic geometric patterns",
-            "elegant oriental design",
-            "minimalist sophisticated",
-            "high quality book cover",
-            "cultural artistic representation"
-        ]
-        prompt += ", " + ", ".join(keywords)
-        
+    # التحقق من الـ cache أولاً
+    if os.path.exists(cache_path):
+        return redirect(f"/static/images/generated/{cache_key}.jpg")
+    
+    # ═══════════════════════════════════════════════════════════
+    # 🎨 بناء Prompt احترافي بناءً على نوع الكتاب
+    # ═══════════════════════════════════════════════════════════
+    lower_title = title.lower()
+    lower_author = author.lower() if author else ""
+    
+    # القاعدة الأساسية للـ prompt
+    base_style = "ultra high quality, 8K resolution, professional book cover design, elegant composition, cinematic lighting"
+    
+    # تحديد نوع الكتاب وإنشاء prompt مخصص
+    if any(w in lower_title for w in ['fiction', 'novel', 'story', 'tales', 'romance', 'love']):
+        # 📖 روايات وأدب
+        genre_prompt = f"""
+        Create a stunning literary fiction book cover for '{title}'.
+        Style: Dreamy, evocative atmosphere with soft bokeh effects.
+        Elements: Abstract silhouettes, flowing fabric, romantic sunset/sunrise colors.
+        Color palette: Deep burgundy, gold accents, cream, soft rose.
+        Mood: Emotional, nostalgic, intimate.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['mystery', 'detective', 'crime', 'murder', 'thriller', 'suspense', 'dark']):
+        # 🔍 غموض وإثارة
+        genre_prompt = f"""
+        Create a gripping thriller/mystery book cover for '{title}'.
+        Style: Film noir aesthetic, dramatic shadows, foggy atmosphere.
+        Elements: Silhouettes in shadows, city lights through rain, mysterious doorways.
+        Color palette: Deep black, midnight blue, crimson red accents, silver.
+        Mood: Tense, suspenseful, dangerous.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['science', 'physics', 'chemistry', 'biology', 'math', 'data', 'algorithm', 'machine learning', 'ai', 'computer']):
+        # 🔬 علوم وتكنولوجيا
+        genre_prompt = f"""
+        Create a cutting-edge scientific book cover for '{title}'.
+        Style: Futuristic, clean, tech-inspired with geometric precision.
+        Elements: DNA helixes, atomic structures, neural networks, data visualizations, circuit patterns.
+        Color palette: Electric blue, neon cyan, deep purple, silver metallic.
+        Mood: Innovative, intellectual, forward-thinking.
+        {base_style}, NO robots, NO human faces
+        """
+    
+    elif any(w in lower_title for w in ['history', 'ancient', 'war', 'empire', 'kingdom', 'civilization', 'century']):
+        # 🏛️ تاريخ
+        genre_prompt = f"""
+        Create an epic historical book cover for '{title}'.
+        Style: Classical, majestic, with aged texture and vintage charm.
+        Elements: Ancient maps, compass roses, architectural ruins, manuscript pages.
+        Color palette: Sepia, aged gold, deep brown, parchment cream, bronze.
+        Mood: Grand, timeless, scholarly.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['philosophy', 'mind', 'thought', 'wisdom', 'ethics', 'consciousness', 'existence']):
+        # 🧠 فلسفة وفكر
+        genre_prompt = f"""
+        Create a profound philosophical book cover for '{title}'.
+        Style: Abstract, contemplative, surrealist influences.
+        Elements: Infinite staircases, cosmic voids, floating geometric shapes, mirror reflections.
+        Color palette: Deep indigo, cosmic purple, ethereal white, gold accents.
+        Mood: Thought-provoking, transcendent, mysterious.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['business', 'money', 'finance', 'investment', 'wealth', 'success', 'leadership', 'management', 'entrepreneur']):
+        # 💼 أعمال ومال
+        genre_prompt = f"""
+        Create a powerful business book cover for '{title}'.
+        Style: Bold, professional, inspiring confidence.
+        Elements: Rising graphs, city skylines at golden hour, chess pieces, mountain peaks.
+        Color palette: Navy blue, gold, white, emerald green accents.
+        Mood: Ambitious, authoritative, successful.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['self', 'help', 'growth', 'motivation', 'habit', 'productivity', 'mindset', 'happiness']):
+        # 🌱 تطوير ذات
+        genre_prompt = f"""
+        Create an inspiring self-help book cover for '{title}'.
+        Style: Uplifting, bright, clean with organic elements.
+        Elements: Sunrise over mountains, blooming flowers, butterflies, paths leading to light.
+        Color palette: Warm orange, sky blue, fresh green, pure white.
+        Mood: Hopeful, empowering, transformative.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['fantasy', 'magic', 'dragon', 'wizard', 'sword', 'kingdom', 'quest', 'enchant']):
+        # 🐉 فانتازيا
+        genre_prompt = f"""
+        Create an epic fantasy book cover for '{title}'.
+        Style: Magical, otherworldly, with dramatic scale.
+        Elements: Floating castles, mystical forests, glowing runes, aurora skies, ancient towers.
+        Color palette: Deep purple, emerald green, gold, mystical blue, silver.
+        Mood: Epic, magical, adventurous.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['sci-fi', 'space', 'future', 'robot', 'galaxy', 'alien', 'planet', 'star']):
+        # 🚀 خيال علمي
+        genre_prompt = f"""
+        Create a stunning sci-fi book cover for '{title}'.
+        Style: Cinematic space opera, futuristic grandeur.
+        Elements: Distant galaxies, space stations, nebulae, futuristic cities, starships.
+        Color palette: Deep space black, nebula purple, neon blue, solar orange.
+        Mood: Vast, awe-inspiring, futuristic.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['art', 'paint', 'design', 'creative', 'photography', 'visual', 'aesthetic']):
+        # 🎨 فنون
+        genre_prompt = f"""
+        Create an artistic book cover for '{title}'.
+        Style: Gallery-worthy, creative, visually striking.
+        Elements: Paint splashes, brush strokes, geometric patterns, color gradients.
+        Color palette: Vibrant rainbow spectrum, bold contrasts.
+        Mood: Creative, expressive, inspiring.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['cook', 'recipe', 'food', 'cuisine', 'kitchen', 'chef']):
+        # 🍳 طبخ
+        genre_prompt = f"""
+        Create a mouth-watering cookbook cover for '{title}'.
+        Style: Food photography inspired, warm and inviting.
+        Elements: Fresh ingredients, rustic wooden surfaces, steam rising, elegant plating.
+        Color palette: Warm amber, fresh greens, rich reds, creamy whites.
+        Mood: Appetizing, homey, artisanal.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['religion', 'spiritual', 'faith', 'god', 'prayer', 'holy', 'sacred', 'islam', 'christian', 'buddha']):
+        # 🕊️ دين وروحانيات
+        genre_prompt = f"""
+        Create a serene spiritual book cover for '{title}'.
+        Style: Peaceful, divine, with ethereal light.
+        Elements: Rays of light through clouds, calm waters, gentle doves, sacred geometry.
+        Color palette: Heavenly white, gold, soft blue, peaceful green.
+        Mood: Serene, uplifting, divine.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['child', 'kid', 'young', 'learn', 'abc', 'number', 'cartoon']):
+        # 👶 أطفال
+        genre_prompt = f"""
+        Create a fun children's book cover for '{title}'.
+        Style: Playful, colorful, whimsical illustration style.
+        Elements: Cute animals, rainbows, stars, friendly characters, clouds.
+        Color palette: Bright primary colors, pastels, cheerful tones.
+        Mood: Joyful, magical, friendly.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['horror', 'ghost', 'vampire', 'zombie', 'haunted', 'fear', 'nightmare']):
+        # 👻 رعب
+        genre_prompt = f"""
+        Create a chilling horror book cover for '{title}'.
+        Style: Dark, atmospheric, spine-tingling.
+        Elements: Shadowy figures, abandoned mansions, full moon, fog, twisted trees.
+        Color palette: Pitch black, blood red, ghostly white, eerie green.
+        Mood: Terrifying, suspenseful, dark.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['travel', 'journey', 'adventure', 'explore', 'world', 'country', 'culture']):
+        # 🌍 سفر ومغامرات
+        genre_prompt = f"""
+        Create an adventurous travel book cover for '{title}'.
+        Style: Breathtaking landscapes, wanderlust-inspiring.
+        Elements: Mountain peaks, ocean horizons, hot air balloons, compass, vintage maps.
+        Color palette: Azure blue, sunset orange, forest green, sandy gold.
+        Mood: Adventurous, free, inspiring.
+        {base_style}
+        """
+    
+    elif any(w in lower_title for w in ['psychology', 'brain', 'behavior', 'emotion', 'mental', 'therapy']):
+        # 🧠 علم نفس
+        genre_prompt = f"""
+        Create an insightful psychology book cover for '{title}'.
+        Style: Abstract representation of the mind, introspective.
+        Elements: Brain illustrations, neural connections, labyrinth patterns, mirror reflections.
+        Color palette: Deep teal, warm orange, soft purple, clean white.
+        Mood: Thoughtful, analytical, enlightening.
+        {base_style}
+        """
+    
     else:
-        # Prompt للكتب الإنجليزية/العالمية
-        prompt = f"Professional book cover for '{title}'"
-        if author:
-            prompt += f" by {author}"
+        # 📚 كتاب عام - تصميم أنيق وعصري
+        genre_prompt = f"""
+        Create a sophisticated, elegant book cover for '{title}'{f" by {author}" if author else ""}.
+        Style: Modern minimalist, timeless elegance, premium feel.
+        Elements: Abstract geometric shapes, subtle gradients, elegant negative space.
+        Color palette: Deep navy, warm gold, clean white, subtle gradients.
+        Mood: Professional, refined, memorable.
+        {base_style}
+        """
+    
+    # تنظيف الـ prompt
+    prompt = " ".join(genre_prompt.split())
+    
+    # ═══════════════════════════════════════════════════════════
+    # 🤖 توليد الصورة بـ Gemini Imagen API
+    # ═══════════════════════════════════════════════════════════
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    
+    if gemini_key:
+        try:
+            response = requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key={gemini_key}",
+                json={
+                    "instances": [{"prompt": prompt}],
+                    "parameters": {
+                        "sampleCount": 1,
+                        "aspectRatio": "2:3"
+                    }
+                },
+                timeout=25
+            )
             
-        keywords = [
-            "award winning design",
-            "modern minimalist",
-            "cinematic lighting",
-            "high resolution 4k",
-            "elegant typography"
-        ]
-        prompt += ", " + ", ".join(keywords)
-
-    # 3. توجيه الطلب إلى Pollinations.ai
-    encoded_prompt = urllib.parse.quote(prompt)
+            if response.ok:
+                data = response.json()
+                predictions = data.get("predictions", [])
+                if predictions:
+                    image_data = predictions[0].get("bytesBase64Encoded", "")
+                    if image_data:
+                        os.makedirs(cache_dir, exist_ok=True)
+                        with open(cache_path, 'wb') as f:
+                            f.write(base64.b64decode(image_data))
+                        print(f"[Gemini Cover] ✅ Generated cover for: {title}")
+                        return redirect(f"/static/images/generated/{cache_key}.jpg")
+            else:
+                print(f"[Gemini Cover] API Error: {response.status_code} - {response.text[:200]}")
+                
+        except Exception as e:
+            print(f"[Gemini Cover] Error: {e}")
     
-    # نستخدم seed عشوائي ثابت بناءً على العنوان لضمان نفس الصورة لنفس الكتاب
-    seed = sum(ord(c) for c in title) % 1000
+    # Fallback: استخدام Open Library للبحث عن غلاف موجود
+    try:
+        search_query = urllib.parse.quote(f"{title} {author}".strip())
+        search_url = f"https://openlibrary.org/search.json?q={search_query}&limit=1"
+        
+        response = requests.get(search_url, timeout=3)
+        if response.ok:
+            data = response.json()
+            docs = data.get("docs", [])
+            if docs and docs[0].get("cover_i"):
+                cover_id = docs[0]["cover_i"]
+                cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+                return redirect(cover_url)
+    except Exception as e:
+        print(f"[Cover] Open Library fallback error: {e}")
     
-    pollinations_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=400&height=600&nologo=true&seed={seed}&model=flux"
-    
-    return redirect(pollinations_url)
+    # Fallback النهائي: صورة placeholder جميلة
+    seed = int(hashlib.md5(title.encode()).hexdigest(), 16) % 1000
+    return redirect(f"https://picsum.photos/seed/{seed}/400/600")
 
 
 @public_bp.get("/api/generate-cover-gemini")
@@ -1386,3 +1724,53 @@ def generate_quiz():
     
     result = generate_quiz_with_ai(title, author)
     return jsonify(result)
+
+# ===========================================================================
+#                          📊 رادار القراءة (Analytics)
+# ===========================================================================
+
+@public_bp.get("/analytics")
+@login_required
+def analytics():
+    """لوحة بيانات تحليل عادات القراءة"""
+    from ..utils import analyze_reading_habits
+    
+    # استدعاء دالة التحليل من utils.py
+    result = analyze_reading_habits(current_user.id)
+    stats = result.get("stats", {})
+    
+    return render_template("analytics.html", stats=stats)
+
+
+# ===========================================================================
+#                          📚 عرض مكتبة المستخدم (عامة)
+# ===========================================================================
+
+@public_bp.get("/library/<int:user_id>", endpoint="user_library")
+def user_library(user_id):
+    """عرض مكتبة مستخدم معين للزوار"""
+    from ..models import User
+    
+    # التحقق من وجود المستخدم
+    user = User.query.get_or_404(user_id)
+    
+    # جلب كتب المستخدم
+    user_books = Book.query.filter_by(owner_id=user_id).order_by(Book.created_at.desc()).all()
+    
+    # تحويل الكتب إلى قائمة
+    books_list = []
+    for book in user_books:
+        books_list.append({
+            "id": book.google_id or f"local_{book.id}",
+            "title": book.title,
+            "author": book.author,
+            "cover": book.cover_url,
+            "description": book.description,
+        })
+    
+    return render_template(
+        "user_library.html",
+        user=user,
+        books=books_list,
+        total_books=len(books_list)
+    )

@@ -2,51 +2,14 @@
 {% block title %}تسجيل الدخول | ALHAM{% endblock %}
 
 {% block content %}
-<style>
-  .auth-bg {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    overflow: hidden;
-  }
-
-  .auth-bg::before {
-    content: '';
-    position: absolute;
-    top: 20%;
-    left: 10%;
-    width: 400px;
-    height: 400px;
-    background: rgba(102, 126, 234, 0.2);
-    border-radius: 50%;
-    filter: blur(100px);
-    animation: float 8s ease-in-out infinite;
-  }
-
-  .auth-bg::after {
-    content: '';
-    position: absolute;
-    bottom: 10%;
-    right: 10%;
-    width: 350px;
-    height: 350px;
-    background: rgba(244, 114, 182, 0.15);
-    border-radius: 50%;
-    filter: blur(80px);
-    animation: float 8s ease-in-out infinite reverse;
-  }
-</style>
-
-<div class="auth-bg"></div>
-
-<section class="auth-section">
+<section class="auth-page">
   <div class="auth-card animate-on-scroll fade-up">
     <div class="text-center mb-4">
       <div class="auth-icon-circle">
         <i class="ph-fill ph-sign-in"></i>
       </div>
-      <h1 class="h3 mb-2" style="color: var(--text-primary);">مرحباً بعودتك</h1>
-      <p class="text-secondary mb-0">سجل دخولك للمتابعة</p>
+      <h1 style="font-size: 1.75rem; margin-bottom: 0.5rem;">مرحباً بعودتك</h1>
+      <p class="text-muted mb-0">سجل دخولك للمتابعة</p>
     </div>
 
     <form method="post">
@@ -56,17 +19,17 @@
         <label for="email" class="form-label">
           <i class="ph ph-envelope"></i> البريد الإلكتروني
         </label>
-        <input type="email" name="email" id="email" class="form-input" placeholder="اسمك@example.com" required>
+        <input type="email" name="email" id="email" class="form-control" placeholder="اسمك@example.com" required>
       </div>
 
       <div class="form-group">
         <label for="password" class="form-label">
           <i class="ph ph-lock"></i> كلمة المرور
         </label>
-        <input type="password" name="password" id="password" class="form-input" placeholder="••••••••" required>
+        <input type="password" name="password" id="password" class="form-control" placeholder="••••••••" required>
       </div>
 
-      <button type="submit" class="btn btn-primary w-100 py-3 mt-2 font-medium">
+      <button type="submit" class="btn btn-primary w-100 py-3 mt-2">
         <i class="ph ph-sign-in"></i>
         تسجيل الدخول
       </button>
@@ -77,8 +40,8 @@
     </div>
 
     <div class="text-center">
-      <p class="text-secondary mb-3">ليس لديك حساب؟</p>
-      <a href="{{ url_for('auth.register') }}" class="btn btn-outline w-100">
+      <p class="text-muted mb-3">ليس لديك حساب؟</p>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-secondary w-100 justify-content-center">
         <i class="ph ph-user-plus"></i>
         إنشاء حساب جديد
       </a>
