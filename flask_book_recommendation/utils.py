@@ -966,7 +966,9 @@ def extract_interests_from_text_ai(title: str, author: str, review_text: str = "
 # ... (دالة get_text_embedding اتركها كما هي) ...
 
 import time
+from functools import lru_cache
 
+@lru_cache(maxsize=1000)
 def get_text_embedding(text, max_retries=3):
     """
     تحويل النص إلى embedding vector باستخدام Gemini API.
@@ -1053,6 +1055,10 @@ def get_book_embedding(book):
         # نأخذ أول 500 حرف من الوصف
         desc = book.description[:500]
         parts.append(f"Description: {desc}")
+
+    # 🆕 إضافة التصنيفات للمحتوى (مهم جداً للتوصيات)
+    if book.categories:
+        parts.append(f"Genre: {book.categories}")
     
     if not parts:
         return None

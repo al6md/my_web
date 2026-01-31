@@ -70,7 +70,7 @@ class SearchEvent(db.Model):
 class UserPreference(db.Model):
     __tablename__ = "user_preferences"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, index=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True, nullable=False)
     topic = db.Column(db.String(80), index=True, nullable=False)
     weight = db.Column(db.Float, default=1.0)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

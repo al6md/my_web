@@ -5,7 +5,7 @@
 <div class="container library-container">
 
   <!-- SIDEBAR -->
-  <aside class="library-sidebar animate-on-scroll fade-right">
+  <aside class="library-sidebar">
 
     <!-- User Library Section if Logged In -->
     {% if current_user.is_authenticated %}
@@ -434,6 +434,14 @@
           <span class="text-gradient">لأنك قرأت</span>
           {% elif q == 'special:trending' %}
           <span class="text-gradient">الأكثر رواجاً</span>
+          {% elif q == 'special:behavior' %}
+          <span class="text-gradient">مقترحات لك</span>
+          {% elif q == 'special:recent-searches' %}
+          <span class="text-gradient">من سجل بحثك</span>
+          {% elif q == 'special:recently-viewed' %}
+          <span class="text-gradient">شاهدت مؤخراً</span>
+          {% elif q == 'special:most-viewed' %}
+          <span class="text-gradient">الأعلى مشاهدة</span>
           {% elif q %}
           نتائج البحث: "{{ q }}"
           {% else %}
@@ -445,19 +453,10 @@
         </p>
       </div>
 
-      <div class="d-flex align-center gap-3">
-        <!-- Search Form -->
-        <form action="{{ url_for('public.list_books') }}" method="get" class="search-form-minimal">
-          <input type="text" name="q" placeholder="ابحث عن كتاب، مؤلف..." value="{{ q or '' }}">
-          <button type="submit">
-            <i class="ph ph-magnifying-glass"></i>
-          </button>
-        </form>
 
-        <!-- View Toggle (Grid/List) - Optional Future Feature -->
-        <!-- <div class="view-toggle"> ... </div> -->
-      </div>
     </div>
+
+
 
 
     <!-- Books Grid -->

@@ -114,6 +114,10 @@ def list_books():
                 cache.delete_memoized(get_topic_based)
                 cache.delete_memoized(get_last_search_recommendations)
                 
+                # إبطال كاش التوصيات السلوكية أيضاً
+                from ..recommender import get_behavior_based_recommendations
+                cache.delete_memoized(get_behavior_based_recommendations)
+                
                 print(f"🧹 Cache cleared for all users after search by user {current_user.id}.")
             except Exception as e:
                 print(f"⚠️ Error clearing cache: {e}")
@@ -267,7 +271,40 @@ def list_books():
         elif special_type == "trending":
             # الرائج الآن
             recommendations = get_trending(limit=per*2)
+        elif special_type == "smart-rec":
+            # مقترحات الذكاء الاصطناعي (Deep Learning)
+            from ..recommender import get_deep_learning_recommendations
+            recommendations = get_deep_learning_recommendations(current_user.id, limit=per*2)
+        elif special_type == "behavior":
+            # مقترحات لك (Behavior-Based)
+            from ..recommender import get_behavior_based_recommendations
             
+            # 🆕 تحديث: العودة لنظام الصفحات (12 كتاب لكل صفحة) بناءً على طلب المستخدم الأخير
+            # "يعرض الكتب المهتم بها اول ص 12 كتاب يعرض و ص الثانيه 12 وهكذا لحد ماتصير 100 كتاب"
+            
+            # View All mode usually requests larger limit (e.g. 48) via 'per' param
+            # We pass 'start' as 'offset' to enable Time Machine pagination
+            recommendations = get_behavior_based_recommendations(current_user.id, limit=per, offset=start)
+            
+            # 🔧 Fix for "Missing Next Button":
+            # If we requested 100 but got 95 (due to filtering), template thinks we reached the end (95 < 100).
+            # We explicitly update 'per' to match strict count so 'shown >= per' passes in template.
+            # Next page will simply start at 'start + 95'.
+            count = len(recommendations)
+            if 0 < count < per:
+                per = count
+            
+            # Update raw_total (approximate)
+            # The user wants "until it becomes 100 books".
+            # So we fix the total to 100 for visualization in pagination.
+            if special_type == "behavior":
+                raw_total = 100
+            elif count > 0:
+                 # Fake a larger total so pagination logic usually works
+                 raw_total = start + count + 100
+            else:
+                 raw_total = 0
+                 
         # Distribute recommendations to source lists
         if recommendations:
             for book in recommendations:
@@ -280,7 +317,8 @@ def list_books():
                 else: clean_items.append(book) # Default to main list
             
             # Update raw_total (approximate)
-            raw_total = len(recommendations)
+            if special_type != "behavior":
+                raw_total = len(recommendations)
 
     else:
         # متغير لتتبع حالة انتهاء الاهتمامات (للحالات العادية)
@@ -296,27 +334,39 @@ def list_books():
                 executor.submit(fetch_it),
             ]
             
-            for future in as_completed(futures, timeout=10):
-                try:
-                    source, items = future.result(timeout=8)
-                    if source == "google":
-                        clean_items = items
-                    elif source == "gutenberg":
-                        gut_items = items
-                    elif source == "archive":
-                        ia_items = items
-                    elif source == "openlib":
-                        ol_items = items
-                    elif source == "itbook":
-                        it_items = items
-                except Exception as e:
-                    print(f"API timeout/error: {e}")
+            try:
+                for future in as_completed(futures, timeout=10):
+                    try:
+                        source, items = future.result(timeout=8)
+                        if source == "google":
+                            clean_items = items
+                        elif source == "gutenberg":
+                            gut_items = items
+                        elif source == "archive":
+                            ia_items = items
+                        elif source == "openlib":
+                            ol_items = items
+                        elif source == "itbook":
+                            it_items = items
+                    except Exception as e:
+                        print(f"API result error: {e}")
+            except Exception as e:
+                print(f"Parallel fetch partially timed out or failed: {e}")
 
     # 4. Reranking (إذا كان المستخدم مسجلاً)
     if current_user.is_authenticated and not q.startswith("special:"):
         clean_items = rerank_search_results(current_user.id, clean_items)
 
-    display_total = max(raw_total, 100) 
+    # display_total = max(raw_total, 100) # ❌ This masked errors
+    display_total = raw_total
+    
+    # If 0 results for special sections, try to fetch generic trending
+    if display_total == 0 and q.startswith("special:") and not clean_items:
+         from ..recommender import get_trending
+         clean_items = get_trending(limit=per)
+         display_total = len(clean_items)
+         # We can add a flash message or handle it in template
+         
     shown = len(clean_items) + len(gut_items) + len(ia_items) + len(ol_items) + len(it_items)
 
     return render_template(
@@ -589,9 +639,101 @@ def book_detail(gid):
             
             db.session.commit()
             print(f"👁️ [BookView] Recorded view for user {current_user.id}, book {gid}")
+            
+            # -------------------------------------------------
+            #   ⭐ تحديث اهتمامات المستخدم بناءً على المشاهدة
+            # -------------------------------------------------
+            try:
+                # استخراج المواضيع من التصنيفات
+                topics_to_boost = []
+                
+                # 1. التصنيفات
+                cats = book_data.get("categories", [])
+                if isinstance(cats, str):
+                    cats = cats.split(",")
+                
+                for cat in cats:
+                    clean_cat = cat.strip()
+                    if clean_cat and len(clean_cat) > 2:
+                        topics_to_boost.append((clean_cat, 5.0)) # وزن عالي للتصنيف
+
+                # 2. المؤلف
+                auth = book_data.get("author", "")
+                if auth and auth not in ["Unknown", "مؤلف غير معروف"]:
+                    # قد يكون هناك مؤلفين متعددين
+                    for a in auth.split(","):
+                        clean_auth = a.strip()
+                        if clean_auth and len(clean_auth) > 2:
+                            topics_to_boost.append((clean_auth, 3.0)) # وزن متوسط للمؤلف
+                
+                # تحديث التفضيلات
+                for topic, weight_boost in topics_to_boost:
+                    pref = UserPreference.query.filter_by(
+                        user_id=current_user.id,
+                        topic=topic
+                    ).first()
+                    
+                    if pref:
+                        pref.weight += weight_boost
+                        pref.updated_at = datetime.utcnow()
+                    else:
+                        pref = UserPreference(
+                            user_id=current_user.id,
+                            topic=topic,
+                            weight=20.0 + weight_boost # وزن ابتدائي جيد
+                        )
+                        db.session.add(pref)
+                
+                db.session.commit()
+                print(f"⭐ [Interests] Updated interests for user {current_user.id}: {[t[0] for t in topics_to_boost]}")
+                
+                # إبطال الكاش للتحديث الفوري
+                try:
+                    from ..recommender import get_homepage_sections, get_topic_based
+                    cache.delete_memoized(get_topic_based, current_user.id)
+                except: pass
+                
+            except Exception as e_pref:
+                print(f"⚠️ [Interests] Error updating preferences: {e_pref}")
+
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ [BookView] Error recording view: {e}")
+
+    # -------------------------------------------------
+    #   👁️ حساب إجمالي المشاهدات من جميع المستخدمين
+    # -------------------------------------------------
+    total_views = 0
+    unique_viewers = 0
+    try:
+        from sqlalchemy import func
+        
+        # البحث عن الكتاب المحلي إذا لم يكن موجوداً
+        book_local = Book.query.filter_by(google_id=gid).first()
+        
+        if book_local:
+            # حساب المشاهدات من جدول UserBookView
+            stats = db.session.query(
+                func.sum(UserBookView.view_count).label('total'),
+                func.count(UserBookView.user_id.distinct()).label('unique')
+            ).filter(UserBookView.book_id == book_local.id).first()
+            
+            if stats:
+                total_views = stats.total or 0
+                unique_viewers = stats.unique or 0
+        else:
+            # البحث باستخدام google_id مباشرة
+            stats = db.session.query(
+                func.sum(UserBookView.view_count).label('total'),
+                func.count(UserBookView.user_id.distinct()).label('unique')
+            ).filter(UserBookView.google_id == gid).first()
+            
+            if stats:
+                total_views = stats.total or 0
+                unique_viewers = stats.unique or 0
+                
+    except Exception as e:
+        print(f"Error calculating views: {e}")
 
     return render_template(
         "public_book_detail.html",
@@ -600,7 +742,10 @@ def book_detail(gid):
         author_books=author_books,  # 🆕 كتب من نفس المؤلف
         personal_recs=personal_recs,
         current_status=current_status,
+        total_views=total_views,  # 🆕 إجمالي المشاهدات
+        unique_viewers=unique_viewers,  # 🆕 عدد القراء الفريدين
     )
+
 
 @public_bp.route("/books/<gid>/add-to-shelf/<status>", methods=["POST"])
 @login_required
@@ -1774,3 +1919,46 @@ def user_library(user_id):
         books=books_list,
         total_books=len(books_list)
     )
+
+@public_bp.get("/api/search_hint")
+def search_hint():
+    """Live search suggestions API"""
+    q = (request.args.get("q") or "").strip()
+    search_type = request.args.get("type", "all")
+    
+    if len(q) < 2:
+        return jsonify([])
+
+    # Construct query based on type
+    query = q
+    if search_type == "title":
+        query = f"intitle:{q}"
+    elif search_type == "author":
+        query = f"inauthor:{q}"
+    elif search_type == "isbn":
+        query = f"isbn:{q}"
+
+    try:
+        # Use existing utility to fetch from Google Books
+        # Limit to 5 results for speed
+        items, _ = fetch_google_books(query, limit=5)
+        
+        results = []
+        for it in items:
+            vi = it.get("volumeInfo", {}) or {}
+            links = vi.get("imageLinks", {}) or {}
+            cover = links.get("smallThumbnail") or links.get("thumbnail")
+            if cover and cover.startswith("http://"): 
+                cover = "https://" + cover[7:]
+            
+            results.append({
+                "id": it.get("id"),
+                "title": vi.get("title"),
+                "author": ", ".join(vi.get("authors", [])) if vi.get("authors") else "",
+                "cover": cover
+            })
+            
+        return jsonify(results)
+    except Exception as e:
+        print(f"Search hint error: {e}")
+        return jsonify([])

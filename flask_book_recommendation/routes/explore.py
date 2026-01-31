@@ -11,7 +11,8 @@ from ..recommender import (
     get_cf_similar,
     get_hidden_gems,
     get_view_based_recommendations,
-    get_behavior_based_recommendations
+    get_behavior_based_recommendations,
+    get_deep_learning_recommendations
 )
 
 explore_bp = Blueprint("explore", __name__, url_prefix="/explore")
@@ -31,6 +32,58 @@ def _book_to_dict(book, source="Local", reason=None):
         "reason": reason,
         "rating": getattr(book, "average_rating", None) or getattr(book, "rating", None),
     }
+
+
+@cache.memoize(timeout=600)  # Cache لمدة 10 دقائق
+def get_most_viewed_books(limit=12):
+    """
+    جلب الكتب الأكثر مشاهدة من جميع المستخدمين.
+    يظهر للجميع (مسجلين وغير مسجلين).
+    
+    Returns:
+        قائمة الكتب الأعلى مشاهدة مع عدد المشاهدات
+    """
+    try:
+        from sqlalchemy import func
+        
+        # جمع مشاهدات كل كتاب من جميع المستخدمين
+        views_subquery = (
+            db.session.query(
+                UserBookView.book_id,
+                func.sum(UserBookView.view_count).label('total_views'),
+                func.count(UserBookView.user_id.distinct()).label('unique_viewers')
+            )
+            .filter(UserBookView.book_id.isnot(None))
+            .group_by(UserBookView.book_id)
+            .order_by(func.sum(UserBookView.view_count).desc())
+            .limit(limit * 2)  # نجلب أكثر للتصفية
+            .subquery()
+        )
+        
+        # جلب الكتب مع ترتيب المشاهدات
+        results = (
+            db.session.query(Book, views_subquery.c.total_views, views_subquery.c.unique_viewers)
+            .join(views_subquery, Book.id == views_subquery.c.book_id)
+            .order_by(views_subquery.c.total_views.desc())
+            .limit(limit)
+            .all()
+        )
+        
+        books_list = []
+        for book, total_views, unique_viewers in results:
+            book_dict = _book_to_dict(
+                book,
+                source="الأعلى مشاهدة",
+                reason=f"👁️ {total_views} مشاهدة من {unique_viewers} قارئ"
+            )
+            if book_dict:
+                books_list.append(book_dict)
+        
+        return books_list
+        
+    except Exception as e:
+        print(f"Error in get_most_viewed_books: {e}")
+        return []
 
 
 def get_books_by_user_interests(user_id, limit=12):
@@ -255,6 +308,7 @@ def index():
     """
     الصفحة الرئيسية
     """
+    print(f"DEBUG: Visit to Explore Index - Authenticated: {current_user.is_authenticated}")
     hero = None
     sections = []
     
@@ -300,26 +354,49 @@ def index():
         }
     ]
     
+    # 👁️ الأعلى مشاهدة - يظهر للجميع
+    try:
+        most_viewed = get_most_viewed_books(limit=12)
+        if most_viewed:
+            sections.append({
+                "title": "👁️ الأعلى مشاهدة",
+                "subtitle": "الكتب الأكثر زيارة من القراء",
+                "books": most_viewed,
+                "style": "info",
+                "icon": "eye",
+                "query": "special:most-viewed"
+            })
+    except Exception as e:
+        print(f"Most Viewed Error: {e}")
+    
+
+
+    # 🧠 مقترحات لك - بناءً على Deep Learning (New) - للجميع
+    try:
+        current_uid = current_user.id if current_user.is_authenticated else None
+        smart_recs = get_deep_learning_recommendations(current_uid, limit=24)
+        print(f"DEBUG: Found {len(smart_recs) if smart_recs else 0} smart recs for user {current_uid}")
+        
+        # Fallback for visibility
+        display_recs = smart_recs if smart_recs else trending_books[:6]
+        
+        if display_recs:
+            sections.insert(0, { 
+                "title": "🧠 مقترحات لك",
+                "subtitle": "كتب اخترناها لك بدقة باستخدام Two-Tower Neural Network",
+                "books": display_recs,
+                "style": "accent",
+                "icon": "brain",
+                "query": "special:smart-rec"
+            })
+    except Exception as e:
+        print(f"DL Recommendations Error: {e}")
+
     # للمستخدم المسجل: أقسام إضافية
     if current_user.is_authenticated:
         user_id = current_user.id
         
-        # 🧠 مختارات الذكاء الاصطناعي
-        try:
-            cf_books = get_cf_similar(user_id, top_n=12)
-            if cf_books:
-                sections.insert(0, {
-                    "title": "🧠 مختارات لك",
-                    "subtitle": "خوارزمياتنا اختارت لك هذه الكتب",
-                    "books": cf_books,
-                    "style": "accent",
-                    "icon": "brain",
-                    "query": "special:cf"
-                })
-                hero = cf_books[0]
-                sections[0]["books"] = cf_books[1:]
-        except Exception as e:
-            print(f"CF Error: {e}")
+        # Removed legacy CF section to prioritize Two-Tower DL models
 
         # 🔍 آخر بحثك - عرض سجل البحث
         try:
@@ -367,20 +444,6 @@ def index():
         except Exception as e:
             print(f"Recent Searches Error: {e}")
 
-        # 🧠 مقترحات لك - بناءً على تحليل سلوكك (مثل YouTube)
-        try:
-            smart_recs = get_behavior_based_recommendations(user_id, limit=12)
-            if smart_recs:
-                sections.insert(2, {
-                    "title": "🧠 مقترحات لك",
-                    "subtitle": "كتب مختارة بناءً على ذوقك وسلوكك",
-                    "books": smart_recs,
-                    "style": "purple",
-                    "icon": "brain",
-                    "query": "special:behavior"
-                })
-        except Exception as e:
-            print(f"Behavior Recommendations Error: {e}")
 
         # 👁️ شاهدت مؤخراً - الكتب الفعلية التي شاهدها
         try:
@@ -397,56 +460,7 @@ def index():
         except Exception as e:
             print(f"Recently Viewed Error: {e}")
 
-        # 🌟 بناءً على اهتماماتك
-        try:
-            interest_books = get_books_by_user_interests(user_id, limit=12)
-            if interest_books:
-                sections.append({
-                    "title": "🌟 بناءً على اهتماماتك",
-                    "subtitle": "كتب تناسب المواضيع التي تهتم بها",
-                    "books": interest_books,
-                    "style": "primary",
-                    "icon": "heart",
-                    "query": "special:interests"
-                })
-        except Exception as e:
-            print(f"Interests Error: {e}")
 
-        # 👀 بناءً على مشاهداتك (AI Enhanced)
-        try:
-            # محاولة استخدام AI Embeddings أولاً
-            view_books = get_view_based_recommendations(user_id, top_n=12)
-            
-            # إذا لم توجد نتائج (ربما لا توجد embeddings بعد)، نستخدم الطريقة التقليدية
-            if not view_books:
-                view_books = get_books_by_user_views(user_id, limit=12)
-                
-            if view_books:
-                sections.append({
-                    "title": "👀 بناءً على مشاهداتك (AI)",
-                    "subtitle": "تحليل ذكي للكتب التي تثير اهتمامك",
-                    "books": view_books,
-                    "style": "info",
-                    "icon": "eye",
-                    "query": "special:views"
-                })
-        except Exception as e:
-            print(f"Views Error: {e}")
-
-        # 💎 جواهر مخفية
-        try:
-            gems = get_hidden_gems(limit=8)
-            if gems:
-                sections.append({
-                    "title": "💎 جواهر مخفية",
-                    "subtitle": "كتب رائعة لم تأخذ حقها من الشهرة",
-                    "books": gems,
-                    "style": "warning",
-                    "icon": "diamond",
-                    "query": "special:hidden-gems"
-                })
-        except Exception as e:
-            print(f"HiddenGems Error: {e}")
 
     resp = make_response(render_template("explore.html", sections=sections, hero=hero))
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"

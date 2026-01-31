@@ -147,11 +147,50 @@
                     </span>
                 </div>
 
-                <div class="mt-3 d-flex gap-2 flex-wrap">
-                    <span class="text-muted small">اقتراحات:</span>
-                    <a href="{{ url_for('public.list_books', q='الرواية') }}" class="badge-ghost">الرواية</a>
-                    <a href="{{ url_for('public.list_books', q='تطوير الذات') }}" class="badge-ghost">تطوير الذات</a>
-                    <a href="{{ url_for('public.list_books', q='برمجة') }}" class="badge-ghost">برمجة</a>
+                <!-- Filter Chips -->
+                <div class="search-filters d-flex gap-2 mt-3 overflow-auto pb-1" style="white-space: nowrap;">
+                    <label class="filter-chip">
+                        <input type="radio" name="search_type" value="all" checked form="searchForm">
+                        <span>الكل</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="search_type" value="title" form="searchForm">
+                        <span>عنوان</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="search_type" value="author" form="searchForm">
+                        <span>مؤلف</span>
+                    </label>
+                    <label class="filter-chip">
+                        <input type="radio" name="search_type" value="isbn" form="searchForm">
+                        <span>ISBN</span>
+                    </label>
+                </div>
+
+                <!-- Live Results Dropdown -->
+                <div id="searchResults" class="search-results-dropdown" style="display: none;"></div>
+
+                <!-- Recent History -->
+                <div id="searchHistory" class="mt-4">
+                    <div class="d-flex justify-between align-center mb-2">
+                        <span class="text-muted small fw-bold">عمليات البحث الأخيرة</span>
+                        <button type="button" class="btn-text small text-danger" onclick="clearSearchHistory()">مسح
+                            الكل</button>
+                    </div>
+                    <div id="historyList" class="d-flex flex-column gap-2">
+                        <!-- History items will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Default Suggestions (Fallback) -->
+                <div id="defaultSuggestions" class="mt-4">
+                    <span class="text-muted small fw-bold d-block mb-2">اقتراحات شائعة:</span>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('public.list_books', q='الرواية') }}" class="badge-ghost">الرواية</a>
+                        <a href="{{ url_for('public.list_books', q='تطوير الذات') }}" class="badge-ghost">تطوير
+                            الذات</a>
+                        <a href="{{ url_for('public.list_books', q='برمجة') }}" class="badge-ghost">برمجة</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -292,6 +331,135 @@
 
     <script>
         // ... (Keep existing JS logic, but minor cleanup if needed) ...
+        // [Existing Theme, Mobile Menu, Scroll logic...]
+
+        // ---------------------------------------------------------
+        // 🔍 SEARCH ENHANCEMENTS (Live Search & History)
+        // ---------------------------------------------------------
+
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const historyList = document.getElementById('historyList');
+        const searchHistoryContainer = document.getElementById('searchHistory');
+        const defaultSuggestions = document.getElementById('defaultSuggestions');
+        let searchTimeout = null;
+
+        // 1. Search History Management
+        function getSearchHistory() {
+            return JSON.parse(localStorage.getItem('alham_search_history') || '[]');
+        }
+
+        function saveSearchHistory(query) {
+            let history = getSearchHistory();
+            // Remove if exists to push to top
+            history = history.filter(item => item !== query);
+            history.unshift(query);
+            // Limit to 5
+            history = history.slice(0, 5);
+            localStorage.setItem('alham_search_history', JSON.stringify(history));
+            renderSearchHistory();
+        }
+
+        function clearSearchHistory() {
+            localStorage.removeItem('alham_search_history');
+            renderSearchHistory();
+        }
+
+        function renderSearchHistory() {
+            const history = getSearchHistory();
+            if (history.length === 0) {
+                searchHistoryContainer.style.display = 'none';
+                return;
+            }
+            searchHistoryContainer.style.display = 'block';
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item" onclick="setSearchQuery('${item}')">
+                    <div class="history-text">
+                        <i class="ph ph-clock-counter-clockwise"></i>
+                        <span>${item}</span>
+                    </div>
+                    <i class="ph ph-arrow-up-left" style="font-size: 0.8rem; opacity: 0.5;"></i>
+                </div>
+            `).join('');
+        }
+
+        function setSearchQuery(query) {
+            searchInput.value = query;
+            document.getElementById('searchForm').submit();
+        }
+
+        // 2. Live Search
+        searchInput.addEventListener('input', function () {
+            const query = this.value.trim();
+            const type = document.querySelector('input[name="search_type"]:checked').value;
+
+            // Clear previous timeout
+            if (searchTimeout) clearTimeout(searchTimeout);
+
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                searchHistoryContainer.style.display = getSearchHistory().length ? 'block' : 'none';
+                defaultSuggestions.style.display = 'block';
+                return;
+            }
+
+            // Debounce API call (300ms)
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/public/api/search_hint?q=${encodeURIComponent(query)}&type=${type}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        renderSearchResults(data);
+                    }
+                } catch (error) {
+                    console.error('Search hint error:', error);
+                }
+            }, 300);
+        });
+
+        function renderSearchResults(data) {
+            if (!data || data.length === 0) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            searchResults.innerHTML = data.map(book => `
+                <a href="/public/books/${book.id}" class="search-result-item">
+                    <img src="${book.cover || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}" 
+                         class="search-result-thumb" alt="${book.title}"
+                         onerror="this.src='https://placehold.co/40x60?text=Book'">
+                    <div class="search-result-info">
+                        <h6>${book.title}</h6>
+                        <p>${book.author || 'Unknown Author'}</p>
+                    </div>
+                </a>
+            `).join('');
+
+            searchResults.style.display = 'block';
+            searchHistoryContainer.style.display = 'none';
+            defaultSuggestions.style.display = 'none';
+        }
+
+        // 3. Form Submit Intercept (Save History)
+        document.getElementById('searchForm').addEventListener('submit', function () {
+            const query = searchInput.value.trim();
+            if (query) saveSearchHistory(query);
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSearchHistory();
+
+            // Focus handling
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim().length < 2) {
+                    renderSearchHistory();
+                    searchResults.style.display = 'none';
+                }
+            });
+        });
+
+        // ... (Keep existing Theme, Mobile Menu, Scroll logic) ...
         // Theme Toggle Functionality
         function initTheme() {
             const savedTheme = localStorage.getItem('theme');
@@ -491,6 +659,7 @@
             }
         }
     </script>
+    {% block scripts %} {% endblock %}
 </body>
 
 </html>

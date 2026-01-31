@@ -974,34 +974,64 @@
         {% endif %}
       </div>
 
-      <!-- Extended Info -->
-      <div class="info-grid animate-on-scroll fade-up delay-1">
-        {% if book.publisher %}
-        <div class="info-item">
-          <span class="info-label">الناشر</span>
-          <span class="info-value">{{ book.publisher }}</span>
+      <!-- Extended Info - بطاقة معلومات الكتاب -->
+      <div class="card glass-panel mb-4" style="padding: 1.5rem;">
+        <h3 class="h6 text-muted mb-3" style="letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="ph ph-info"></i> معلومات الكتاب
+        </h3>
+        <div class="info-grid">
+          {% if book.categories %}
+          <div class="info-item" style="border-color: rgba(139, 92, 246, 0.3);">
+            <span class="info-label">📚 التصنيف</span>
+            <span class="info-value" style="color: var(--primary-400);">{{ book.categories|join(', ') if book.categories
+              is iterable and book.categories is not string else book.categories }}</span>
+          </div>
+          {% endif %}
+          {% if book.language %}
+          <div class="info-item">
+            <span class="info-label">🌍 اللغة</span>
+            <span class="info-value">{{ book.language|upper }}</span>
+          </div>
+          {% endif %}
+          {% if book.publisher %}
+          <div class="info-item">
+            <span class="info-label">🏢 الناشر</span>
+            <span class="info-value">{{ book.publisher }}</span>
+          </div>
+          {% endif %}
+          {% if book.pageCount %}
+          <div class="info-item">
+            <span class="info-label">📄 الصفحات</span>
+            <span class="info-value">{{ book.pageCount }}</span>
+          </div>
+          {% endif %}
+          {% if book.publishedDate %}
+          <div class="info-item">
+            <span class="info-label">📅 النشر</span>
+            <span class="info-value">{{ book.publishedDate }}</span>
+          </div>
+          {% endif %}
+          {% if total_views and total_views > 0 %}
+          <div class="info-item" style="border-color: rgba(59, 130, 246, 0.3);">
+            <span class="info-label">👁️ المشاهدات</span>
+            <span class="info-value" style="color: var(--info);">{{ total_views }}</span>
+          </div>
+          {% endif %}
+          {% if unique_viewers and unique_viewers > 0 %}
+          <div class="info-item" style="border-color: rgba(16, 185, 129, 0.3);">
+            <span class="info-label">👥 القراء</span>
+            <span class="info-value" style="color: var(--success);">{{ unique_viewers }}</span>
+          </div>
+          {% endif %}
+          {% if book.isbn %}
+          <div class="info-item" style="opacity: 0.85;">
+            <span class="info-label">🔢 ISBN</span>
+            <span class="info-value" style="font-family: monospace; font-size: 0.8rem;">{{ book.isbn }}</span>
+          </div>
+          {% endif %}
         </div>
-        {% endif %}
-        {% if book.language %}
-        <div class="info-item">
-          <span class="info-label">اللغة</span>
-          <span class="info-value">{{ book.language|upper }}</span>
-        </div>
-        {% endif %}
-        {% if book.isbn %}
-        <div class="info-item">
-          <span class="info-label">ISBN</span>
-          <span class="info-value">{{ book.isbn }}</span>
-        </div>
-        {% endif %}
-        {% if book.categories %}
-        <div class="info-item">
-          <span class="info-label">التصنيف</span>
-          <span class="info-value">{{ book.categories|join(', ') if book.categories is iterable and book.categories is
-            not string else book.categories }}</span>
-        </div>
-        {% endif %}
       </div>
+
 
       <!-- Description Card -->
       <div class="card glass-panel mb-5">

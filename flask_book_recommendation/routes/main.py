@@ -23,7 +23,8 @@ from ..utils import (
     translate_to_english_with_gemini,
     chat_with_ai  # مساعد AI للكتب
 )
-from ..recommender import log_user_view
+from ..recommender import log_user_view, get_deep_learning_recommendations
+
 
 
 
@@ -218,8 +219,8 @@ def books():
         if book.language:
             all_languages.add(book.language)
 
-    # ============ توصيات الذكاء الاصطناعي ============
-    recs = get_cf_recommendations(current_user.id, top_n=8)
+    # ============ توصيات الذكاء الاصطناعي (Deep Learning) ============
+    recs = get_deep_learning_recommendations(current_user.id, limit=8)
     
     # ============ المكتبات الخمس ============
     from ..recommender import get_all_libraries_showcase, get_hybrid_recommendations, get_author_books # Added imports
@@ -796,3 +797,5 @@ def ai_chat():
             "reply": "عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.",
             "books": []
         }, 500
+
+

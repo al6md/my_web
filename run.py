@@ -5,15 +5,16 @@ import os
 import subprocess
 
 # تحديد المسارات
-venv_path = os.path.join(os.getcwd(), "venv", "Scripts", "activate.bat")
+venv_python = os.path.join(os.getcwd(), "venv", "Scripts", "python.exe")
 
-print("Activating virtual environment...")
+# إعداد متغيرات البيئة
+os.environ["FLASK_APP"] = "flask_book_recommendation.app:create_app"
+os.environ["FLASK_DEBUG"] = "1"
 
-# تعريف التطبيق الرئيسي لفلَسك
-flask_app = "flask_book_recommendation.app:create_app"
+print(f"Starting server using: {venv_python}")
 
-# نص الأمر الكامل
-activate_cmd = f'"{venv_path}" && set FLASK_APP={flask_app} && python -m flask run --debug --host=0.0.0.0'
-
-# تشغيل السيرفر
-subprocess.call(activate_cmd, shell=True)
+# تشغيل السيرفر مباشرة باستخدام بايثون البيئة الافتراضية
+try:
+    subprocess.call([venv_python, "-m", "flask", "run", "--host=0.0.0.0"])
+except KeyboardInterrupt:
+    print("\nServer stopped.")
