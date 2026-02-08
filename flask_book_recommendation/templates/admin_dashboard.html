@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>🤖 AI Engine Dashboard</h1>
+    <hr>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Service Status</h5>
+                </div>
+                <div class="card-body">
+                    {% if health.status == 'ok' %}
+                    <h2 class="text-success"><i class="fas fa-check-circle"></i> Online</h2>
+                    <p>Model Loaded: <strong>{{ health.model_loaded }}</strong></p>
+                    {% else %}
+                    <h2 class="text-danger"><i class="fas fa-times-circle"></i> Offline</h2>
+                    <p>Reason: {{ health.get('status', 'Unknown error') }}</p>
+                    <div class="alert alert-warning">
+                        Please start the AI Service using <code>start_ai_service.bat</code>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Vector Index Stats</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Indexed Books
+                            <span class="badge bg-primary rounded-pill">{{ stats.get('index_size', 0) }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Embedding Model
+                            <span>{{ stats.get('embedding_model', 'N/A') }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Actions</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('admin.trigger_index') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-hammer"></i> Rebuild Vector Index
+                </button>
+                <small class="text-muted ms-2">Use this after adding new books to update the AI search engine.</small>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

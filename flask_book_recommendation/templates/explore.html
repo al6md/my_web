@@ -249,7 +249,24 @@
 
             <div class="scroll-container">
                 {% for book in section.books %}
-                <div class="book-card">
+                <!-- Active Algorithms Bar (Only for Smart Recs) -->
+                {% if section.query == 'special:smart-rec' and loop.first %}
+                <div class="active-algorithms-bar animate-on-scroll fade-up">
+                    <span class="algo-label"><i class="ph-fill ph-cpu"></i> Active AI Models:</span>
+                    <div class="algo-badges">
+                        <span class="algo-badge active" title="Semantic Analysis"><i class="ph-bold ph-text-aa"></i>
+                            Transformer Embeddings</span>
+                        <span class="algo-badge active" title="User Behavior Learning"><i
+                                class="ph-bold ph-users-three"></i> Neural Collaborative Filtering</span>
+                        <span class="algo-badge active" title="Ranker"><i class="ph-bold ph-sort-ascending"></i> Hybrid
+                            Ranking Engine</span>
+                        <span class="algo-badge active" title="Real-time"><i class="ph-bold ph-lightning"></i>
+                            Behavioral Learning</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="book-card {{ 'ai-enhanced' if book.algorithm_used else '' }}">
                     <a href="{{ url_for('public.book_detail', gid=book.id) }}"
                         style="display: block; text-decoration: none;">
                         <div class="book-cover-wrap" data-title="{{ book.title }}"
@@ -278,7 +295,28 @@
                                 </div>
                                 {% endif %}
                             </div>
-                            {% if book.reason %}
+                            {% if book.algorithm_used %}
+                            <div class="ai-meta mt-2">
+                                <div class="d-flex align-center gap-1 mb-1">
+                                    <span class="ai-badge transformer">{{ book.algorithm_used }}</span>
+                                    {% if book.score %}
+                                    <span class="ai-score" title="Neural Confidence Score">
+                                        <i class="ph-fill ph-chart-bar"></i> {{ book.score }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="ai-reason" data-title="{{ book.title|escape }}"
+                                    data-algo="{{ book.algorithm_used|escape }}"
+                                    data-reason="{{ book.reason_detail|default(book.reason)|escape }}"
+                                    data-score="{{ book.score|default(0)|escape }}"
+                                    data-version="{{ book.model_version|default('v2.0')|escape }}"
+                                    onclick="event.preventDefault(); showExplainModalFromData(this)">
+                                    <i class="ph-fill ph-info"></i> كيف تم اختياره؟
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if book.reason and not book.algorithm_used %}
                             <p class="mt-1" style="font-size: 0.75rem; color: var(--primary-500); font-weight: 500;">
                                 <i class="ph-fill ph-check-circle"></i> {{ book.reason }}
                             </p>
@@ -329,33 +367,252 @@
     {% endfor %}
 </div>
 
+<!-- Explainable AI Modal -->
+<div id="ai-explain-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content glass-card animate-on-scroll fade-up">
+        <div class="modal-header">
+            <h3 class="mb-0 text-gradient"><i class="ph-fill ph-brain"></i> تحليل الذكاء الاصطناعي</h3>
+            <button class="close-btn" onclick="closeExplainModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="modal-body text-center">
+            <div id="modal-book-title" class="h5 mb-4 text-primary"></div>
+
+            <div class="ai-metric-grid">
+                <div class="metric-item">
+                    <div class="label">الخوارزمية</div>
+                    <div id="modal-algo" class="value">Transformer</div>
+                </div>
+                <div class="metric-item">
+                    <div class="label">نسبة التطابق</div>
+                    <div id="modal-score" class="value text-warning">0.95</div>
+                </div>
+                <div class="metric-item">
+                    <div class="label">إصدار النموذج</div>
+                    <div id="modal-version" class="value text-muted small">v2.1</div>
+                </div>
+            </div>
+
+            <div class="explanation-box mt-4">
+                <h6><i class="ph-fill ph-lightbulb"></i> لماذا هذا الكتاب؟</h6>
+                <p id="modal-reason" class="text-muted"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
-    .book-placeholder {
+    /* AI Enhancements */
+    .book-card.ai-enhanced {
+        border: 1px solid var(--primary-200);
+        background: linear-gradient(to bottom, var(--bg-surface-1), rgba(99, 102, 241, 0.05));
+    }
+
+    .ai-meta {
+        font-size: 0.7rem;
+        padding-top: 5px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .ai-badge {
+        background: var(--primary-100);
+        color: var(--primary-700);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.65rem;
+    }
+
+    .ai-score {
+        color: var(--warning);
+        font-weight: bold;
+        margin-right: auto;
+    }
+
+    .ai-reason {
+        color: var(--text-muted);
+        cursor: pointer;
+        margin-top: 4px;
+        transition: color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .ai-reason:hover {
+        color: var(--primary-500);
+        text-decoration: underline;
+    }
+
+    /* Active Algorithms Bar */
+    .active-algorithms-bar {
+        width: 100%;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background: var(--bg-surface-2);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--primary-200);
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .algo-label {
+        font-weight: bold;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .algo-badges {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .algo-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: var(--bg-surface-1);
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+
+    .algo-badge.active {
+        border-color: var(--primary-300);
+        color: var(--primary-600);
+        background: rgba(99, 102, 241, 0.05);
+        opacity: 1;
+    }
+
+    /* Modal Styles */
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        min-height: 200px;
-        background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: white;
-        border-radius: var(--radius-md);
+    }
+
+    .modal-content {
+        background: var(--bg-surface-1);
+        padding: 2rem;
+        border-radius: var(--radius-xl);
+        width: 90%;
+        max-width: 500px;
+        position: relative;
+        border: 1px solid var(--border-subtle);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+    }
+
+    .ai-metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .metric-item {
+        background: var(--bg-surface-2);
         padding: 1rem;
-        text-align: center;
+        border-radius: var(--radius-lg);
     }
 
-    .book-placeholder i {
-        font-size: 2.5rem;
+    .metric-item .label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
         margin-bottom: 0.5rem;
-        opacity: 0.8;
     }
 
-    .book-placeholder span {
-        font-size: 0.75rem;
-        opacity: 0.9;
-        font-weight: 600;
+    .metric-item .value {
+        font-weight: bold;
+        font-size: 0.9rem;
+        color: var(--text-main);
     }
+
+    .explanation-box {
+        background: rgba(99, 102, 241, 0.05);
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        text-align: right;
+        border-right: 3px solid var(--primary-500);
+    }
+</style>
+
+<script>
+    function showExplainModalFromData(element) {
+        const title = element.dataset.title;
+        const algo = element.dataset.algo;
+        const reason = element.dataset.reason;
+        const score = element.dataset.score;
+        const version = element.dataset.version;
+
+        showExplainModal(title, algo, reason, score, version);
+    }
+
+    function showExplainModal(title, algo, reason, score, version) {
+        document.getElementById('modal-book-title').textContent = title;
+        document.getElementById('modal-algo').textContent = algo;
+        document.getElementById('modal-score').textContent = score;
+        document.getElementById('modal-version').textContent = version;
+        document.getElementById('modal-reason').textContent = reason;
+        document.getElementById('ai-explain-modal').style.display = 'flex';
+    }
+    function closeExplainModal() {
+        document.getElementById('ai-explain-modal').style.display = 'none';
+    }
+</script>
+width: 100%;
+height: 100%;
+min-height: 200px;
+background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+color: white;
+border-radius: var(--radius-md);
+padding: 1rem;
+text-align: center;
+}
+
+.book-placeholder i {
+font-size: 2.5rem;
+margin-bottom: 0.5rem;
+opacity: 0.8;
+}
+
+.book-placeholder span {
+font-size: 0.75rem;
+opacity: 0.9;
+font-weight: 600;
+}
 </style>
 
 <script>

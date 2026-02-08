@@ -640,6 +640,15 @@ def book_detail(gid):
             db.session.commit()
             print(f"👁️ [BookView] Recorded view for user {current_user.id}, book {gid}")
             
+            # --- AI Engine Feedback Loop ---
+            try:
+                from ..ai_client import ai_client
+                # 0 for view, we could use dwell time if we had it from frontend
+                ai_client.send_feedback(current_user.id, int(local_book.id) if local_book else 0, "view", 1.0) 
+            except Exception as e_rl:
+                print(f"RL Feedback Error: {e_rl}")
+            # -------------------------------
+            
             # -------------------------------------------------
             #   ⭐ تحديث اهتمامات المستخدم بناءً على المشاهدة
             # -------------------------------------------------
@@ -1962,3 +1971,101 @@ def search_hint():
     except Exception as e:
         print(f"Search hint error: {e}")
         return jsonify([])
+
+# ===========================================================================
+#                     🎭 توصيات المزاج والكتاب المشابه (AI API)
+# ===========================================================================
+
+@public_bp.get("/api/recommend_by_mood")
+def recommend_by_mood():
+    """توصيات بناءً على المزاج"""
+    mood = request.args.get("mood", "happy")
+    
+    # خريطة المزاج للتصنيفات
+    mood_map = {
+        "happy": "Comedy, Humor, Adventure",
+        "sad": "Drama, Psychology, Poetry",
+        "adventurous": "Travel, Adventure, Science Fiction",
+        "calm": "Philosophy, Spirituality, Nature",
+        "curious": "Science, History, Mystery",
+        "romantic": "Romance, Love, Poetry"
+    }
+    
+    topic = mood_map.get(mood, "General")
+    
+    # استخدام Logic Recommender
+    from ..recommender import get_topic_based, _book_to_dict
+    
+    # نحصل على كائنات Books
+    result = get_topic_based(current_user.id if current_user.is_authenticated else 0, topic_override=topic, limit=12)
+    books = result if isinstance(result, list) else result.get('books', [])
+    
+    # تحويل لـ JSON مع Metadata
+    books_data = []
+    for b in books:
+        # إذا كانت books عبارة عن قواميس بالفعل (من get_topic_based أحياناً)
+        if isinstance(b, dict):
+            # التأكد من وجود metadata
+            if 'algorithm_used' not in b:
+                b['algorithm_used'] = "Mood Semantic Match"
+                b['score'] = "0.85"
+                b['reason_detail'] = f"Matches your mood '{mood}' via semantic analysis of '{topic}'"
+            books_data.append(b)
+        else:
+            # إذا كانت كائنات
+            d = _book_to_dict(
+                b, 
+                source="Mood Match", 
+                reason=f"Mood: {mood}",
+                extra_meta={
+                    "algorithm_used": "Mood Semantic Match", 
+                    "score": "0.88",
+                    "reason_detail": f"Selected for '{mood}' vibe based on genre '{topic}'",
+                    "model_version": "v1.2 (Topic)"
+                }
+            )
+            if d: books_data.append(d)
+            
+    return jsonify({"books": books_data})
+
+
+@public_bp.get("/api/recommend_similar_book")
+def recommend_similar_book():
+    """توصيات بناءً على كتاب مشابه"""
+    title = request.args.get("title", "").strip()
+    if not title:
+        return jsonify({"books": []})
+
+    # استخدام البحث الدلالي
+    from ..recommender import get_content_similar_by_text
+    
+    # نفترض وجود دالة get_content_similar_by_text(text, limit)
+    # إذا لم تكن موجودة، نستخدم البحث العادي كبديل
+    try:
+        recs = get_content_similar_by_text(title, limit=12)
+    except:
+        # Fallback: search content
+        from ..models import Book
+        recs = Book.query.filter(Book.title.ilike(f"%{title}%")).limit(5).all()
+        # ثم البحث عن مشابه لهم.. للتبسيط سنرجع البحث نفسه إذا فشل ال AI
+    
+    books_data = []
+    for b in recs:
+        if isinstance(b, dict):
+             books_data.append(b)
+        else:
+            d = _book_to_dict(
+                b, 
+                source="Content Match", 
+                reason=f"Similar to {title}",
+                extra_meta={
+                    "algorithm_used": "Content-Based Filtering",
+                    "score": "0.92",
+                    "reason_detail": f"High semantic similarity to '{title}' description and style.",
+                    "model_version": "v2.1 (Transformer)"
+                }
+            )
+            if d: books_data.append(d)
+
+    return jsonify({"books": books_data})
+

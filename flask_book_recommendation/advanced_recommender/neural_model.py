@@ -12,11 +12,11 @@ class UserTower(nn.Module):
         
         # History Processor (Processes sequence of book embeddings)
         # Input: Sequence of Book Vectors (Batch, Seq_Len, Embed_Dim)
-        self.history_gru = nn.GRU(input_size=768, hidden_size=history_dim, batch_first=True)
+        self.history_gru = nn.GRU(input_size=384, hidden_size=history_dim, batch_first=True)
         
         # Semantic/Explicit Interest Embedding
         # Example: Linear layer to project concatenated search/interest vectors
-        self.interest_projector = nn.Linear(768, history_dim)
+        self.interest_projector = nn.Linear(384, history_dim)
         
         # Fusion Layer
         self.fc1 = nn.Linear(user_embedding_dim + history_dim + history_dim, hidden_dim)
@@ -48,7 +48,7 @@ class UserTower(nn.Module):
         return F.normalize(x, p=2, dim=1)
 
 class ItemTower(nn.Module):
-    def __init__(self, book_embedding_dim=768, hidden_dim=256, output_dim=128):
+    def __init__(self, book_embedding_dim=384, hidden_dim=256, output_dim=128):
         super(ItemTower, self).__init__()
         
         # Input is pre-computed BERT/Text embedding of the book

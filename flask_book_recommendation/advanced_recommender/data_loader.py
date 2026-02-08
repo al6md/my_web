@@ -75,7 +75,7 @@ def get_dummy_data_loader(num_users=100, num_books=500):
     book_ids = range(1, num_books + 1)
     
     # Mock Embeddings (BERT style)
-    book_features = {bid: np.random.randn(768).astype(np.float32) for bid in book_ids}
+    book_features = {bid: np.random.randn(384).astype(np.float32) for bid in book_ids}
     
     # Mock User Interactions
     interactions = []
@@ -83,9 +83,9 @@ def get_dummy_data_loader(num_users=100, num_books=500):
     
     for uid in user_ids:
         # Mock History: Sequence of 10 book vectors
-        hist = np.random.randn(10, 768).astype(np.float32)
+        hist = np.random.randn(10, 384).astype(np.float32)
         # Mock Interests
-        interests = np.random.randn(768).astype(np.float32)
+        interests = np.random.randn(384).astype(np.float32)
         user_features[uid] = (hist, interests)
         
         # Create 20 interactions per user

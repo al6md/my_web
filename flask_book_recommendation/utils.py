@@ -971,26 +971,29 @@ from functools import lru_cache
 @lru_cache(maxsize=1000)
 def get_text_embedding(text, max_retries=3):
     """
-    تحويل النص إلى embedding vector باستخدام Gemini API.
-    
-    Args:
-        text: النص المراد تحويله
-        max_retries: عدد محاولات إعادة المحاولة في حال الفشل
-        
-    Returns:
-        قائمة من الأرقام (768 بُعد) أو None في حال الفشل
+    تحويل النص إلى embedding vector.
+    يحاول أولاً استخدام نموذج محلي (SentenceTransformers) لضمان الاستمرارية،
+    ثم يحاول استخدام Gemini API كبديل.
     """
+    # 1. محاولة استخدام النموذج المحلي (أسرع وأكثر اعتمادية)
+    try:
+        from sentence_transformers import SentenceTransformer
+        # استخدام نموذج صغير وسريع
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        embedding = model.encode(text)
+        return embedding.tolist()
+    except Exception as e:
+        print(f"[Local-Embedding] ⚠️ Error loading local model: {e}")
+
+    # 2. محاولة استخدام Gemini API كبديل
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        print("[Embedding] ⚠️ GEMINI_API_KEY not found!")
         return None
     
     if not text or not text.strip():
         return None
     
-    # تنظيف النص وتقليل طوله
-    clean_text = text.strip()[:2000]  # Gemini يدعم حتى 2048 حرف
-    
+    clean_text = text.strip()[:2000]
     url = f"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key={api_key}"
     payload = {
         "model": "models/embedding-001", 
@@ -1000,31 +1003,14 @@ def get_text_embedding(text, max_retries=3):
     for attempt in range(max_retries):
         try:
             response = requests.post(url, json=payload, timeout=10)
-            
             if response.status_code == 200:
                 data = response.json()
                 embedding = data.get('embedding', {}).get('values')
                 if embedding:
                     return embedding
-                    
-            elif response.status_code == 429:
-                # Rate limit - انتظر ثم حاول مجدداً
-                wait_time = (attempt + 1) * 2
-                print(f"[Embedding] Rate limited, waiting {wait_time}s...")
-                time.sleep(wait_time)
-                continue
-                
-            else:
-                print(f"[Embedding] API error: {response.status_code}")
-                
-        except requests.exceptions.Timeout:
-            print(f"[Embedding] Timeout on attempt {attempt + 1}")
-        except Exception as e:
-            print(f"[Embedding] Error: {e}")
-        
-        # انتظار قبل المحاولة التالية
-        if attempt < max_retries - 1:
             time.sleep(1)
+        except:
+            pass
     
     return None
 

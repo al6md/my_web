@@ -12,9 +12,11 @@ from .routes.preferences import prefs_bp
 from .routes.my_google_books import google_bp
 from .routes.explore import explore_bp
 from .routes.public import public_bp
-from .routes.public import public_bp
 from .routes.api import api_bp
 from .routes.onboarding import onboarding_bp
+from .routes.admin import admin_bp
+from .routes.debug_api import debug_bp
+
 
 
 def setup_logging(app):
@@ -77,6 +79,12 @@ def create_app():
     # Onboarding
     csrf.exempt(onboarding_bp) # API also uses JWT/Token often
     app.register_blueprint(onboarding_bp)
+    
+    app.register_blueprint(admin_bp)
+    
+    # Debug/Verification API for recommendations
+    csrf.exempt(debug_bp)
+    app.register_blueprint(debug_bp)
 
     # الصفحة الرئيسية → Explore
     @app.route("/")

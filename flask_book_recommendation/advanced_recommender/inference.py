@@ -38,9 +38,9 @@ class DLInferenceEngine:
     def predict(self, user_id, history_vectors, interest_vector, candidate_books_features):
         """
         user_id: int
-        history_vectors: np.array (10, 768)
-        interest_vector: np.array (768,)
-        candidate_books_features: dict {book_id: vector (768,)}
+        history_vectors: np.array (10, 384)
+        interest_vector: np.array (384,)
+        candidate_books_features: dict {book_id: vector (384,)}
         """
         if not self.is_ready:
             return {}
@@ -85,8 +85,8 @@ class DLInferenceEngine:
         candidate_vectors = {b['id']: b['vector'] for b in all_books_data if b.get('vector') is not None}
         dl_scores = self.predict(
             user_id, 
-            user_data.get('history', np.zeros((10, 768))), 
-            user_data.get('interests', np.zeros(768)),
+            user_data.get('history', np.zeros((10, 384))), 
+            user_data.get('interests', np.zeros(384)),
             candidate_vectors
         )
         

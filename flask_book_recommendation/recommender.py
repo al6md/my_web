@@ -38,28 +38,18 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------
 
 
-def _book_to_dict(book, source="Local", reason=None):
+def _book_to_dict(book, source="Local", reason=None, extra_meta=None):
     """
     يحوّل كائن Book من الـ ORM إلى قاموس جاهز للتمبليت.
-    
-    Args:
-        book: كائن Book من SQLAlchemy
-        source: مصدر الكتاب (Local, CF, Content, Google Books, etc.)
-        reason: سبب التوصية (نص توضيحي)
-        
-    Returns:
-        قاموس يحتوي على معلومات الكتاب أو None إذا كان book=None
     """
     if book is None:
         return None
 
     cover_url = getattr(book, "cover_url", None)
-    # تنظيف روابط Google Books - إزالة edge=curl لتحسين الأداء
     if cover_url and 'books.google.com' in cover_url and '&edge=curl' in cover_url:
         cover_url = cover_url.replace('&edge=curl', '').replace('&edge=curl&', '&')
 
-    return {
-        # نستخدم google_id لو موجود, وإلا نستخدم id محلي
+    data = {
         "id": getattr(book, "google_id", None) or f"local_{book.id}",
         "title": getattr(book, "title", None),
         "author": getattr(book, "author", None),
@@ -68,6 +58,12 @@ def _book_to_dict(book, source="Local", reason=None):
         "reason": reason,
         "rating": getattr(book, "average_rating", None) or getattr(book, "rating", None),
     }
+    
+    # Add AI Metadata if provided
+    if extra_meta:
+        data.update(extra_meta)
+        
+    return data
 
 
 def _extract_rating_with_fallback(vi):
@@ -623,23 +619,89 @@ def run_in_context(app, func, *args, **kwargs):
     with app.app_context():
         return func(*args, **kwargs)
 
+from .ai_client import ai_client
+
 def _get_ai_embedding_recommendations(user_id, viewed_book_ids, search_queries=None, favorite_book_ids=None, high_rated_book_ids=None, explicit_genres=None, limit=10, offset=0):
     """
-    توصيات بناءً على AI Embeddings - تشابه دلالي شامل.
-    يدمج (المشاهدات + البحث + المفضلة + التقييمات العالية) لبناء بروفايل دقيق.
-    
-    Args:
-        user_id: معرف المستخدم
-        viewed_book_ids: قائمة IDs الكتب المشاهدة
-        search_queries: قائمة عبارات البحث الأخيرة
-        favorite_book_ids: قائمة IDs الكتب المفضلة (Likes)
-        high_rated_book_ids: قاموس أو قائمة بـ IDs الكتب ذات التقييم العالي (مع الدرجة)
-        limit: عدد التوصيات
-        offset: بداية النتائج (للتصفح)
-        
-    Returns:
-        قائمة كتب مقترحة بناءً على التشابه الدلالي
+    Hybrid Recommender: AI Engine (Two-Tower) -> Fallback to Local Embeddings.
     """
+    # 1. Try AI Engine (Microservice)
+    try:
+        # Prepare Context for AI
+        history_texts = []
+        # Fetch titles of viewed books
+        if viewed_book_ids:
+            books = Book.query.filter(Book.id.in_(viewed_book_ids[:5])).all() # Limit history sent
+            history_texts = [f"{b.title} {b.description or ''}" for b in books]
+        
+        # Add Search Queries to history context
+        if search_queries:
+            history_texts.extend(search_queries[:3])
+            
+        interest_texts = explicit_genres or []
+        
+        ai_recs = ai_client.get_recommendations(user_id, history_texts, interest_texts, k=limit+offset)
+        
+        if ai_recs:
+            # AI Returned Data -> Sort and Fetch Book Objects
+            # ai_recs = [{'book_id': 123, 'score': 0.9, 'explanation': 'xxx'}]
+            
+            # Extract IDs (assuming AI returns local DB IDs for now, or we need mapping)
+            # In our implementation of indexer.py, we put Book.ids into FAISS.
+            
+            rec_ids = [r['book_id'] for r in ai_recs]
+            score_map = {r['book_id']: r['score'] for r in ai_recs}
+            expl_map = {r['book_id']: r.get('explanation', 'AI Choice') for r in ai_recs}
+            
+            # Fetch objects
+            books = Book.query.filter(Book.id.in_(rec_ids)).all()
+            books_map = {b.id: b for b in books}
+            
+            final_recs = []
+            for rid in rec_ids:
+                if rid in books_map:
+                    b = books_map[rid]
+                    # Apply offset manually if API didn't handle it strictly (API returns k top)
+                    # We requested limit+offset, so we slice locally
+                    pass
+            
+            # Build Result List
+            for rid in rec_ids:
+                 if rid in books_map:
+                     b = books_map[rid]
+                     
+                     explanation = expl_map[rid]
+                     score = float(score_map[rid])
+                     
+                     # Determine specific algorithm based on explanation keywords
+                     algo = "Transformer Semantic Model"
+                     if "similar to" in explanation.lower():
+                         algo = "Hybrid Ranking Engine"
+                     elif "interest" in explanation.lower():
+                         algo = "Behavioral Learning"
+
+                     meta = {
+                         "score": f"{score:.2f}",
+                         "algorithm_used": algo,
+                         "model_version": "v2.1 (Two-Tower)",
+                         "reason_detail": explanation
+                     }
+
+                     d = _book_to_dict(b, source="AI Neural Brain", reason=explanation, extra_meta=meta)
+                     if d:
+                         final_recs.append(d)
+            
+            # Slice for pagination
+            if offset < len(final_recs):
+                return final_recs[offset:offset+limit]
+            else:
+                return []
+                
+    except Exception as e:
+        logger.error(f"[AI-Bridge] Error contacting AI engine: {e}")
+        # Continue to fallback...
+
+    # ---------------- FALLBACK: Local Logic ----------------
     try:
         search_queries = search_queries or []
         favorite_book_ids = favorite_book_ids or []
@@ -782,13 +844,21 @@ def _get_ai_embedding_recommendations(user_id, viewed_book_ids, search_queries=N
             if not book:
                 continue
             
+            meta = {
+                "score": f"{score:.2f}",
+                "algorithm_used": "Sematic Hybrid Embeddings",
+                "model_version": "v1.5 (Local)",
+                "reason_detail": f"Based on semantic similarity to your reading history ({int(score*100)}% match)."
+            }
+
             book_dict = _book_to_dict(
                 book,
                 source="AI Smart Match",
-                reason=f"🧠 تطابق ذكي: {int(score*100)}%"
+                reason=f"🧠 تطابق ذكي: {int(score*100)}%",
+                extra_meta=meta
             )
             if book_dict:
-                book_dict["score"] = float(score)
+                # book_dict["score"] is already set in meta
                 book_dict["category"] = book.categories.split(",")[0].strip() if book.categories else "unknown"
                 book_dict["rec_type"] = "ai_embedding"
                 recs.append(book_dict)
@@ -815,106 +885,151 @@ def _get_cf_recommendations(user_id, limit=6, offset=0):
 def get_deep_learning_recommendations(user_id, limit=10):
     """
     Get recommendations using the Two-Tower Deep Learning model.
-    Includes Hybrid Ranking logic.
+    Includes Hybrid Ranking logic with full logging and traceability.
     """
-    try:
-        # 1. Fetch User Data
-        recent_views = []
-        if user_id:
-            recent_views = (
-                UserBookView.query
-                .filter_by(user_id=user_id)
-                .order_by(UserBookView.last_viewed_at.desc())
-                .limit(10)
-                .all()
-            )
-        
-        print(f"DEBUG: [DL] user_id={user_id}, recent_views={len(recent_views)}")
-        
-        history_vectors = [] # Should be (10, 768)
-        viewed_ids = []
-        for v in recent_views:
-            # Resolve book
-            book_id = v.book_id
-            if not book_id and v.google_id:
-                 b = Book.query.filter_by(google_id=v.google_id).first()
-                 if b: book_id = b.id
+    import time
+    from .recommendation_logger import (
+        RecommendationPipelineLogger, 
+        RecommendationTrace,
+        validate_embedding,
+        rec_logger
+    )
+    
+    with RecommendationPipelineLogger(user_id or 0) as pipeline_log:
+        try:
+            stage_start = time.perf_counter()
             
-            if book_id:
-                viewed_ids.append(book_id)
-                emb = BookEmbedding.query.filter_by(book_id=book_id).first()
+            # 1. Fetch User Data
+            recent_views = []
+            if user_id:
+                recent_views = (
+                    UserBookView.query
+                    .filter_by(user_id=user_id)
+                    .order_by(UserBookView.last_viewed_at.desc())
+                    .limit(10)
+                    .all()
+                )
+            
+            rec_logger.debug(f"[DL] user_id={user_id}, recent_views={len(recent_views)}")
+            
+            history_vectors = []
+            viewed_ids = []
+            for v in recent_views:
+                book_id = v.book_id
+                if not book_id and v.google_id:
+                     b = Book.query.filter_by(google_id=v.google_id).first()
+                     if b: book_id = b.id
+                
+                if book_id:
+                    viewed_ids.append(book_id)
+                    emb = BookEmbedding.query.filter_by(book_id=book_id).first()
+                    if emb and emb.vector is not None:
+                        history_vectors.append(np.array(emb.vector, dtype=np.float32))
+            
+            # Validate embeddings
+            if history_vectors:
+                validate_embedding(history_vectors[0], context="user_history[0]")
+            
+            # Pad history to 10
+            if len(history_vectors) < 10:
+                pad_len = 10 - len(history_vectors)
+                for _ in range(pad_len):
+                    history_vectors.append(np.zeros(768, dtype=np.float32))
+            else:
+                history_vectors = history_vectors[:10]
+                
+            history_arr = np.array(history_vectors)
+            interest_vec = np.mean(history_arr, axis=0)
+
+            # 2. Prepare Candidates
+            all_books = Book.query.all()
+            candidate_features = {}
+            book_metadata = {}
+            
+            for b in all_books:
+                if b.id in viewed_ids: continue
+                
+                emb = BookEmbedding.query.filter_by(book_id=b.id).first()
                 if emb and emb.vector is not None:
-                    history_vectors.append(np.array(emb.vector, dtype=np.float32))
-        
-        # Pad history to 10
-        if len(history_vectors) < 10:
-            pad_len = 10 - len(history_vectors)
-            # Pad with zeros
-            for _ in range(pad_len):
-                history_vectors.append(np.zeros(768, dtype=np.float32))
-        else:
-            history_vectors = history_vectors[:10]
+                     candidate_features[b.id] = np.array(emb.vector, dtype=np.float32)
+                     book_metadata[b.id] = {
+                         'id': b.id,
+                         'vector': candidate_features[b.id],
+                         'popularity': 0.5,
+                         'semantic_score': 0.0
+                     }
             
-        history_arr = np.array(history_vectors) # (10, 768)
-        
-        # Interest Vector (Average of liked books or explicit interests)
-        # For simplicity, using mean of history as interest
-        interest_vec = np.mean(history_arr, axis=0)
+            if not candidate_features:
+                pipeline_log.log_fallback("No candidate books with embeddings")
+                pipeline_log.set_final_count(0)
+                return []
 
-        # 2. Prepare Candidates
-        # We need a set of candidate books to score.
-        # In production, we'd use Annoy/Faiss index.
-        # Here, we score ALL books (OK for small DB of ~500 books).
-        all_books = Book.query.all()
-        candidate_features = {}
-        book_metadata = {}
-        
-        for b in all_books:
-            if b.id in viewed_ids: continue # Skip viewed
+            # Log Transformer/Embedding stage
+            embedding_time = (time.perf_counter() - stage_start) * 1000
+            pipeline_log.log_stage("transformer", time_ms=embedding_time, results=len(candidate_features))
             
-            emb = BookEmbedding.query.filter_by(book_id=b.id).first()
-            if emb and emb.vector is not None:
-                 candidate_features[b.id] = np.array(emb.vector, dtype=np.float32)
-                 book_metadata[b.id] = {
+            # 3. Predict & Rank (Neural Model)
+            neural_start = time.perf_counter()
+            user_data = {'history': history_arr, 'interests': interest_vec}
+            candidates_list = list(book_metadata.values())
+            
+            ranked_results = dl_engine.generate_recommendations(
+                user_id, 
+                user_data, 
+                candidates_list, 
+                top_k=limit
+            )
+            
+            neural_time = (time.perf_counter() - neural_start) * 1000
+            pipeline_log.log_stage("neural", time_ms=neural_time, results=len(ranked_results))
+            
+            # 4. Convert to Dicts with Trace
+            recs = []
+            for idx, res in enumerate(ranked_results):
+                b_id = res['id']
+                book = Book.query.get(b_id)
+                if book:
+                    # Build trace metadata
+                    trace = RecommendationTrace(
+                        algorithm="Two-Tower Neural Network",
+                        model_version="v2.1 (PyTorch)",
+                        score=res.get('final_score', 0),
+                        rank=idx + 1,
+                        features_used=["user_history_embeddings", "interest_vector", "book_embedding"],
+                        execution_time_ms=neural_time,
+                        is_fallback=False,
+                        debug_info={
+                            "neural_score": res.get('neural_score', 0),
+                            "semantic_score": res.get('semantic_score', 0),
+                            "popularity_boost": res.get('popularity', 0)
+                        }
+                    )
+                    
+                    d = _book_to_dict(
+                        book,
+                        source="Deep Learning",
+                        reason=f"🧠 AI Score: {res['final_score']:.2f}",
+                        extra_meta={
+                            "algorithm_used": trace.algorithm,
+                            "model_version": trace.model_version,
+                            "score": f"{trace.score:.2f}",
+                            "rank": trace.rank,
+                            "features_used": trace.features_used,
+                            "reason_detail": f"Neural confidence: {res.get('neural_score', 0):.2f}, "
+                                           f"Semantic match: {res.get('semantic_score', 0):.2f}",
+                            "_trace": trace.to_dict()
+                        }
+                    )
+                    recs.append(d)
+            
+            pipeline_log.set_final_count(len(recs))
+            return recs
 
-                     'id': b.id,
-                     'vector': candidate_features[b.id],
-                     'popularity': 0.5, # Placeholder
-                     'semantic_score': 0.0 # Placeholder
-                 }
-        
-        if not candidate_features:
+        except Exception as e:
+            pipeline_log.log_error(str(e))
+            logger.error(f"[DL-Rec] Error: {e}", exc_info=True)
             return []
 
-        # 3. Predict & Rank
-        user_data = {'history': history_arr, 'interests': interest_vec}
-        candidates_list = list(book_metadata.values())
-        
-        ranked_results = dl_engine.generate_recommendations(
-            user_id, 
-            user_data, 
-            candidates_list, 
-            top_k=limit
-        )
-        
-        # 4. Convert to Dicts
-        recs = []
-        for res in ranked_results:
-            b_id = res['id']
-            book = Book.query.get(b_id)
-            if book:
-                d = _book_to_dict(
-                    book,
-                    source="Deep Learning",
-                    reason=f"🧠 AI Score: {res['final_score']:.2f}"
-                )
-                recs.append(d)
-                
-        return recs
-
-    except Exception as e:
-        logger.error(f"[DL-Rec] Error: {e}", exc_info=True)
-        return []
 
     """
     توصيات Collaborative Filtering - مستخدمون مشابهون.
