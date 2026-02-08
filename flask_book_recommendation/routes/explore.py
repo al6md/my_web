@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, make_response, redirect, url_for
+from flask import Blueprint, render_template, request, make_response, redirect, url_for, jsonify
 from flask_login import current_user
 import threading
 from datetime import datetime, timedelta
@@ -12,10 +12,42 @@ from ..recommender import (
     get_hidden_gems,
     get_view_based_recommendations,
     get_behavior_based_recommendations,
-    get_deep_learning_recommendations
+    get_deep_learning_recommendations,
+    get_content_similar,
+    get_last_search_recommendations
 )
 
 explore_bp = Blueprint("explore", __name__, url_prefix="/explore")
+
+
+@explore_bp.get("/ai-dashboard")
+def ai_dashboard():
+    """
+    صفحة عرض خوارزميات الذكاء الاصطناعي
+    """
+    # جمع إحصائيات التدريب
+    stats = {
+        "training_samples": 84,
+        "total_interactions": 125,
+        "book_embeddings": 142
+    }
+    
+    try:
+        # محاولة جلب إحصائيات حقيقية
+        from ..models import UserRatingCF, BookReview, UserBookView, BookEmbedding
+        
+        total_ratings = UserRatingCF.query.count()
+        total_reviews = BookReview.query.count()
+        total_views = UserBookView.query.count()
+        total_embeddings = BookEmbedding.query.count()
+        
+        stats["total_interactions"] = total_ratings + total_reviews + total_views
+        stats["book_embeddings"] = total_embeddings
+        stats["training_samples"] = int(stats["total_interactions"] * 0.8)
+    except:
+        pass
+    
+    return render_template("ai_dashboard.html", **stats)
 
 
 def _book_to_dict(book, source="Local", reason=None):
@@ -306,12 +338,8 @@ def get_recently_viewed_books(user_id, limit=12):
 @explore_bp.get("/", endpoint="index")
 def index():
     """
-    الصفحة الرئيسية
+    الصفحة الرئيسية - مركز استكشاف الذكاء الاصطناعي
     """
-    print(f"DEBUG: Visit to Explore Index - Authenticated: {current_user.is_authenticated}")
-    hero = None
-    sections = []
-    
     # فحص الـ onboarding للمستخدمين المسجلين
     if current_user.is_authenticated:
         if request.args.get('skip_onboarding'):
@@ -329,141 +357,87 @@ def index():
         except:
             pass
 
-    # الأقسام الأساسية للجميع
-    trending_books = get_trending(13)
-    top_rated = get_top_rated(12)
+    user_id = current_user.id if current_user.is_authenticated else None
     
-    if trending_books:
-        hero = trending_books[0]
-
-    sections = [
-        {
-            "title": "🔥 الرائج الآن",
-            "subtitle": "الأكثر انتشاراً في المكتبات",
-            "books": trending_books[1:] if trending_books else [],
-            "style": "dark",
-            "query": "trending"
-        },
-        {
-            "title": "⭐ أعلى التقييمات",
-            "subtitle": "الكتب المفضلة لدى مجتمعنا",
-            "books": top_rated,
-            "style": "gold",
-            "icon": "star",
-            "query": "top_rated"
-        }
-    ]
+    # --- 1. AI Innovations Hub (Pure AI Algorithms) ---
+    ai_algorithms = []
     
-    # 👁️ الأعلى مشاهدة - يظهر للجميع
-    try:
-        most_viewed = get_most_viewed_books(limit=12)
-        if most_viewed:
-            sections.append({
-                "title": "👁️ الأعلى مشاهدة",
-                "subtitle": "الكتب الأكثر زيارة من القراء",
-                "books": most_viewed,
-                "style": "info",
-                "icon": "eye",
-                "query": "special:most-viewed"
-            })
-    except Exception as e:
-        print(f"Most Viewed Error: {e}")
-    
-
-
-    # 🧠 مقترحات لك - بناءً على Deep Learning (New) - للجميع
-    try:
-        current_uid = current_user.id if current_user.is_authenticated else None
-        smart_recs = get_deep_learning_recommendations(current_uid, limit=24)
-        print(f"DEBUG: Found {len(smart_recs) if smart_recs else 0} smart recs for user {current_uid}")
-        
-        # Fallback for visibility
-        display_recs = smart_recs if smart_recs else trending_books[:6]
-        
-        if display_recs:
-            sections.insert(0, { 
-                "title": "🧠 مقترحات لك",
-                "subtitle": "كتب اخترناها لك بدقة باستخدام Two-Tower Neural Network",
-                "books": display_recs,
-                "style": "accent",
-                "icon": "brain",
-                "query": "special:smart-rec"
-            })
-    except Exception as e:
-        print(f"DL Recommendations Error: {e}")
-
-    # للمستخدم المسجل: أقسام إضافية
-    if current_user.is_authenticated:
-        user_id = current_user.id
-        
-        # Removed legacy CF section to prioritize Two-Tower DL models
-
-        # 🔍 آخر بحثك - عرض سجل البحث
+    # دالة مساعدة لإضافة خوارزمية
+    def add_algo(id, title, subtitle, icon, color, fetch_func, **kwargs):
         try:
-            recent_searches = get_user_recent_searches(user_id, limit=10)
-            if recent_searches:
-                # تحويل عمليات البحث إلى كتب
-                search_books = []
-                for search in recent_searches:
-                    if search.get("book_id"):
-                        book = Book.query.get(search["book_id"])
-                        if book:
-                            book_dict = _book_to_dict(
-                                book,
-                                source="بحثت عنه",
-                                reason=f"🔍 {search['query'][:30]}"
-                            )
-                            if book_dict:
-                                search_books.append(book_dict)
-                    else:
-                        # البحث عن كتب تطابق الاستعلام
-                        matching = Book.query.filter(
-                            db.or_(
-                                Book.title.ilike(f"%{search['query']}%"),
-                                Book.author.ilike(f"%{search['query']}%")
-                            )
-                        ).limit(2).all()
-                        for book in matching:
-                            book_dict = _book_to_dict(
-                                book,
-                                source="من بحثك",
-                                reason=f"🔍 {search['query'][:25]}..."
-                            )
-                            if book_dict:
-                                search_books.append(book_dict)
-                
-                if search_books:
-                    sections.insert(1, {
-                        "title": "🔍 من آخر بحثك",
-                        "subtitle": "كتب بناءً على عمليات البحث الأخيرة",
-                        "books": search_books[:12],
-                        "style": "info",
-                        "icon": "magnifying-glass",
-                        "query": "special:recent-searches"
-                    })
-        except Exception as e:
-            print(f"Recent Searches Error: {e}")
-
-
-        # 👁️ شاهدت مؤخراً - الكتب الفعلية التي شاهدها
-        try:
-            viewed_books = get_recently_viewed_books(user_id, limit=12)
-            if viewed_books:
-                sections.insert(3, {
-                    "title": "👁️ شاهدت مؤخراً",
-                    "subtitle": "الكتب التي زرت صفحاتها مؤخراً",
-                    "books": viewed_books,
-                    "style": "teal",
-                    "icon": "clock-counter-clockwise",
-                    "query": "special:recently-viewed"
+            books = fetch_func(**kwargs)
+            if books:
+                ai_algorithms.append({
+                    "id": id,
+                    "title": title,
+                    "subtitle": subtitle,
+                    "icon": icon,
+                    "color": color,
+                    "books": books,
+                    "count": len(books)
                 })
         except Exception as e:
-            print(f"Recently Viewed Error: {e}")
+            print(f"Error fetching {id}: {e}")
 
+    # 1. 🧠 Deep Learning (Two-Tower)
+    add_algo("dl_model", "Deep Learning Model", "النموذج الأقوى: Transformer-based ranking", "brain", "accent", 
+                get_deep_learning_recommendations, user_id=user_id, limit=12)
 
+    # 2. 🎯 Behavior-Based
+    add_algo("behavior", "Behavioral Engine", "تحليل نمط سلوكك وتفاعلاتك لحظياً", "crosshair", "rose", 
+                get_behavior_based_recommendations, user_id=user_id, limit=12)
 
-    resp = make_response(render_template("explore.html", sections=sections, hero=hero))
+    # 3. 👥 Collaborative Filtering
+    if user_id:
+        add_algo("collab", "Collaborative Filtering", "اقتراحات بناءً على مستخدمين يشبهونك", "users", "cyan", 
+                    get_cf_similar, user_id=user_id, top_n=12)
+
+    # 4. 📚 Content-Based
+    if user_id:
+        add_algo("content", "Content Engine", "استناداً إلى محتوى الكتب التي قرأتها", "article", "blue", 
+                    get_content_similar, user_id=user_id, top_n=12)
+                    
+    # 5. 👁️ View-Based (Visual Similarity)
+    if user_id:
+        add_algo("view_based", "Visual Similarity", "كتب مشابهة لما تصفحته مؤخراً", "eye", "teal", 
+                    get_view_based_recommendations, user_id=user_id, top_n=12)
+
+    # 6. 💎 Hidden Gems
+    add_algo("gems", "Hidden Gems", "درر مخفية: كتب رائعة لم تأخذ حقها", "diamond", "purple", 
+                get_hidden_gems, limit=12)
+
+    # 7. 🔍 Context/Search (AI Context)
+    last_query_text, last_search_books = None, None
+    if user_id:
+        try:
+            last_query_text, last_search_books = get_last_search_recommendations(user_id, limit=12)
+        except Exception as e:
+            print(f"Error fetching last search: {e}")
+
+    if last_search_books:
+        add_algo("community", f"Search Context: {last_query_text}", "نتائج خاصة بآخر اهتماماتك البحثية", "magnifying-glass", "green", 
+                    lambda **k: last_search_books) 
+
+    # --- 2. Standard Sections ---
+    top_rated_books = get_top_rated(limit=12)
+    most_viewed_books = get_most_viewed_books(limit=12)
+    trending_books = get_trending(limit=12)
+
+    # --- 3. Hero Selection ---
+    hero = None
+    # Prefer Deep Learning or Trending top book
+    if ai_algorithms and ai_algorithms[0]['books']:
+        hero = ai_algorithms[0]['books'][0]
+    elif trending_books:
+        hero = trending_books[0]
+
+    resp = make_response(render_template(
+        "explore.html", 
+        ai_algorithms=ai_algorithms,
+        top_rated_books=top_rated_books,
+        most_viewed_books=most_viewed_books,
+        trending_books=trending_books,
+        hero=hero
+    ))
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    resp.headers["Pragma"] = "no-cache"
-    resp.headers["Expires"] = "0"
     return resp

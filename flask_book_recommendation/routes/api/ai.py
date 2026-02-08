@@ -21,6 +21,27 @@ except ImportError:
 api_ai_bp = Blueprint('api_ai', __name__, url_prefix='/ai')
 
 
+@api_ai_bp.route('/health', methods=['GET'])
+def ai_health():
+    """
+    حالة نظام الذكاء الاصطناعي
+    GET /api/ai/health
+    """
+    result = {
+        "status": "online",
+        "local_scorer": {"status": "not_loaded"}
+    }
+    
+    try:
+        from ...ai_client import ai_client
+        health = ai_client.get_health()
+        result.update(health)
+    except Exception as e:
+        result["error"] = str(e)
+    
+    return jsonify(result)
+
+
 def get_book_info(gid: str) -> dict:
     """جلب معلومات الكتاب من Google Books"""
     try:

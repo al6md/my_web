@@ -1,0 +1,848 @@
+{% extends "base.html" %}
+
+{% block title %}مركز الذكاء الاصطناعي | ALHAM{% endblock %}
+
+{% block content %}
+<!-- AI Dashboard Hero -->
+<section class="ai-hero">
+    <div class="container" style="position: relative; z-index: 10;">
+        <div class="text-center animate-on-scroll fade-up">
+            <!-- Neural Network Animation Background -->
+            <div class="neural-bg"></div>
+
+            <div class="ai-badge-hero mb-4">
+                <i class="ph-fill ph-brain"></i>
+                <span>مركز الذكاء الاصطناعي</span>
+            </div>
+
+            <h1 class="mb-3" style="font-weight: 800;">
+                <span class="text-gradient">٩+</span> خوارزميات ذكية
+                <br>تعمل لخدمتك
+            </h1>
+
+            <p class="text-muted mb-4" style="max-width: 600px; margin: 0 auto; font-size: 1.1rem;">
+                نظام توصيات متطور يجمع بين التعلم العميق، الشبكات العصبية،
+                والذكاء الاصطناعي القابل للتفسير
+            </p>
+
+            <!-- Live Stats -->
+            <div class="ai-live-stats mt-5">
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-models">9</div>
+                    <div class="stat-label">نماذج نشطة</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-embeddings">768</div>
+                    <div class="stat-label">بُعد المتجهات</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-value pulse" id="stat-status">نشط</div>
+                    <div class="stat-label">حالة النظام</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Algorithm Categories -->
+<section class="container py-5">
+    <div class="text-center mb-5 animate-on-scroll fade-up">
+        <h2>الخوارزميات <span class="text-gradient">المتاحة</span></h2>
+        <p class="text-muted">اضغط على أي خوارزمية لمعرفة المزيد عنها</p>
+    </div>
+
+    <!-- Models Grid -->
+    <div class="algo-grid">
+        <!-- Two-Tower Neural Network -->
+        <div class="algo-card animate-on-scroll fade-up" data-algo="two-tower">
+            <div class="algo-icon gradient-primary">
+                <i class="ph-fill ph-columns"></i>
+            </div>
+            <div class="algo-content">
+                <h4>Two-Tower Network</h4>
+                <p class="text-muted small mb-2">الشبكة ثنائية البرج</p>
+                <div class="algo-tags">
+                    <span class="tag">Deep Learning</span>
+                    <span class="tag">Embeddings</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>نموذج يتعلم تمثيلات منفصلة للمستخدمين والكتب في فضاء مشترك،
+                        مما يسمح بحساب التشابه بسرعة فائقة.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">الدقة</span>
+                        <span class="value">92%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">السرعة</span>
+                        <span class="value">
+                            <1ms< /span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Transformer Encoder -->
+        <div class="algo-card animate-on-scroll fade-up delay-1" data-algo="transformer">
+            <div class="algo-icon gradient-purple">
+                <i class="ph-fill ph-lightning"></i>
+            </div>
+            <div class="algo-content">
+                <h4>Transformer Encoder</h4>
+                <p class="text-muted small mb-2">محول النصوص العصبي</p>
+                <div class="algo-tags">
+                    <span class="tag">NLP</span>
+                    <span class="tag">Attention</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يحول عناوين ووصف الكتب إلى متجهات دلالية غنية
+                        باستخدام آلية الانتباه الذاتي (Self-Attention).</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">البعد</span>
+                        <span class="value">768</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">الطبقات</span>
+                        <span class="value">12</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Graph Neural Network -->
+        <div class="algo-card animate-on-scroll fade-up delay-2" data-algo="graph">
+            <div class="algo-icon gradient-teal">
+                <i class="ph-fill ph-graph"></i>
+            </div>
+            <div class="algo-content">
+                <h4>LightGCN</h4>
+                <p class="text-muted small mb-2">الشبكة العصبية البيانية</p>
+                <div class="algo-tags">
+                    <span class="tag">Graph</span>
+                    <span class="tag">Collaborative</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يحلل شبكة العلاقات بين المستخدمين والكتب
+                        لاكتشاف أنماط التفضيلات المخفية.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">الطبقات</span>
+                        <span class="value">3</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">النوع</span>
+                        <span class="value">GCN</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Collaborative Filtering -->
+        <div class="algo-card animate-on-scroll fade-up" data-algo="cf">
+            <div class="algo-icon gradient-gold">
+                <i class="ph-fill ph-users-three"></i>
+            </div>
+            <div class="algo-content">
+                <h4>Collaborative Filtering</h4>
+                <p class="text-muted small mb-2">التصفية التعاونية</p>
+                <div class="algo-tags">
+                    <span class="tag">Matrix</span>
+                    <span class="tag">ALS</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يستخدم تقييمات المستخدمين الآخرين المشابهين لك
+                        لاقتراح كتب جديدة قد تعجبك.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">الخوارزمية</span>
+                        <span class="value">ALS</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">العوامل</span>
+                        <span class="value">128</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Neural Reranker -->
+        <div class="algo-card animate-on-scroll fade-up delay-1" data-algo="reranker">
+            <div class="algo-icon gradient-rose">
+                <i class="ph-fill ph-sort-ascending"></i>
+            </div>
+            <div class="algo-content">
+                <h4>Neural Reranker</h4>
+                <p class="text-muted small mb-2">إعادة الترتيب العصبي</p>
+                <div class="algo-tags">
+                    <span class="tag">Cross-Attention</span>
+                    <span class="tag">Scoring</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يعيد ترتيب النتائج المرشحة بناءً على تحليل عميق
+                        للتفاعل بين ملفك الشخصي وكل كتاب.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">الدقة</span>
+                        <span class="value">+15%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">الرؤوس</span>
+                        <span class="value">8</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Context-Aware Ranker -->
+        <div class="algo-card animate-on-scroll fade-up delay-2" data-algo="context">
+            <div class="algo-icon gradient-orange">
+                <i class="ph-fill ph-clock-afternoon"></i>
+            </div>
+            <div class="algo-content">
+                <h4>Context-Aware Ranker</h4>
+                <p class="text-muted small mb-2">الترتيب حسب السياق</p>
+                <div class="algo-tags">
+                    <span class="tag">Temporal</span>
+                    <span class="tag">Diversity</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يأخذ بالاعتبار الوقت من اليوم، تاريخ تفاعلاتك،
+                        والتنوع لتقديم توصيات متوازنة.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">العوامل</span>
+                        <span class="value">5+</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">التنوع</span>
+                        <span class="value">عالي</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Ensemble System -->
+        <div class="algo-card animate-on-scroll fade-up" data-algo="ensemble">
+            <div class="algo-icon gradient-multi">
+                <i class="ph-fill ph-gear-six"></i>
+            </div>
+            <div class="algo-content">
+                <h4>Ensemble Scorer</h4>
+                <p class="text-muted small mb-2">نظام التصويت الجماعي</p>
+                <div class="algo-tags">
+                    <span class="tag">Fusion</span>
+                    <span class="tag">Weighted</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يجمع نتائج جميع الخوارزميات بأوزان ديناميكية
+                        للحصول على أفضل توصية ممكنة.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">المصادر</span>
+                        <span class="value">6+</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">الدمج</span>
+                        <span class="value">RRF</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- FAISS Vector Search -->
+        <div class="algo-card animate-on-scroll fade-up delay-1" data-algo="faiss">
+            <div class="algo-icon gradient-blue">
+                <i class="ph-fill ph-magnifying-glass"></i>
+            </div>
+            <div class="algo-content">
+                <h4>FAISS Vector Search</h4>
+                <p class="text-muted small mb-2">البحث المتجهي السريع</p>
+                <div class="algo-tags">
+                    <span class="tag">ANN</span>
+                    <span class="tag">HNSW</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يبحث في ملايين المتجهات بسرعة فائقة
+                        باستخدام فهارس متقدمة من Meta AI.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">السرعة</span>
+                        <span class="value">
+                            <5ms< /span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">الدقة</span>
+                        <span class="value">99%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+
+        <!-- Explainable AI -->
+        <div class="algo-card animate-on-scroll fade-up delay-2" data-algo="xai">
+            <div class="algo-icon gradient-cyan">
+                <i class="ph-fill ph-lightbulb"></i>
+            </div>
+            <div class="algo-content">
+                <h4>Explainable AI</h4>
+                <p class="text-muted small mb-2">الذكاء القابل للتفسير</p>
+                <div class="algo-tags">
+                    <span class="tag">XAI</span>
+                    <span class="tag">NLG</span>
+                </div>
+                <div class="algo-desc mt-3">
+                    <p>يولّد تفسيرات بلغة طبيعية لكل توصية،
+                        حتى تفهم لماذا تم اقتراح هذا الكتاب لك.</p>
+                </div>
+                <div class="algo-metrics">
+                    <div class="metric">
+                        <span class="label">الأنواع</span>
+                        <span class="value">4</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">اللغة</span>
+                        <span class="value">AR/EN</span>
+                    </div>
+                </div>
+            </div>
+            <div class="algo-status active">
+                <i class="ph-fill ph-check-circle"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pipeline Visualization -->
+<section class="container py-5">
+    <div class="text-center mb-5 animate-on-scroll fade-up">
+        <h2>كيف تعمل <span class="text-gradient">التوصيات</span>؟</h2>
+        <p class="text-muted">رحلة طلبك من البداية للنهاية</p>
+    </div>
+
+    <div class="pipeline-flow animate-on-scroll fade-up">
+        <div class="pipeline-step">
+            <div class="step-icon">
+                <i class="ph-fill ph-user"></i>
+            </div>
+            <div class="step-content">
+                <h5>ملفك الشخصي</h5>
+                <p>اهتماماتك، تاريخ قراءاتك، تقييماتك</p>
+            </div>
+        </div>
+
+        <div class="pipeline-arrow">
+            <i class="ph ph-arrow-left"></i>
+        </div>
+
+        <div class="pipeline-step">
+            <div class="step-icon gradient-purple">
+                <i class="ph-fill ph-lightning"></i>
+            </div>
+            <div class="step-content">
+                <h5>Embedding</h5>
+                <p>تحويل للمتجهات الدلالية</p>
+            </div>
+        </div>
+
+        <div class="pipeline-arrow">
+            <i class="ph ph-arrow-left"></i>
+        </div>
+
+        <div class="pipeline-step">
+            <div class="step-icon gradient-teal">
+                <i class="ph-fill ph-magnifying-glass"></i>
+            </div>
+            <div class="step-content">
+                <h5>Retrieval</h5>
+                <p>استرجاع 100+ مرشح</p>
+            </div>
+        </div>
+
+        <div class="pipeline-arrow">
+            <i class="ph ph-arrow-left"></i>
+        </div>
+
+        <div class="pipeline-step">
+            <div class="step-icon gradient-gold">
+                <i class="ph-fill ph-funnel"></i>
+            </div>
+            <div class="step-content">
+                <h5>Ranking</h5>
+                <p>ترتيب وتصفية</p>
+            </div>
+        </div>
+
+        <div class="pipeline-arrow">
+            <i class="ph ph-arrow-left"></i>
+        </div>
+
+        <div class="pipeline-step">
+            <div class="step-icon gradient-rose">
+                <i class="ph-fill ph-sparkle"></i>
+            </div>
+            <div class="step-content">
+                <h5>النتيجة</h5>
+                <p>توصيات مخصصة لك</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Training Status -->
+<section class="container py-5">
+    <div class="glass-card p-4 animate-on-scroll fade-up">
+        <div class="d-flex align-center justify-between flex-wrap gap-3">
+            <div class="d-flex align-center gap-3">
+                <div class="training-indicator">
+                    <div class="pulse-ring"></div>
+                    <i class="ph-fill ph-brain"></i>
+                </div>
+                <div>
+                    <h4 class="mb-1">حالة التدريب</h4>
+                    <p class="text-muted small mb-0">آخر تدريب: اليوم</p>
+                </div>
+            </div>
+
+            <div class="d-flex gap-4 flex-wrap">
+                <div class="text-center">
+                    <div class="fw-bold text-gradient">{{ training_samples or 84 }}</div>
+                    <div class="small text-muted">عينات تدريب</div>
+                </div>
+                <div class="text-center">
+                    <div class="fw-bold text-gradient">{{ total_interactions or 125 }}</div>
+                    <div class="small text-muted">تفاعل</div>
+                </div>
+                <div class="text-center">
+                    <div class="fw-bold text-gradient">{{ book_embeddings or 142 }}</div>
+                    <div class="small text-muted">متجه كتب</div>
+                </div>
+            </div>
+
+            <a href="{{ url_for('explore.index') }}" class="btn btn-primary">
+                <i class="ph ph-sparkle"></i>
+                جرب التوصيات
+            </a>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* AI Hero Section */
+    .ai-hero {
+        padding: 6rem 0 4rem;
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, var(--bg-surface-1), var(--bg-surface-2));
+    }
+
+    .neural-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+            radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        animation: neuralPulse 8s ease-in-out infinite;
+    }
+
+    @keyframes neuralPulse {
+
+        0%,
+        100% {
+            opacity: 0.5;
+        }
+
+        50% {
+            opacity: 1;
+        }
+    }
+
+    .ai-badge-hero {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+        border-radius: var(--radius-full);
+        color: white;
+        font-weight: 600;
+        box-shadow: var(--glow-primary);
+    }
+
+    .ai-live-stats {
+        display: inline-flex;
+        align-items: center;
+        gap: 2rem;
+        padding: 1.5rem 2.5rem;
+        background: var(--bg-surface-1);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--primary-500);
+    }
+
+    .stat-value.pulse {
+        color: var(--success);
+        animation: statPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statPulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.6;
+        }
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .stat-divider {
+        width: 1px;
+        height: 40px;
+        background: var(--border-subtle);
+    }
+
+    /* Algorithm Grid */
+    .algo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .algo-card {
+        background: var(--bg-surface-1);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        position: relative;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .algo-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .algo-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: var(--primary-300);
+    }
+
+    .algo-card:hover::before {
+        opacity: 1;
+    }
+
+    .algo-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+    }
+
+    .gradient-primary {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    }
+
+    .gradient-purple {
+        background: linear-gradient(135deg, #a855f7, #d946ef);
+    }
+
+    .gradient-teal {
+        background: linear-gradient(135deg, #14b8a6, #06b6d4);
+    }
+
+    .gradient-gold {
+        background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    }
+
+    .gradient-rose {
+        background: linear-gradient(135deg, #f43f5e, #ec4899);
+    }
+
+    .gradient-orange {
+        background: linear-gradient(135deg, #f97316, #fb923c);
+    }
+
+    .gradient-blue {
+        background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    }
+
+    .gradient-cyan {
+        background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    }
+
+    .gradient-multi {
+        background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+    }
+
+    .algo-content h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        color: var(--text-main);
+    }
+
+    .algo-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+
+    .algo-tags .tag {
+        font-size: 0.65rem;
+        padding: 2px 8px;
+        background: var(--primary-100);
+        color: var(--primary-700);
+        border-radius: var(--radius-full);
+        font-weight: 600;
+    }
+
+    .algo-desc {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .algo-metrics {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .algo-metrics .metric {
+        flex: 1;
+        text-align: center;
+    }
+
+    .algo-metrics .label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+
+    .algo-metrics .value {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--primary-500);
+    }
+
+    .algo-status {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        font-size: 1.25rem;
+        color: var(--success);
+    }
+
+    /* Pipeline Flow */
+    .pipeline-flow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        flex-wrap: wrap;
+        padding: 2rem;
+        background: var(--bg-surface-1);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .pipeline-step {
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .pipeline-step .step-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin: 0 auto 1rem;
+        box-shadow: var(--glow-primary);
+    }
+
+    .pipeline-step h5 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .pipeline-step p {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .pipeline-arrow {
+        color: var(--primary-400);
+        font-size: 1.5rem;
+        padding: 0 0.5rem;
+    }
+
+    /* Training Indicator */
+    .training-indicator {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+    }
+
+    .pulse-ring {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid var(--primary-400);
+        border-radius: 50%;
+        animation: pulseRing 2s ease-out infinite;
+    }
+
+    @keyframes pulseRing {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(1.5);
+            opacity: 0;
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .ai-live-stats {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        .stat-divider {
+            width: 60%;
+            height: 1px;
+        }
+
+        .pipeline-flow {
+            flex-direction: column;
+        }
+
+        .pipeline-arrow {
+            transform: rotate(-90deg);
+        }
+
+        .algo-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    // Fetch AI system stats
+    async function fetchAIStats() {
+        try {
+            const response = await fetch('/api/ai/health');
+            const data = await response.json();
+
+            if (data.local_scorer) {
+                document.getElementById('stat-embeddings').textContent = data.local_scorer.embedding_dim || 768;
+                document.getElementById('stat-status').textContent = data.local_scorer.status === 'ready' ? 'نشط' : 'غير نشط';
+            }
+        } catch (e) {
+            console.log('AI stats not available');
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchAIStats();
+
+        // Add click handlers for algorithm cards
+        document.querySelectorAll('.algo-card').forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('expanded');
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1401,7 +1401,8 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0):
         # ---------------------------------------------------------
         
         # دمج الكل
-        combined = ai_recs + cf_recs + explore_recs
+        # دمج الكل - نعطي الأولوية لنتائج الاستكشاف (البحث) لأنها الأحدث والأكثر صلة بالنوايا الحالية
+        combined = explore_recs + ai_recs + cf_recs
         
         # إزالة التكرار
         unique_recs = []
@@ -1720,7 +1721,8 @@ def semantic_search(query: str, limit: int = 12, exclude_book_ids: list = None):
             continue
         
         v = np.array(row.vector, dtype=np.float32)
-        if v.ndim == 1:
+        # ضمان تطابق الأبعاد
+        if v.ndim == 1 and v.shape[0] == query_vec.shape[1]:
             book_ids.append(row.book_id)
             vectors.append(v)
     

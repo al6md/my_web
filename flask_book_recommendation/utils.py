@@ -968,6 +968,9 @@ def extract_interests_from_text_ai(title: str, author: str, review_text: str = "
 import time
 from functools import lru_cache
 
+# Global cache for the model
+_embedding_model = None
+
 @lru_cache(maxsize=1000)
 def get_text_embedding(text, max_retries=3):
     """
@@ -976,11 +979,16 @@ def get_text_embedding(text, max_retries=3):
     ثم يحاول استخدام Gemini API كبديل.
     """
     # 1. محاولة استخدام النموذج المحلي (أسرع وأكثر اعتمادية)
+    global _embedding_model
     try:
-        from sentence_transformers import SentenceTransformer
-        # استخدام نموذج صغير وسريع
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        embedding = model.encode(text)
+        if _embedding_model is None:
+            from sentence_transformers import SentenceTransformer
+            # تحميل النموذج مرة واحدة فقط
+            print("[Embedding] 🔄 Loading SentenceTransformer model...")
+            _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            print("[Embedding] ✅ Model loaded successfully")
+        
+        embedding = _embedding_model.encode(text)
         return embedding.tolist()
     except Exception as e:
         print(f"[Local-Embedding] ⚠️ Error loading local model: {e}")
