@@ -1,300 +1,428 @@
 {% extends "base.html" %}
-{% block title %}ALHAM | اكتشف كتابك القادم{% endblock %}
+{% from "components/macros.html" import render_book_card, render_carousel_section, render_ai_score, render_algo_badge,
+render_stars, render_confidence %}
+
+{% block title %}Explore AI Center | ALHAM Discovery{% endblock %}
 
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/nextgen-ai.css') }}">
+<style>
+  /* Custom Overrides for Explore Page */
+  .explore-hero-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    justify-content: center;
+  }
+
+  .explore-stat-item {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.25rem;
+  }
+
+  /* Unified Section Special Styling */
+  .unified-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .glass-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2rem;
+  }
+
+  .glass-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .glass-title i {
+    color: var(--ng-purple-400);
+  }
+
+  /* Force smaller card size globally on home */
+  .glass-book-card {
+    max-width: 100%;
+  }
+
+  /* In grid, let them fill the column but not exceed a reasonable size if columns get wide */
+  .unified-grid .glass-book-card {
+    width: 100%;
+  }
+
+  /* In carousels, force a fixed width */
+  .carousel-track-ng .glass-book-card {
+    min-width: 180px;
+    max-width: 200px;
+    flex: 0 0 auto;
+  }
+
+  /* Force See All Styling inline to bypass cache issues */
+  .see-all-ng {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    color: #fff !important;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .see-all-ng:hover {
+    background: rgba(139, 92, 246, 0.4);
+    transform: translateX(5px);
+  }
+
+  /* 🎯 Distinctive Mark for Search History */
+  .search-history-distinctive {
+    position: relative;
+    padding: 3rem 1.5rem;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(0, 0, 0, 0) 50%);
+    border: 1px solid rgba(239, 68, 68, 0.1);
+    margin-bottom: 4rem;
+    overflow: hidden;
+  }
+
+  .search-history-distinctive::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--ng-neon-red, #ef4444);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  }
+
+  .search-history-distinctive .glass-title i {
+    color: #ef4444 !important;
+    filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5));
+  }
+
+  .search-history-distinctive .section-title-ng h2 {
+    color: #ef4444 !important;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  }
+
+  /* 🎯 Distinctive Mark for Search History (Enhanced V2) */
+  @keyframes pulse-red-border {
+    0% {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+      border-color: rgba(239, 68, 68, 0.8);
+    }
+
+    100% {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+  }
+
+  .search-history-distinctive {
+    position: relative;
+    padding: 3rem 1.5rem;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(20, 0, 0, 0.95) 0%, rgba(50, 0, 0, 0.4) 100%) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    margin-bottom: 4rem;
+    overflow: hidden;
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8);
+    animation: pulse-red-border 3s infinite ease-in-out;
+  }
+
+  /* Side glowing strip */
+  .search-history-distinctive::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: #ef4444;
+    box-shadow: 0 0 25px #ef4444;
+  }
+
+  /* Live Badge */
+  .search-history-distinctive::after {
+    content: 'LIVE SEARCH';
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #fff;
+    background: #ef4444;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+  }
+
+  .search-history-distinctive .glass-title i {
+    color: #ef4444 !important;
+    filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8));
+  }
+
+  .search-history-distinctive .section-title-ng h2 {
+    color: #fff !important;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="hero-section">
-  <div class="container">
-    <div class="grid-2 align-center" style="gap: 4rem;">
-      <!-- Text Content -->
-      <div class="fade-up" style="position: relative; z-index: 10;">
-        <span class="section-badge">
-          <i class="ph-fill ph-sparkle"></i>
-          الجيل القادم من استكشاف الكتب
-        </span>
+<div class="nextgen-explore">
 
-        <h1 style="margin-bottom: 1.5rem; line-height: 1.2;">
-          رحلتك لاكتشاف
-          <br>
-          <span class="text-gradient">المعرفة</span> تبدأ هنا
+  {# ═══════════════════════════════════════════════════════════════════════
+  [1] MINIMALIST BRAND HERO
+  ═══════════════════════════════════════════════════════════════════════ #}
+  <section class="brand-hero position-relative overflow-hidden d-flex align-items-center justify-content-center"
+    style="min-height: 50vh;">
+    {# Background Elements #}
+    <div class="hero-glow-orb orb-1" style="opacity: 0.4;"></div>
+    <div class="hero-glow-orb orb-2" style="opacity: 0.3;"></div>
+
+    <div class="container text-center position-relative z-2">
+      <div class="hero-content">
+        {# Animated Brand Badge #}
+        <div class="mb-4">
+          <span class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill"
+            style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);">
+            <i class="ph-fill ph-sparkle text-purple-400"></i>
+            <span class="text-white-50 small text-uppercase" style="letter-spacing: 2px;">Next-Gen Discovery</span>
+          </span>
+        </div>
+
+        {# Site Name #}
+        <h1 class="display-1 fw-bold text-white mb-3" style="font-family: 'Outfit', sans-serif; letter-spacing: -2px;">
+          ALHAM
         </h1>
 
-        <p class="text-muted" style="font-size: 1.2rem; max-width: 500px; margin-bottom: 2.5rem; line-height: 1.8;">
-          نظام توصيات ذكي يفهم ذوقك، يحلل اهتماماتك، ويقترح عليك كتباً ستعشقها باستخدام أحدث تقنيات الذكاء الاصطناعي.
+        {# Beautiful Phrase / Tagline #}
+        <p class="lead text-white-50 mx-auto mb-0" style="max-width: 600px; font-size: 1.25rem; line-height: 1.6;">
+          "Discover your next literary journey through the lens of artificial intelligence."
         </p>
-
-        <div class="d-flex gap-3 flex-wrap">
-          <a href="{{ url_for('public.list_books') }}" class="btn btn-primary">
-            <i class="ph ph-compass" style="font-size: 1.25rem;"></i>
-            ابدأ الاستكشاف
-          </a>
-          <a href="#trending" class="btn btn-secondary">
-            <i class="ph ph-fire" style="font-size: 1.25rem;"></i>
-            الكتب الرائجة
-          </a>
-        </div>
-
-        <!-- Trust Indicators -->
-        <div class="d-flex align-center gap-4 mt-5 flex-wrap" style="opacity: 0.8;">
-          <div class="d-flex align-center gap-2">
-            <i class="ph-fill ph-check-circle" style="color: var(--success); font-size: 1.25rem;"></i>
-            <span class="small">مجاني 100%</span>
-          </div>
-          <div class="d-flex align-center gap-2">
-            <i class="ph-fill ph-check-circle" style="color: var(--success); font-size: 1.25rem;"></i>
-            <span class="small">بدون إعلانات</span>
-          </div>
-          <div class="d-flex align-center gap-2">
-            <i class="ph-fill ph-check-circle" style="color: var(--success); font-size: 1.25rem;"></i>
-            <span class="small">AI متقدم</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Book Stack Display -->
-      <div class="fade-up delay-1">
-        <div class="book-stack">
-          <div class="book-stack-item">
-            <img src="https://covers.openlibrary.org/b/id/8296291-L.jpg" alt="Featured Book">
-          </div>
-          <div class="book-stack-item">
-            <img src="https://covers.openlibrary.org/b/id/12696660-L.jpg" alt="Featured Book">
-          </div>
-          <div class="book-stack-item">
-            <img src="https://covers.openlibrary.org/b/id/10603706-L.jpg" alt="Featured Book">
-          </div>
-        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Stats Section -->
-<section class="py-5" style="background: var(--bg-surface-2);">
-  <div class="container">
-    <div class="grid-4" style="gap: 1.5rem;">
-      <div class="stat-card fade-up">
-        <div class="stat-value">5M+</div>
-        <div class="stat-label">كتاب متوفر</div>
-      </div>
-      <div class="stat-card fade-up delay-1">
-        <div class="stat-value">AI</div>
-        <div class="stat-label">توصيات دقيقة</div>
-      </div>
-      <div class="stat-card fade-up delay-2">
-        <div class="stat-value">24/7</div>
-        <div class="stat-label">مساعدة فورية</div>
-      </div>
-      <div class="stat-card fade-up delay-3">
-        <div class="stat-value">100%</div>
-        <div class="stat-label">مجاني</div>
-      </div>
-    </div>
-  </div>
-</section>
+  <div class="container pb-5">
 
-<!-- Trending Section -->
-<section id="trending" class="section">
-  <div class="container">
-    <div class="section-header d-flex justify-between align-center flex-wrap gap-3">
-      <div>
-        <span class="section-badge">
-          <i class="ph-fill ph-fire"></i>
-          الأكثر رواجاً
+    {# ═══════════════════════════════════════════════════════════════════════
+    [2] UNIFIED AI RECOMMENDATIONS (Featured)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if unified_recommendations and unified_recommendations|length > 0 %}
+    <section class="mb-5">
+      <div class="glass-section-header">
+        <div class="glass-title">
+          <i class="ph-fill ph-circles-three-plus"></i>
+          <span>Unified AI Picks</span>
+        </div>
+        <span class="badge badge-purple-subtle">
+          <i class="ph-fill ph-check-circle"></i> Highest Confidence
         </span>
-        <h2 style="margin-bottom: 0.5rem;">كتب رائجة <span class="text-gradient">هذا الأسبوع</span></h2>
-        <p class="mb-0 text-muted">اختيارات القراء الأكثر طلباً وشهرة</p>
       </div>
-      <a href="{{ url_for('public.list_books', sort='trending') }}" class="btn btn-ghost">
-        عرض الكل <i class="ph ph-arrow-left"></i>
-      </a>
-    </div>
 
-    <div class="grid-4">
-      <!-- Book Card 1 -->
-      <a href="{{ url_for('public.list_books', q='Gatsby') }}" class="featured-book-card fade-up">
-        <div class="featured-book-cover">
-          <img src="https://covers.openlibrary.org/b/id/8296291-L.jpg" alt="The Great Gatsby" loading="lazy">
-        </div>
-        <div style="padding: 1rem 0.5rem 0.5rem;">
-          <h4 class="text-truncate mb-1" style="font-size: 1.05rem;">The Great Gatsby</h4>
-          <p class="small text-muted mb-2">F. Scott Fitzgerald</p>
-          <div class="book-rating">
-            <i class="ph-fill ph-star"></i>
-            <span>4.8</span>
-          </div>
-        </div>
-      </a>
-
-      <!-- Book Card 2 -->
-      <a href="{{ url_for('public.list_books', q='1984') }}" class="featured-book-card fade-up delay-1">
-        <div class="featured-book-cover">
-          <img src="https://covers.openlibrary.org/b/id/12696660-L.jpg" alt="1984" loading="lazy">
-        </div>
-        <div style="padding: 1rem 0.5rem 0.5rem;">
-          <h4 class="text-truncate mb-1" style="font-size: 1.05rem;">1984</h4>
-          <p class="small text-muted mb-2">George Orwell</p>
-          <div class="book-rating">
-            <i class="ph-fill ph-star"></i>
-            <span>4.9</span>
-          </div>
-        </div>
-      </a>
-
-      <!-- Book Card 3 -->
-      <a href="{{ url_for('public.list_books', q='Alchemist') }}" class="featured-book-card fade-up delay-2">
-        <div class="featured-book-cover">
-          <img src="https://covers.openlibrary.org/b/id/10603706-L.jpg" alt="The Alchemist" loading="lazy">
-        </div>
-        <div style="padding: 1rem 0.5rem 0.5rem;">
-          <h4 class="text-truncate mb-1" style="font-size: 1.05rem;">The Alchemist</h4>
-          <p class="small text-muted mb-2">Paulo Coelho</p>
-          <div class="book-rating">
-            <i class="ph-fill ph-star"></i>
-            <span>4.7</span>
-          </div>
-        </div>
-      </a>
-
-      <!-- Book Card 4 -->
-      <a href="{{ url_for('public.list_books', q='Mockingbird') }}" class="featured-book-card fade-up delay-3">
-        <div class="featured-book-cover">
-          <img src="https://covers.openlibrary.org/b/id/10524419-L.jpg" alt="To Kill a Mockingbird" loading="lazy">
-        </div>
-        <div style="padding: 1rem 0.5rem 0.5rem;">
-          <h4 class="text-truncate mb-1" style="font-size: 1.05rem;">To Kill a Mockingbird</h4>
-          <p class="small text-muted mb-2">Harper Lee</p>
-          <div class="book-rating">
-            <i class="ph-fill ph-star"></i>
-            <span>4.9</span>
-          </div>
-        </div>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- Algorithm Showcase Section -->
-<section class="section" style="background: var(--bg-surface-2);">
-  <div class="container">
-    <div class="section-header text-center fade-up">
-      <span class="section-badge">
-        <i class="ph-fill ph-cpu"></i>
-        12+ خوارزمية ذكية
-      </span>
-      <h2>تقنيات التوصية <span class="text-gradient">المتقدمة</span></h2>
-      <p class="text-muted" style="max-width: 600px; margin: 0 auto;">
-        نستخدم مزيجاً من أحدث خوارزميات الذكاء الاصطناعي وتحليل البيانات لتقديم توصيات دقيقة
+      <p class="text-muted mb-4">
+        Curated by our Ensemble Engine combining <strong>Hybrid, Transformer, and Graph</strong> algorithms.
       </p>
-    </div>
 
-    <div class="grid-3" style="gap: 1.5rem;">
-      <!-- Algorithm Card 1 -->
-      <div class="algo-card fade-up">
-        <div class="algo-card-icon">
-          <i class="ph-fill ph-robot"></i>
-        </div>
-        <div>
-          <h4 class="mb-1" style="font-size: 1.1rem;">توصيات AI مخصصة</h4>
-          <p class="text-muted small mb-0">تحليل سلوكك باستخدام الذكاء الاصطناعي التوليدي لتقديم اقتراحات فريدة.</p>
-        </div>
-      </div>
+      {# ═══════════════════════════════════════════════════════════════════════
+      [3] SEARCH HISTORY SECTION (DYNAMICS / DISTINCTIVE MARK)
+      [MOVE] Moved inside Unified Section as requested
+      ═══════════════════════════════════════════════════════════════════════ #}
+      {% if algo_buckets.search_history_results and algo_buckets.search_history_results|length > 0 %}
+      <section class="search-history-distinctive">
+        {{ render_carousel_section(
+        title='Special Search Discovery',
+        icon='ph-bold ph-magnifying-glass',
+        books=algo_buckets.search_history_results,
+        id_prefix='search_hist',
+        badges=[{'text': 'Found for You', 'pulse': true}],
+        color='red'
+        ) }}
+      </section>
+      {% endif %}
 
-      <!-- Algorithm Card 2 -->
-      <div class="algo-card fade-up delay-1">
-        <div class="algo-card-icon teal">
-          <i class="ph-fill ph-users"></i>
-        </div>
-        <div>
-          <h4 class="mb-1" style="font-size: 1.1rem;">التوصية التعاونية</h4>
-          <p class="text-muted small mb-0">كتب أحبها مستخدمون لديهم ذوق مشابه لذوقك في القراءة.</p>
-        </div>
-      </div>
+      {# Using existing macro for consistent card design #}
+      {{ render_carousel_section(
+      title='Top Unified Recommendations',
+      icon='ph-fill ph-star-four',
+      books=unified_recommendations,
+      id_prefix='unified_rec',
+      badges=[{'text': 'Ensemble Choice', 'pulse': true}],
+      view_all_url=url_for('main.browse', category='unified'),
+      color='purple'
+      ) }}
+    </section>
+    {% endif %}
 
-      <!-- Algorithm Card 3 -->
-      <div class="algo-card fade-up delay-2">
-        <div class="algo-card-icon purple">
-          <i class="ph-fill ph-brain"></i>
-        </div>
-        <div>
-          <h4 class="mb-1" style="font-size: 1.1rem;">تشابه المحتوى</h4>
-          <p class="text-muted small mb-0">كتب مشابهة في الموضوع والأسلوب باستخدام Embeddings.</p>
-        </div>
-      </div>
 
-      <!-- Algorithm Card 4 -->
-      <div class="algo-card fade-up">
-        <div class="algo-card-icon gold">
-          <i class="ph-fill ph-target"></i>
-        </div>
-        <div>
-          <h4 class="mb-1" style="font-size: 1.1rem;">من اهتماماتك</h4>
-          <p class="text-muted small mb-0">بناءً على تفضيلاتك وسجل بحثك واهتماماتك المحددة.</p>
-        </div>
-      </div>
 
-      <!-- Algorithm Card 5 -->
-      <div class="algo-card fade-up delay-1">
-        <div class="algo-card-icon rose">
-          <i class="ph-fill ph-diamond"></i>
-        </div>
-        <div>
-          <h4 class="mb-1" style="font-size: 1.1rem;">جواهر مخفية</h4>
-          <p class="text-muted small mb-0">كتب عالية التقييم لكنها لم تشتهر بعد - اكتشافات نادرة.</p>
-        </div>
-      </div>
+    {# ═══════════════════════════════════════════════════════════════════════
+    [4] HIGHEST RATED BY USERS
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if top_rated_books_sorted and top_rated_books_sorted|length > 0 %}
+    {{ render_carousel_section(
+    title='Highest Rated by Community',
+    icon='ph-fill ph-star',
+    books=top_rated_books_sorted,
+    id_prefix='top_rated',
+    badges=[{'text': 'Reader Favorites', 'pulse': false}],
+    view_all_url=url_for('main.browse', category='top_rated'),
+    color='warning'
+    ) }}
+    {% endif %}
 
-      <!-- Algorithm Card 6 -->
-      <div class="algo-card fade-up delay-2">
-        <div class="algo-card-icon">
-          <i class="ph-fill ph-heart"></i>
-        </div>
-        <div>
-          <h4 class="mb-1" style="font-size: 1.1rem;">لأنك قرأت</h4>
-          <p class="text-muted small mb-0">توصيات مباشرة بناءً على آخر كتاب أحببته أو قيمته.</p>
-        </div>
-      </div>
-    </div>
+    {# ═══════════════════════════════════════════════════════════════════════
+    [5] HIGHEST VIEWED (POPULARITY)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if most_viewed_books and most_viewed_books|length > 0 %}
+    {{ render_carousel_section(
+    title='Most Viewed This Week',
+    icon='ph-fill ph-eye',
+    books=most_viewed_books,
+    id_prefix='most_viewed',
+    badges=[{'text': 'Trending', 'pulse': true}],
+    view_all_url=url_for('main.browse', category='most_viewed'),
+    color='accent'
+    ) }}
+    {% endif %}
 
-    <div class="text-center mt-5 fade-up">
-      <a href="{{ url_for('explore.index') }}" class="btn btn-primary">
-        <i class="ph ph-sparkle"></i>
-        اكتشف جميع التوصيات
-      </a>
-    </div>
+    {# ═══════════════════════════════════════════════════════════════════════
+    [6] TRENDING IN LIBRARIES
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if trending_by_libraries and trending_by_libraries|length > 0 %}
+    {{ render_carousel_section(
+    title='Trending in User Libraries',
+    icon='ph-fill ph-books',
+    books=trending_by_libraries,
+    id_prefix='lib_trending',
+    badges=[{'text': 'Hot Picks'}],
+    view_all_url=url_for('main.browse', category='trending_libs'),
+    color='success'
+    ) }}
+    {% endif %}
+
   </div>
-</section>
 
-<!-- Call to Action -->
-<section class="section">
-  <div class="container">
-    <div class="cta-section text-center fade-up" style="position: relative; z-index: 1;">
-      <div style="position: relative; z-index: 2;">
-        <div class="d-inline-flex align-center justify-center mb-4"
-          style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; font-size: 2rem;">
-          <i class="ph-fill ph-rocket" style="color: white;"></i>
-        </div>
-        <h2 style="color: white; margin-bottom: 1rem; font-size: 2.5rem;">جاهز للبدء؟</h2>
-        <p style="color: rgba(255,255,255,0.9); max-width: 500px; margin: 0 auto 2rem; font-size: 1.1rem;">
-          انضم اليوم مجاناً وابدأ رحلة استكشاف لا تنتهي من المعرفة والمتعة.
-        </p>
-        <div class="d-flex justify-center gap-3 flex-wrap">
-          <a href="{{ url_for('auth.register') }}" class="btn"
-            style="background: white; color: var(--primary-700); padding: 1rem 2rem;">
-            <i class="ph ph-user-plus"></i>
-            أنشئ حساب مجاني
-          </a>
-          <a href="{{ url_for('public.list_books') }}" class="btn"
-            style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 1rem 2rem;">
-            <i class="ph ph-books"></i>
-            تصفح المكتبة
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+  {# SVG Gradient Definitions for AI Score Rings #}
+  <svg style="position:absolute;width:0;height:0">
+    <defs>
+      <linearGradient id="gradient-high" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#4ade80" />
+        <stop offset="100%" style="stop-color:#22c55e" />
+      </linearGradient>
+      <linearGradient id="gradient-medium" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#facc15" />
+        <stop offset="100%" style="stop-color:#f59e0b" />
+      </linearGradient>
+      <linearGradient id="gradient-low" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#f87171" />
+        <stop offset="100%" style="stop-color:#ef4444" />
+      </linearGradient>
+      <linearGradient id="gradient-ai" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#8b5cf6" />
+        <stop offset="100%" style="stop-color:#6366f1" />
+      </linearGradient>
+    </defs>
+  </svg>
+</div>
+
+{# ═══════════════════════════════════════════════════════════════════════
+MICRO-INTERACTIONS SCRIPT
+═══════════════════════════════════════════════════════════════════════ #}
+<script>
+  (function () {
+    // Parallax Effect on Orbs
+    document.addEventListener('mousemove', (e) => {
+      const orbs = document.querySelectorAll('.hero-glow-orb');
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+
+      orbs.forEach((orb, i) => {
+        const speed = (i + 1) * 20;
+        const xOffset = (x - 0.5) * speed;
+        const yOffset = (y - 0.5) * speed;
+        orb.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+      });
+    });
+
+    // Intersection Observer for Cards Animation
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          // entry.target.style.opacity = '1';
+          // entry.target.style.transform = 'translateY(0)';
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05 });
+
+    // Observe all cards
+    document.querySelectorAll('.glass-book-card').forEach((card) => {
+      // card.style.opacity = '0';
+      // card.style.transform = 'translateY(20px)';
+      // card.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+      observer.observe(card);
+    });
+
+    // Add FadeIn style if not exists
+    if (!document.getElementById('card-animations')) {
+      const style = document.createElement('style');
+      style.id = 'card-animations';
+      style.textContent = `
+                .glass-book-card {
+                    opacity: 0;
+                    transform: translateY(20px);
+                    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+                }
+                .glass-book-card.visible {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            `;
+      document.head.appendChild(style);
+    }
+  })();
+</script>
 {% endblock %}

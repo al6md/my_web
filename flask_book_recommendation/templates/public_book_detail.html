@@ -1081,14 +1081,7 @@
           <p>خطة قراءة مخصصة لوقتك</p>
         </div>
 
-        <!-- Quiz Card -->
-        <div class="ai-card" onclick="openQuizModal()">
-          <div class="ai-card-icon" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">
-            <i class="ph-fill ph-brain"></i>
-          </div>
-          <h4>اختبر معلوماتك</h4>
-          <p>أسئلة وتحديات من محتوى الكتاب</p>
-        </div>
+
       </div>
     </div>
   </div>
@@ -1473,27 +1466,7 @@
   }
   }
 
-  // --- Quiz ---
-  function openQuizModal() {
-    document.getElementById('aiResultModal').classList.add('active');
-    document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-brain" style="color: var(--warning);"></i> اختبار معلومات';
-    document.getElementById('resultBody').innerHTML = `
-       <div class="text-center py-5">
-         <i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--warning);"></i>
-         <p class="mt-2 text-muted">جاري إعداد الاختبار...</p>
-       </div>
-     `;
 
-    // Mock Quiz implementation (real backend endpoint needed for full version)
-    setTimeout(() => {
-      document.getElementById('resultBody').innerHTML = `
-           <div class="text-center">
-             <h4 class="mb-3">قريباً!</h4>
-             <p class="text-muted">نعمل حالياً على تطوير ميزة الاختبارات التفاعلية.</p>
-           </div>
-        `;
-    }, 1000);
-  }
 
   // --- Reviews Loading ---
   async function loadReviews() {

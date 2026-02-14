@@ -1,6 +1,8 @@
 # app/__init__.py أو flask_book_recommendation/__init__.py
 import logging
+# Force reload trigger v2
 from logging.handlers import RotatingFileHandler
+# Force reload trigger v3
 from flask import Flask, redirect, url_for, jsonify, request
 from flask_cors import CORS
 from .config import Config
@@ -22,6 +24,7 @@ from .routes.debug_api import debug_bp
 def setup_logging(app):
     """إعداد نظام Logging للتطبيق"""
     if not app.debug:
+
         # إنشاء ملف log مع rotation
         file_handler = RotatingFileHandler(
             app.config['LOG_FILE'],
@@ -87,9 +90,9 @@ def create_app():
     app.register_blueprint(debug_bp)
 
     # الصفحة الرئيسية → Explore
-    @app.route("/")
-    def index():
-        return redirect(url_for("explore.index"))
+    # @app.route("/")
+    # def index():
+    #     return redirect(url_for("explore.index"))
 
     # فحص سريع لحالة السيرفر
     @app.route("/ping")

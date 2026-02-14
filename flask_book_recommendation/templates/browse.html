@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "components/macros.html" import render_book_card %}
+
+{% block title %}{{ title }} | ALHAM{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/nextgen-ai.css') }}">
+<style>
+    .browse-header {
+        padding: 4rem 0 2rem;
+        text-align: center;
+        background: radial-gradient(circle at center, rgba(139, 92, 246, 0.15), transparent 70%);
+    }
+
+    .browse-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .browse-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 2rem;
+        padding-bottom: 4rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="nextgen-explore">
+    <div class="browse-header">
+        <div class="container">
+            <h1 class="browse-title">{{ title }}</h1>
+            <p class="text-white-50">{{ description }}</p>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if books and books|length > 0 %}
+        <div class="browse-grid">
+            {% for book in books %}
+            {{ render_book_card(book, card_class='w-100') }}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="ph ph-mask-sad text-white-50 display-1 mb-3"></i>
+            <h3 class="text-white">No books found in this category.</h3>
+            <a href="{{ url_for('main.home') }}" class="btn btn-outline-light mt-3">Back to Home</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

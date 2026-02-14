@@ -1,9 +1,12 @@
 import requests
+import json
 import os
 import re
 from dotenv import load_dotenv
 
 # تحميل ملف .env لضمان تحميل مفاتيح API
+from .extensions import cache
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 dotenv_path = os.path.join(BASE_DIR, '.env')
 load_dotenv(dotenv_path)
@@ -16,6 +19,7 @@ print(f"DEBUG: Loading .env from {dotenv_path}")
 load_dotenv(dotenv_path, override=True)
 print(f"DEBUG: GEMINI_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
+@cache.memoize(timeout=1800)
 def fetch_google_books(query, max_results=12, start_index=0, order_by="relevance"):
     params = {
         "q": query, "maxResults": max_results,
@@ -86,6 +90,7 @@ def fetch_book_details(book_id, source="google"):
     return None
 
 
+@cache.memoize(timeout=86400) # cache for 24h
 def generate_ai_description(title: str, author: str = "") -> str:
     """
     توليد وصف قصير للكتاب باستخدام AI عندما لا يتوفر وصف.
@@ -162,6 +167,7 @@ def generate_ai_description(title: str, author: str = "") -> str:
 # -----------------------------------------------------------
 # 2. Project Gutenberg
 # -----------------------------------------------------------
+@cache.memoize(timeout=3600)
 def fetch_gutenberg_books(query, page=1, limit=12, **kwargs):
     api_url = "https://gutendex.com/books"
     params = {"search": query, "page": page}
@@ -223,6 +229,7 @@ def fetch_openlib_rating(isbn=None, olid=None, title=None):
     except: pass
     return None
 
+@cache.memoize(timeout=3600)
 def fetch_openlib_books(query, limit=12, offset=0, **kwargs):
     """جلب كتب من OpenLibrary مع تحسين جلب الأغلفة"""
     try:
@@ -393,6 +400,7 @@ def _verify_cover_exists(url):
     return True  # نفترض أنها موجودة إذا فشل التحقق
 
 
+@cache.memoize(timeout=86400)
 def get_book_cover_smart(title, author=None, isbn=None, source=None):
     """
     جلب غلاف كتاب بطريقة ذكية من مصادر متعددة
@@ -651,6 +659,7 @@ def analyze_search_intent_with_ai(text: str) -> dict:
     if not text or len(text.split()) < 2:
         return {"query": text, "is_tech": False}
 
+    import json
     api_key = os.environ.get("GEMINI_API_KEY")
     groq_key = os.environ.get("GROQ_API_KEY")
     

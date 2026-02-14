@@ -1,4 +1,5 @@
 import os
+# Force reload trigger
 from dotenv import load_dotenv
 
 # تحميل ملف .env من نفس المجلد

@@ -15,6 +15,7 @@ app = FastAPI(title=settings.APP_NAME, version=settings.VERSION)
 
 # Global State
 model = SuperIntelligentTwoTower()
+model.eval() # Force eval mode immediately to prevent BatchNorm errors
 retriever = RetrievalEngine()
 
 class RecommendationRequest(BaseModel):

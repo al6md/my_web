@@ -19,6 +19,10 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/professional.css') }}">
+
+    <!-- Animation Libraries CSS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     {% block head %}{% endblock %}
 </head>
 
@@ -34,8 +38,8 @@
 
             <!-- Center Navigation Links -->
             <div class="nav-links">
-                <a href="{{ url_for('explore.index') }}"
-                    class="nav-link {% if request.endpoint == 'explore.index' %}active{% endif %}">
+                <a href="{{ url_for('main.home') }}"
+                    class="nav-link {% if request.endpoint == 'main.home' %}active{% endif %}">
                     <i class="ph ph-house"></i>
                     <span>الرئيسية</span>
                 </a>
@@ -44,11 +48,7 @@
                     <i class="ph ph-books"></i>
                     <span>المكتبة</span>
                 </a>
-                <a href="{{ url_for('explore.ai_dashboard') }}"
-                    class="nav-link {% if request.endpoint == 'explore.ai_dashboard' %}active{% endif %}">
-                    <i class="ph ph-brain"></i>
-                    <span>الذكاء الاصطناعي</span>
-                </a>
+
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('main.books') }}"
                     class="nav-link {% if request.endpoint == 'main.books' %}active{% endif %}">
@@ -95,7 +95,7 @@
             </div>
 
             <div class="d-flex flex-column gap-3">
-                <a href="{{ url_for('explore.index') }}" class="nav-link">
+                <a href="{{ url_for('main.home') }}" class="nav-link">
                     <i class="ph ph-compass"></i> استكشف
                 </a>
 
@@ -103,9 +103,7 @@
                     <i class="ph ph-books"></i> المكتبة
                 </a>
 
-                <a href="{{ url_for('explore.ai_dashboard') }}" class="nav-link">
-                    <i class="ph ph-brain"></i> الذكاء الاصطناعي
-                </a>
+
 
                 {% if current_user.is_authenticated %}
                 <div class="mobile-divider my-3 border-top border-subtle"></div>
@@ -254,7 +252,7 @@
                     <div class="d-flex flex-column gap-2">
                         <a href="{{ url_for('main.home') }}" class="text-secondary"><i
                                 class="ph ph-house ms-2"></i>الرئيسية</a>
-                        <a href="{{ url_for('explore.index') }}" class="text-secondary"><i
+                        <a href="{{ url_for('main.home') }}" class="text-secondary"><i
                                 class="ph ph-compass ms-2"></i>استكشف</a>
                         <a href="{{ url_for('public.list_books') }}" class="text-secondary"><i
                                 class="ph ph-books ms-2"></i>المكتبة</a>
@@ -667,6 +665,25 @@
                 `;
             }
         }
+    </script>
+
+    <!-- Animation Libraries JS -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
+    <script>
+        // Initialize AOS globally
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof AOS !== 'undefined') {
+                AOS.init({
+                    duration: 800,
+                    easing: 'ease-out-cubic',
+                    once: true,
+                    offset: 50
+                });
+            }
+        });
     </script>
     {% block scripts %} {% endblock %}
 </body>

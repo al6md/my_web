@@ -1,0 +1,397 @@
+{# ═══════════════════════════════════════════════════════════════════════════
+🧩 ALHAM AI - Next-Gen UI Components (2026)
+Futuristic Jinja2 Macros with Glassmorphism & AI Aesthetics
+═══════════════════════════════════════════════════════════════════════════ #}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+📊 AI Score - SVG Circular Neon Ring
+Usage: {{ render_ai_score(85) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_ai_score(score, size='sm') %}
+{% set score_val = score|default(0)|float %}
+{% set score_class = 'score-high' if score_val >= 80 else ('score-medium' if score_val >= 60 else 'score-low') %}
+<div class="ai-ring-container size-{{ size }}">
+    <svg class="ai-ring" viewBox="0 0 100 100">
+        <circle class="ring-bg" cx="50" cy="50" r="40" />
+        <circle class="ring-progress {{ score_class }}" cx="50" cy="50" r="40" style="--score: {{ score_val }}" />
+    </svg>
+    <span class="ring-value">{{ score_val|int }}%</span>
+</div>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+⭐ Star Rating Display
+Usage: {{ render_stars(4.5, 120) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_stars(rating, count=0) %}
+{% set rating_val = rating|default(0)|float %}
+<div class="star-rating d-flex align-center gap-1">
+    {% for i in range(1, 6) %}
+    {% if i <= rating_val|int %} <svg class="star-icon filled" width="14" height="14" viewBox="0 0 24 24"
+        fill="currentColor" style="color: #facc15;">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+        {% elif i - rating_val < 1 %} <svg class="star-icon half" width="14" height="14" viewBox="0 0 24 24"
+            style="color: #facc15;">
+            <defs>
+                <linearGradient id="half{{ loop.index }}">
+                    <stop offset="50%" stop-color="currentColor" />
+                    <stop offset="50%" stop-color="rgba(255,255,255,0.2)" />
+                </linearGradient>
+            </defs>
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                fill="url(#half{{ loop.index }})" />
+            </svg>
+            {% else %}
+            <svg class="star-icon empty" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="rgba(255,255,255,0.3)" stroke-width="1.5">
+                <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            {% endif %}
+            {% endfor %}
+            {% if count and count > 0 %}
+            <span class="rating-count" style="color: rgba(255,255,255,0.4); font-size: 0.7rem;">({{ count }})</span>
+            {% endif %}
+</div>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+🏷️ Algorithm Sensor Badge
+Usage: {{ render_algo_badge('Hybrid Ensemble') }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_algo_badge(algorithm_name) %}
+{% set algo = algorithm_name|default('AI')|lower %}
+{% set badge_config = {
+'hybrid': {'icon': 'ph-fill ph-brain', 'color': 'purple', 'label': 'Hybrid AI'},
+'hybrid ensemble': {'icon': 'ph-fill ph-brain', 'color': 'purple', 'label': 'Hybrid AI'},
+'transformer': {'icon': 'ph-fill ph-lightning', 'color': 'cyan', 'label': 'Transformer'},
+'transformer model': {'icon': 'ph-fill ph-lightning', 'color': 'cyan', 'label': 'Transformer'},
+'transformer nn': {'icon': 'ph-fill ph-lightning', 'color': 'cyan', 'label': 'Transformer NN'},
+'collaborative': {'icon': 'ph-fill ph-users-three', 'color': 'green', 'label': 'Collaborative'},
+'collaborative filtering': {'icon': 'ph-fill ph-users-three', 'color': 'green', 'label': 'Collaborative'},
+'content': {'icon': 'ph-fill ph-file-text', 'color': 'orange', 'label': 'Content Based'},
+'content vector': {'icon': 'ph-fill ph-file-text', 'color': 'orange', 'label': 'Content Vector'},
+'graph': {'icon': 'ph-fill ph-graph', 'color': 'pink', 'label': 'Graph NN'},
+'reranker': {'icon': 'ph-fill ph-funnel', 'color': 'green', 'label': 'Reranker'},
+'neural reranker': {'icon': 'ph-fill ph-funnel', 'color': 'green', 'label': 'Neural Reranker'},
+'global trends': {'icon': 'ph-fill ph-trend-up', 'color': 'cyan', 'label': 'Trending'},
+'search history': {'icon': 'ph-bold ph-magnifying-glass', 'color': 'red', 'label': 'Recent Search'},
+'interest match': {'icon': 'ph-fill ph-heart', 'color': 'rose', 'label': 'Interest Match'},
+'vector similarity': {'icon': 'ph-fill ph-file-text', 'color': 'orange', 'label': 'Vector Similarity'}
+} %}
+
+{# 🧠 Fuzzy Logic fallback if exact match fails #}
+{% set config = badge_config.get(algo) %}
+{% if not config %}
+{% if 'vector' in algo %}
+{% set config = badge_config['vector similarity'] %}
+{% elif 'reranker' in algo %}
+{% set config = badge_config['neural reranker'] %}
+{% elif 'learning' in algo or 'deep' in algo %}
+{% set config = badge_config['transformer'] %}
+{% elif 'graph' in algo %}
+{% set config = badge_config['graph'] %}
+{% else %}
+{% set config = {'icon': 'ph-fill ph-sparkle', 'color': 'purple', 'label': algorithm_name} %}
+{% endif %}
+{% endif %}
+
+<span class="algo-sensor sensor-{{ config.color }}">
+    <i class="{{ config.icon }}"></i>
+    <span>{{ config.label }}</span>
+</span>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+🎴 Glass Book Card - Next-Gen Design
+Usage: {{ render_book_card(book, show_score=true) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_book_card(book, show_score=true, show_algo=true, show_reason=true, card_class='') %}
+{% set book_id = book.id|default('') %}
+{% set cover_val = book.cover|default(book.cover_url) %}
+{% set cover = cover_val if cover_val and cover_val != 'None' else
+'https://placehold.co/400x600/1a1a24/64748b?text=No+Cover' %}
+{% set title = book.title|default('Untitled Book') %}
+{% set author = book.author|default('Unknown Author') %}
+{% set score = book.score|default(book.ai_score)|default(0)|float %}
+{% set algo_tag = book.algo_tag|default('AI') %}
+{# Fallback: If algo_tag is generic, check contributing_algorithms list #}
+{% if (algo_tag == 'AI' or not algo_tag) and book.contributing_algorithms %}
+{% set algo_tag = book.contributing_algorithms[0] %}
+{% endif %}
+{% set reason = book.reason|default(book.explanation)|default('') %}
+{% set rating = book.rating|default(book.rating_avg)|default(0)|float %}
+{% set score_color = '#4ade80' if score >= 80 else ('#facc15' if score >= 60 else '#f87171') %}
+
+{# 🎨 Dynamic Algorithm Colors #}
+{% set algo_clean = algo_tag|lower %}
+{% set context_color = score_color %} {# Default to score color #}
+
+{% if 'transformer' in algo_clean or 'deep' in algo_clean %}
+{% set context_color = '#22d3ee' %} {# Cyan #}
+{% elif 'search' in algo_clean %}
+{% set context_color = '#ef4444' %} {# Red #}
+{% elif 'interest' in algo_clean %}
+{% set context_color = '#f472b6' %} {# Pink #}
+{% elif 'hybrid' in algo_clean %}
+{% set context_color = '#a78bfa' %} {# Purple #}
+{% elif 'collaborative' in algo_clean or 'users' in algo_clean %}
+{% set context_color = '#4ade80' %} {# Green #}
+{% elif 'vector' in algo_clean or 'content' in algo_clean %}
+{% set context_color = '#fb923c' %} {# Orange #}
+{% elif 'reranker' in algo_clean %}
+{% set context_color = '#34d399' %} {# Emerald #}
+{% endif %}
+
+{# 🎨 VISIBILITY FIX: Apply permanent border and subtle glow #}
+<article class="glass-book-card {{ card_class }}" data-algo="{{ algo_tag }}" style="--glow-color: {{ context_color }}; 
+           border: 2px solid {{ context_color }}; 
+           box-shadow: 0 4px 20px {{ context_color }}40;">
+    <div class="card-glass-inner">
+        <div class="card-cover-glass">
+            <img src="{{ cover }}" alt="{{ title }}" loading="lazy"
+                style="width: 100%; height: 100%; object-fit: cover; aspect-ratio: 2/3;"
+                onerror="this.src='https://placehold.co/400x600/1a1a24/64748b?text=No+Cover'">
+
+            {# AI Score Ring #}
+            {% if show_score and score > 0 %}
+            <div class="card-ai-ring" style="--ring-glow: {{ context_color }}">
+                {{ render_ai_score(score, 'sm') }}
+            </div>
+            {% endif %}
+
+            {# Hover Overlay #}
+            <div class="card-overlay-glass">
+                <div class="overlay-badges">
+                    <span class="badge-ai">
+                        <i class="ph-fill ph-sparkle"></i> AI
+                    </span>
+                    {% if score >= 80 %}
+                    <span class="badge-match">{{ score|int }}% Match</span>
+                    {% endif %}
+                </div>
+                <div class="overlay-actions">
+                    <a href="{{ url_for('public.book_detail', gid=book_id) }}" class="action-btn-glass primary">
+                        <i class="ph ph-eye"></i> View
+                    </a>
+                    <button class="action-btn-glass secondary">
+                        <i class="ph ph-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-info-glass">
+            {# Algorithm Badge #}
+            {% if show_algo and algo_tag %}
+            <div style="margin-bottom: 0.5rem;">
+                {{ render_algo_badge(algo_tag) }}
+            </div>
+            {% endif %}
+
+            {# Title & Author #}
+            <h5 class="card-title">
+                <a href="{{ url_for('public.book_detail', gid=book_id) }}"
+                    style="color: inherit; text-decoration: none;">
+                    {{ title }}
+                </a>
+            </h5>
+            <p class="card-author">{{ author }}</p>
+
+            {# Rating #}
+            {% if rating > 0 %}
+            <div style="margin-bottom: 0.5rem;">
+                {{ render_stars(rating) }}
+            </div>
+            {% endif %}
+
+            {# AI Reason #}
+            {% if show_reason and reason %}
+            <div class="ai-reason">
+                <i class="ph-fill ph-sparkle"></i>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ reason }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</article>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+🎴 Book Card - Compact Horizontal
+Usage: {{ render_book_card_horizontal(book) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_book_card_horizontal(book, show_metric=none, metric_value=none, metric_icon='ph-fill ph-fire') %}
+{% set book_id = book.id|default('') %}
+{% set cover = book.cover|default(book.cover_url)|default('https://placehold.co/200x300/1a1a24/64748b?text=No+Cover') %}
+{% set title = book.title|default('Untitled Book') %}
+{% set author = book.author|default('Unknown Author') %}
+
+<div class="book-card-horizontal"
+    style="display: flex; gap: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; backdrop-filter: blur(10px);">
+    <div style="width: 50px; height: 75px; border-radius: 8px; overflow: hidden; flex-shrink: 0;">
+        <img src="{{ cover }}" alt="{{ title }}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;"
+            onerror="this.src='https://placehold.co/200x300/1a1a24/64748b?text=No+Cover'">
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <h6
+            style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <a href="{{ url_for('public.book_detail', gid=book_id) }}" style="color: inherit; text-decoration: none;">{{
+                title }}</a>
+        </h6>
+        <p style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 0.5rem;">{{ author }}</p>
+        {% if show_metric and metric_value %}
+        <span
+            style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; color: var(--ng-neon-orange); background: rgba(251,146,60,0.15); padding: 0.2rem 0.5rem; border-radius: 6px;">
+            <i class="{{ metric_icon }}"></i> {{ metric_value }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+🎴 Book Card - Minimal (For Algorithm Showcase)
+Usage: {{ render_book_card_mini(book, badge_text, badge_color) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_book_card_mini(book, badge_text='', badge_color='purple') %}
+{% set book_id = book.id|default('') %}
+{% set cover = book.cover|default('https://placehold.co/200x300/1a1a24/64748b?text=No+Cover') %}
+{% set title = book.title|default('Untitled Book') %}
+
+<div style="display: flex; gap: 0.75rem; align-items: center;">
+    <img src="{{ cover }}" style="width: 50px; height: 75px; border-radius: 8px; object-fit: cover;" loading="lazy"
+        onerror="this.src='https://placehold.co/200x300/1a1a24/64748b?text=No+Cover'">
+    <div>
+        <h6
+            style="font-size: 0.85rem; margin-bottom: 0.25rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
+            <a href="{{ url_for('public.book_detail', gid=book_id) }}" style="color: inherit; text-decoration: none;">{{
+                title }}</a>
+        </h6>
+        {% if badge_text %}
+        <span
+            style="font-size: 0.65rem; padding: 0.2rem 0.5rem; background: rgba(139,92,246,0.15); color: var(--ng-purple-400); border-radius: 6px;">{{
+            badge_text }}</span>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+💀 AI Scanning Skeleton Loader
+Usage: {{ render_skeleton_card() }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_skeleton_card() %}
+<div class="skeleton-scanner" style="flex: 0 0 220px;">
+    <div class="skeleton-cover"></div>
+    <div class="skeleton-info">
+        <div class="skeleton-line w-60"></div>
+        <div class="skeleton-line w-75"></div>
+        <div class="skeleton-line w-40"></div>
+    </div>
+    <div class="skeleton-ai-indicator">
+        <i class="ph ph-spinner"></i>
+        <span>AI Processing</span>
+    </div>
+</div>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+📊 Section Header - Next-Gen
+Usage: {{ render_section_header('Title', 'icon-class', 'Description') }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_section_header(title, icon='ph-fill ph-sparkle', description='', color='purple', extra_content='') %}
+<div class="section-header-ng">
+    <div class="section-title-ng">
+        <i class="{{ icon }}"></i>
+        <h2>{{ title }}</h2>
+    </div>
+    {% if extra_content %}
+    <div>
+        {{ extra_content|safe }}
+    </div>
+    {% endif %}
+</div>
+{% if description %}
+<p style="color: rgba(255,255,255,0.5); margin-bottom: 1.5rem; padding: 0 1rem;">{{ description }}</p>
+{% endif %}
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+📈 Popularity Meter
+Usage: {{ render_popularity_meter(views, max_views) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_popularity_meter(value, max_value=1000) %}
+{% set percentage = ((value|default(0)|float / max_value|float) * 100)|int %}
+{% set percentage = [percentage, 100]|min %}
+<div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+    <div
+        style="width: {{ percentage }}%; height: 100%; background: linear-gradient(90deg, var(--ng-purple-500), var(--ng-neon-cyan)); border-radius: 2px; transition: width 0.5s ease;">
+    </div>
+</div>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+🏷️ Confidence Level Indicator
+Usage: {{ render_confidence(0.85) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_confidence(confidence) %}
+{% set conf = (confidence|default(0)|float * 100)|int %}
+{% set color = '#4ade80' if conf >= 80 else ('#facc15' if conf >= 50 else '#f87171') %}
+<div style="display: inline-flex; align-items: center; gap: 0.5rem;">
+    <span
+        style="width: 8px; height: 8px; border-radius: 50%; background: {{ color }}; box-shadow: 0 0 8px {{ color }};"></span>
+    <span style="font-size: 0.75rem; color: {{ color }};">{{ conf }}% confidence</span>
+</div>
+{% endmacro %}
+
+{# ─────────────────────────────────────────────────────────────────────────────
+🎠 Carousel Section - Next-Gen with 3D Perspective
+Usage: {{ render_carousel_section(...) }}
+───────────────────────────────────────────────────────────────────────────── #}
+{% macro render_carousel_section(title, icon='ph-fill ph-sparkle', books=[], id_prefix='c', badges=[], view_all_url='#',
+color='purple') %}
+{% if books and books|length > 0 %}
+<section class="carousel-section-ng" id="section-{{ id_prefix }}">
+    <div class="container">
+        <div class="section-header-ng">
+            <div class="section-title-ng">
+                <i class="{{ icon }}"></i>
+                <h2>{{ title }}</h2>
+                <div class="section-badges">
+                    {% for badge in badges %}
+                    <span
+                        class="{% if badge.pulse %}badge-live{% else %}badge-new{% endif %} {{ badge.class|default('') }}">
+                        {% if badge.pulse %}<span class="pulse-dot"></span>{% endif %}
+                        {{ badge.text }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% if view_all_url and view_all_url != '#' %}
+            <a href="{{ view_all_url }}" class="see-all-ng">
+                See All <i class="ph ph-arrow-right"></i>
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="carousel-container-ng">
+            <button class="carousel-btn-ng prev"
+                onclick="document.getElementById('track-{{ id_prefix }}').scrollBy({left: -350, behavior: 'smooth'})">
+                <i class="ph ph-caret-left"></i>
+            </button>
+            <div class="carousel-track-ng" id="track-{{ id_prefix }}">
+                {% for book in books %}
+                {{ render_book_card(book, card_class='') }}
+                {% endfor %}
+            </div>
+            <button class="carousel-btn-ng next"
+                onclick="document.getElementById('track-{{ id_prefix }}').scrollBy({left: 350, behavior: 'smooth'})">
+                <i class="ph ph-caret-right"></i>
+            </button>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endmacro %}

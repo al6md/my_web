@@ -24,13 +24,86 @@ from .utils import (
 from .extensions import db, cache
 from .advanced_recommender import DLInferenceEngine
 
-# Initialize DL Engine
-# We initialize it lazily or here if it doesn't block startup too much.
-# Since it loads a model file, let's keep it at module level but handle errors inside the class.
-dl_engine = DLInferenceEngine()
+# Initialize DL Engine lazily to avoid blocking startup or script imports
+_dl_engine = None
+
+def get_dl_engine():
+    global _dl_engine
+    if _dl_engine is None:
+        _dl_engine = DLInferenceEngine()
+    return _dl_engine
 
 
 logger = logging.getLogger(__name__)
+
+# ------------------------------------------------------------------
+# Global Performance Caches
+# ------------------------------------------------------------------
+# This cache stores deserialized embeddings in memory to avoid heavy DB queries
+# on every page refresh or recommendation request.
+_GLOBAL_EMBEDDING_CACHE = {
+    'matrix': None,      # numpy matrix (N, D)
+    'book_ids': [],      # List of book IDs corresponding to rows
+    'last_updated': 0,   # Timestamp
+    'lock': False        # Simple flag for atomic-ish updates
+}
+
+def _get_embeddings_matrix(ttl=3600):
+    """
+    Helper to get the embeddings matrix from memory, loading it from DB if needed.
+    TTL defaults to 1 hour to account for new books.
+    """
+    import time
+    now = time.time()
+    
+    # 1. Check if cache is valid
+    if (_GLOBAL_EMBEDDING_CACHE['matrix'] is not None and 
+        (now - _GLOBAL_EMBEDDING_CACHE['last_updated'] < ttl)):
+        return _GLOBAL_EMBEDDING_CACHE['matrix'], _GLOBAL_EMBEDDING_CACHE['book_ids']
+
+    # 2. Loading from DB
+    try:
+        logger.info("[Embedding-Cache] Loading embeddings matrix from database...")
+        start_time = time.perf_counter()
+        
+        # Pull all embeddings
+        all_rows = BookEmbedding.query.all()
+        if not all_rows:
+            return None, []
+
+        ids = []
+        vectors = []
+        target_dim = None
+        
+        for row in all_rows:
+            if row.vector is not None:
+                v = np.array(row.vector, dtype=np.float32)
+                if v.ndim == 1:
+                    # Initialize target_dim from the first valid vector
+                    if target_dim is None:
+                         target_dim = v.shape[0]
+                         
+                    # Only include vectors with consistent dimension
+                    if v.shape[0] == target_dim:
+                        ids.append(row.book_id)
+                        vectors.append(v)
+        
+        if not vectors:
+            return None, []
+
+        # Update Cache
+        _GLOBAL_EMBEDDING_CACHE['matrix'] = np.vstack(vectors)
+        _GLOBAL_EMBEDDING_CACHE['book_ids'] = ids
+        _GLOBAL_EMBEDDING_CACHE['last_updated'] = now
+        
+        elapsed = (time.perf_counter() - start_time) * 1000
+        logger.info(f"[Embedding-Cache] Matrix loaded: {len(ids)} vectors in {elapsed:.2f}ms")
+        
+        return _GLOBAL_EMBEDDING_CACHE['matrix'], _GLOBAL_EMBEDDING_CACHE['book_ids']
+        
+    except Exception as e:
+        logger.error(f"[Embedding-Cache] Error loading matrix: {e}", exc_info=True)
+        return None, []
 
 
 # ------------------------------------------------------------------
@@ -193,7 +266,7 @@ def get_trending(limit=12):
 
 
 @cache.memoize(timeout=600)
-def get_cf_similar(user_id, top_n=30, min_users=2, offset=0):
+def get_cf_similar(user_id, top_n=30, min_users=2, offset=0, randomize=False):
     """
     Get recommendations based on similar users (User-User Collaborative Filtering)
     :param user_id: ID of the user
@@ -271,11 +344,17 @@ def get_cf_similar(user_id, top_n=30, min_users=2, offset=0):
         top_indices = np.argsort(scores)[::-1]
         
         # Apply pagination (offset + limit)
-        start_idx = offset
-        if start_idx >= len(top_indices):
+        if offset >= len(top_indices):
             return []
             
-        top_indices = top_indices[start_idx:]
+        if randomize:
+            # Take a larger pool and shuffle to ensure variety on refresh
+            pool_size = max(top_n * 3, 100)
+            potential_indices = top_indices[offset : offset + pool_size]
+            np.random.shuffle(potential_indices)
+            top_indices = potential_indices
+        else:
+            top_indices = top_indices[offset:]
         
         recs = []
         for idx in top_indices:
@@ -308,8 +387,8 @@ def get_cf_similar(user_id, top_n=30, min_users=2, offset=0):
 # ------------------------------------------------------------------
 
 
-@cache.memoize(timeout=600)  # Cache لمدة 10 دقائق
-def get_content_similar(user_id, top_n=30, history_limit=20):
+# @cache.memoize(timeout=600)  # Cache disabled for dynamic results
+def get_content_similar(user_id, top_n=30, history_limit=20, randomize=False):
     """
     توصيات محتوى Content-Based باستخدام جدول BookEmbedding.
     
@@ -410,6 +489,13 @@ def get_content_similar(user_id, top_n=30, history_limit=20):
     exclude_ids = set(seed_book_ids)
     ranked_indices = np.argsort(sims)[::-1]
 
+    if randomize:
+        # Take top 100 candidates and shuffle for variety
+        pool_size = max(top_n * 4, 100)
+        potential = ranked_indices[:pool_size]
+        np.random.shuffle(potential)
+        ranked_indices = potential
+
     recs = []
     for idx in ranked_indices:
         score = sims[idx]
@@ -436,8 +522,8 @@ def get_content_similar(user_id, top_n=30, history_limit=20):
     return recs
 
 
-@cache.memoize(timeout=600)  # Cache لمدة 10 دقائق
-def get_view_based_recommendations(user_id, top_n=12, history_limit=10):
+# @cache.memoize(timeout=600)  # Cache disabled for dynamic results
+def get_view_based_recommendations(user_id, top_n=12, history_limit=10, randomize=False):
     """
     توصيات ذكية بناءً على سجل المشاهدات (UserBookView) باستخدام AI Embeddings.
     
@@ -520,6 +606,13 @@ def get_view_based_recommendations(user_id, top_n=12, history_limit=10):
         # ترتيب النتائج
         ranked_indices = np.argsort(sims)[::-1]
         
+        if randomize:
+            # Shuffle top pool for fresh views on refresh
+            pool_size = max(top_n * 4, 40)
+            potential = ranked_indices[:pool_size]
+            np.random.shuffle(potential)
+            ranked_indices = potential
+            
         recs = []
         for idx in ranked_indices:
             score = sims[idx]
@@ -621,7 +714,7 @@ def run_in_context(app, func, *args, **kwargs):
 
 from .ai_client import ai_client
 
-def _get_ai_embedding_recommendations(user_id, viewed_book_ids, search_queries=None, favorite_book_ids=None, high_rated_book_ids=None, explicit_genres=None, limit=10, offset=0):
+def _get_ai_embedding_recommendations(user_id, viewed_book_ids, search_queries=None, favorite_book_ids=None, high_rated_book_ids=None, explicit_genres=None, limit=10, offset=0, randomize=False):
     """
     Hybrid Recommender: AI Engine (Two-Tower) -> Fallback to Local Embeddings.
     """
@@ -794,35 +887,58 @@ def _get_ai_embedding_recommendations(user_id, viewed_book_ids, search_queries=N
             logger.debug(f"[AI-Embed] No vectors found for user profile")
             return []
         
+        # 🆕 Fix Dimension Mismatch: Filter vectors to ensure consistency (384 vs 768)
+        # Determine target dimension from the first vector (likely from live embedding)
+        target_dim = all_vectors[0].shape[0]
+        
+        # Filter all_vectors to match target_dim
+        consistent_vectors = [v for v in all_vectors if v.shape[0] == target_dim]
+        
+        if not consistent_vectors:
+             logger.warning(f"[AI-Embed] No consistent vectors found for dimension {target_dim}")
+             return []
+
         # بناء بروفايل المستخدم (Centroid)
-        user_profile = np.mean(np.vstack(all_vectors), axis=0).reshape(1, -1)
+        user_profile = np.mean(np.vstack(consistent_vectors), axis=0).reshape(1, -1)
         
-        # مقارنة مع جميع الكتب
-        all_embeds = BookEmbedding.query.all()
-        candidate_ids = []
-        candidate_vectors = []
-        
-        # استثناء الكتب التي تفاعل معها المستخدم بالفعل (إلا إذا أردنا إعادة اقتراحها؟ عادة لا)
-        exclude_ids = set(viewed_book_ids) | set(favorite_book_ids) 
+        # استثناء الكتب التي تفاعل معها المستخدم بالفعل
+        exclude_ids = set(viewed_book_ids) | set(favorite_book_ids or []) 
         if isinstance(high_rated_book_ids, dict):
             exclude_ids |= set(high_rated_book_ids.keys())
         elif isinstance(high_rated_book_ids, list):
             exclude_ids |= set(high_rated_book_ids)
+
+        # ---------------- OPTIMIZED: Using Global Matrix ----------------
+        matrix, matrix_ids = _get_embeddings_matrix()
         
-        for row in all_embeds:
-            if row.book_id in exclude_ids:
-                continue
-            if row.vector is not None:
-                v = np.array(row.vector, dtype=np.float32)
-                if v.ndim == 1:
-                    candidate_ids.append(row.book_id)
-                    candidate_vectors.append(v)
-        
-        if not candidate_vectors:
+        if matrix is None:
+            logger.warning("[AI-Embed] Matrix is empty or not loaded.")
             return []
+
+        # Filter candidate matrix by dimension matching the user profile
+        if matrix.shape[1] != target_dim:
+             logger.warning(f"[AI-Embed] Matrix dimension mismatch ({matrix.shape[1]}) vs Target ({target_dim})")
+             # Still try to find matching ones if possible? Usually matrix is consistent.
+             return []
+
+        candidate_ids = matrix_ids
+        candidate_vectors = matrix
         
-        mat = np.vstack(candidate_vectors)
+        # We still need to handle exclude_ids. 
+        # Filtering a large matrix by ID is better done by indices.
+        exclude_indices = [i for i, bid in enumerate(candidate_ids) if bid in exclude_ids]
+        
+        # Instead of np.delete (slow), we just mask them after similarity Calculation if possible,
+        # or filter ahead if the exclude list is small.
+        # Since exclude_ids is usually < 100, we can just mask.
+        
+        mat = candidate_vectors
         sims = cosine_similarity(user_profile, mat)[0]
+        
+        # Mask excluded IDs
+        if exclude_indices:
+            sims[exclude_indices] = -1.0
+
         
         # ترتيب حسب التشابه
         ranked_indices = np.argsort(sims)[::-1]
@@ -835,7 +951,19 @@ def _get_ai_embedding_recommendations(user_id, viewed_book_ids, search_queries=N
         if start_idx >= len(ranked_indices):
              return []
              
-        for idx in ranked_indices[start_idx:]:
+        # 🆕 Randomization: Shuffle the top candidates before slicing
+        if randomize:
+            # We take a larger pool (e.g., 3x limit or 50) starting from offset
+            pool_size = max(limit * 3, 30)
+            candidate_pool = ranked_indices[start_idx : start_idx + pool_size]
+            # Shuffle this pool
+            np.random.shuffle(candidate_pool)
+            # Now take the loop indices from this shuffled pool
+            indices_to_iter = candidate_pool
+        else:
+            indices_to_iter = ranked_indices[start_idx:]
+            
+        for idx in indices_to_iter:
             score = sims[idx]
             if score < 0.35:  # عتبة التشابه
                 continue
@@ -882,7 +1010,7 @@ def _get_cf_recommendations(user_id, limit=6, offset=0):
 # 4) Deep Learning - Two-Tower Model (Added Step)
 # ------------------------------------------------------------------
 
-def get_deep_learning_recommendations(user_id, limit=10):
+def get_deep_learning_recommendations(user_id, limit=10, randomize=False):
     """
     Get recommendations using the Two-Tower Deep Learning model.
     Includes Hybrid Ranking logic with full logging and traceability.
@@ -934,12 +1062,18 @@ def get_deep_learning_recommendations(user_id, limit=10):
             if len(history_vectors) < 10:
                 pad_len = 10 - len(history_vectors)
                 for _ in range(pad_len):
-                    history_vectors.append(np.zeros(768, dtype=np.float32))
+                    history_vectors.append(np.zeros(384, dtype=np.float32))
             else:
                 history_vectors = history_vectors[:10]
                 
             history_arr = np.array(history_vectors)
             interest_vec = np.mean(history_arr, axis=0)
+
+            # 🆕 Randomization: Add noise to user profile
+            if randomize:
+                # Add slight noise to interest vector to vary results (Exploration)
+                noise = np.random.normal(0, 0.08, interest_vec.shape).astype(np.float32)
+                interest_vec = interest_vec + noise
 
             # 2. Prepare Candidates
             all_books = Book.query.all()
@@ -973,12 +1107,36 @@ def get_deep_learning_recommendations(user_id, limit=10):
             user_data = {'history': history_arr, 'interests': interest_vec}
             candidates_list = list(book_metadata.values())
             
-            ranked_results = dl_engine.generate_recommendations(
-                user_id, 
-                user_data, 
-                candidates_list, 
-                top_k=limit
-            )
+            # 🆕 Randomization: Request more results from engine if randomizing
+            top_k_request = limit * 3 if randomize else limit
+            
+            # Generate candidates using the Two-Tower model
+            try:
+                engine = get_dl_engine()
+                ranked_results = engine.generate_recommendations(
+                    user_id,
+                    user_data,
+                    candidates_list,
+                    top_k=top_k_request
+                )
+            except Exception as e:
+                rec_logger.error(f"[DL-Rec] Error generating recommendations: {e}", exc_info=True)
+                return []
+            
+            # 🆕 Randomization: Shuffle top candidates
+            if randomize and len(ranked_results) > 0:
+                 import random
+                 # Logic: Take a larger pool from results to ensure variety
+                 # We take up to 4x limit (e.g. 40 items) and shuffle them
+                 pool_size = min(len(ranked_results), limit * 5) 
+                 pool = ranked_results[:pool_size]
+                 random.shuffle(pool)
+                 
+                 # Combine shuffled pool with rest (if any)
+                 ranked_results = pool + ranked_results[pool_size:]
+                 
+                 # Trim to original limit
+                 ranked_results = ranked_results[:limit]
             
             neural_time = (time.perf_counter() - neural_start) * 1000
             pipeline_log.log_stage("neural", time_ms=neural_time, results=len(ranked_results))
@@ -1007,7 +1165,7 @@ def get_deep_learning_recommendations(user_id, limit=10):
                     
                     d = _book_to_dict(
                         book,
-                        source="Deep Learning",
+                        source="Transformer",
                         reason=f"🧠 AI Score: {res['final_score']:.2f}",
                         extra_meta={
                             "algorithm_used": trace.algorithm,
@@ -1022,6 +1180,9 @@ def get_deep_learning_recommendations(user_id, limit=10):
                     )
                     recs.append(d)
             
+            print(f"DEBUG: Transformer generated {len(recs)} recommendations")
+            rec_logger.info(f"DEBUG: Transformer generated {len(recs)} recommendations")
+
             pipeline_log.set_final_count(len(recs))
             return recs
 
@@ -1031,6 +1192,7 @@ def get_deep_learning_recommendations(user_id, limit=10):
             return []
 
 
+def _get_cf_recommendations(user_id, limit=6, offset=0):
     """
     توصيات Collaborative Filtering - مستخدمون مشابهون.
     
@@ -1061,126 +1223,39 @@ def get_deep_learning_recommendations(user_id, limit=10):
         return []
 
 
-# @cache.memoize(timeout=300)  # Cache disabled for debugging
-def get_behavior_based_recommendations(user_id, limit=12, offset=0):
-    print(f"DEBUG: get_behavior_based_recommendations called for user {user_id} with limit {limit}, offset {offset}")
+@cache.memoize(timeout=300) 
+def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=False, salt=0):
     """
-    توصيات ذكية شاملة (YouTube-Style)
-    
-    تدمج بين:
-    1. سجل البحث (Search History) - لمعرفة ما تبحث عنه الآن.
-    2. المفضلة (Favorites) - لمعرفة ذوقك الدقيق.
-    3. المشاهدات (Views) - لمعرفة اهتمامك الضمني.
-    4. التصنيفات المختارة (Explicit Genres) - اهتماماتك العامة.
-    5. التشابه مع مستخدمين آخرين (Collaborative Filtering).
-    
-    Args:
-        user_id: معرف المستخدم
-        limit: عدد التوصيات المطلوبة per source type roughly
-        
-    Returns:
-        قائمة كتب متنوعة وشخصية جداً
+    Heavy lifting: Fetches a large pool of hybrid candidates from various sources.
+    This is cached for 5 minutes.
     """
     from datetime import datetime, timedelta
     from collections import defaultdict
-    from concurrent.futures import ThreadPoolExecutor
-    
-    try:
-        logger.info(f"[Behavior-Hybrid] Starting comprehensive recommendations for user {user_id}")
-        
-        # ---------------------------------------------------------
-        # 1. جمع البيانات (Data Gathering)
-        # ---------------------------------------------------------
-        
-        # أ) الكتب المشاهدة حديثاً
-        recent_views = (
-            UserBookView.query
-            .filter_by(user_id=user_id)
-            .order_by(UserBookView.last_viewed_at.desc())
-            .limit(40)
-            .all()
-        )
-        viewed_book_ids = set()
-        viewed_google_ids = set()
-        
-        category_weights = defaultdict(float)
-        author_weights = defaultdict(float)
-        
-        for view in recent_views:
-            if view.book_id: viewed_book_ids.add(view.book_id)
-            if view.google_id: viewed_google_ids.add(view.google_id)
-            
-            # تحليل مبسط للأوزان من المشاهدات
-            book = None
-            if view.book_id: book = Book.query.get(view.book_id)
-            elif view.google_id: book = Book.query.filter_by(google_id=view.google_id).first()
-            
-            if book:
-                w = view.view_count or 1
-                if book.categories:
-                    for cat in book.categories.split(','):
-                        if len(cat) > 2: category_weights[cat.strip()] += w
-                if book.author:
-                    author_weights[book.author.split(',')[0].strip()] += w
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from flask import current_app
 
-        # ب) سجل البحث (آخر 10 عمليات بحث)
-        recent_searches = (
-            db.session.query(SearchHistory)
-            .filter_by(user_id=user_id)
-            .order_by(SearchHistory.created_at.desc())
-            .limit(10)
-            .all()
-        )
+    try:
+        logger.info(f"[Behavior-Hybrid] Fetching pool for user {user_id}")
+        
+        # 1. Data Gathering
+        recent_views = UserBookView.query.filter_by(user_id=user_id).order_by(UserBookView.last_viewed_at.desc()).limit(40).all()
+        viewed_book_ids = [v.book_id for v in recent_views if v.book_id]
+        viewed_google_ids = [v.google_id for v in recent_views if v.google_id]
+        
+        recent_searches = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(10).all()
         search_queries = [s.query for s in recent_searches if s.query]
         
-            # ج) الكتب المفضلة (Status = favorite)
-        favorites = (
-            BookStatus.query
-            .filter_by(user_id=user_id, status='favorite')
-            .order_by(BookStatus.created_at.desc())
-            .all()
-        )
+        favorites = BookStatus.query.filter_by(user_id=user_id, status='favorite').all()
         favorite_book_ids = [f.book_id for f in favorites if f.book_id]
 
-        # د) الكتب الأعلى تقييماً (4 نجوم فأكثر)
-        high_rated_books = {}  # {book_id: stars}
-        
-        # 1. تقييمات محلية (UserRatingCF)
         user_ratings = UserRatingCF.query.filter(UserRatingCF.user_id==user_id, UserRatingCF.rating >= 4).all()
-        for r in user_ratings:
-             if r.google_id:
-                 # محاولة العثور على book_id محلي
-                 b = Book.query.filter_by(google_id=r.google_id).first()
-                 if b: high_rated_books[b.id] = r.rating
+        high_rated_books = {r.id: r.rating for r in user_ratings}
 
-        # 2. تقييمات عامة (PublicRating) - إذا كنا نربط المستخدمين بها بطريقة ما (حالياً PublicRating بـ u_id)
-        public_ratings = PublicRating.query.filter(PublicRating.user_id==user_id, PublicRating.stars >= 4).all()
-        for r in public_ratings:
-             if r.google_id:
-                 b = Book.query.filter_by(google_id=r.google_id).first()
-                 if b: 
-                     # نأخذ التقييم الأعلى إذا تكرر
-                     old = high_rated_books.get(b.id, 0)
-                     high_rated_books[b.id] = max(old, r.stars)
-
-        # هـ) التصنيفات المختارة صراحةً
-        user_genres = (
-            db.session.query(Genre.name)
-            .join(UserGenre)
-            .filter(UserGenre.user_id == user_id)
-            .all()
-        )
+        user_genres = db.session.query(Genre.name).join(UserGenre).filter(UserGenre.user_id == user_id).all()
         explicit_genres = [g[0] for g in user_genres]
         
-        # 🆕 أضفنا تفضيلات المستخدم المخصصة (Topics)
-        user_prefs = UserPreference.query.filter_by(user_id=user_id).all()
-        for p in user_prefs:
-            explicit_genres.append(p.topic)
-        
-        # إذا لم يكن هناك أي داتا, نرجع للرائج
-        if not (viewed_book_ids or search_queries or favorite_book_ids or explicit_genres or high_rated_books):
-             logger.info("[Behavior-Hybrid] No user history, falling back to Trending")
-             return get_trending(limit=limit)
+        if not (viewed_book_ids or search_queries or favorite_book_ids or explicit_genres):
+             return []
 
         # ---------------------------------------------------------
         # 2. تشغيل محركات التوصية بالتوازي
@@ -1191,259 +1266,124 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0):
         # Capture real app object to pass to threads
         app = current_app._get_current_object()
         
-        # حساب الحصص التقريبية
-        # نعطي مساحة أكبر للـ AI لأنه الأذكى الآن
-        ai_limit = int(limit * 0.6) + 4 
-        cf_limit = int(limit * 0.2) + 2
-        explore_limit = int(limit * 0.2) + 2
+        # INCREASED pool sizes for high variety on refresh
+        ai_limit = 60
+        cf_limit = 30
+        explore_limit = 40
         
+        # 2. Parallel Recommendation Source Fetching
+        app = current_app._get_current_object()
+        
+        # INCREASED pool sizes
+        ai_pool_limit = 80
+        cf_pool_limit = 40
+        explore_pool_limit = 40
+        
+        all_recs = []
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = {}
             
-            # حساب offset مخصص للـ AI
-            # الـ AI يأخذ تقريباً 50-60% من الصفحة
-            # إذا الصفحة 0 (offset 0) -> ai_offset = 0
-            # إذا الصفحة 12 (offset 12) -> ai_offset = ~6 (نصف الـ offset)
-            # ولكن, هنا المنطق دقيق:
-            # نحن نطلب ai_limit لكل صفحة.
-            # لاستمرار النتائج بشكل صحيح, يجب أن نتخطى ما عرضناه سابقاً.
-            # إذا كنا نعرض في كل صفحة (ai_limit) من نتائج الـ AI, فالـ offset يجب أن يكون (page_num * ai_limit)
-            
-            # حساب رقم الصفحة التقريبي
-            page_num = offset // limit if limit > 0 else 0
-            
-            ai_offset = page_num * ai_limit
-            cf_offset = page_num * cf_limit
-            
-            logger.info(f"[Behavior-Hybrid] Page {page_num} (Offset {offset}): AI={ai_limit} (Off:{ai_offset}), CF={cf_limit} (Off:{cf_offset})")
-
-            # 1. AI Hybrid Match (Semantic Profile)
+            # AI
             futures["ai"] = executor.submit(
-                run_in_context,
-                app,
-                _get_ai_embedding_recommendations,
-                user_id,
-                list(viewed_book_ids),
-                search_queries[:5], 
-                favorite_book_ids,
-                high_rated_books, 
-                explicit_genres,  # 🆕 Pass explicit genres
-                ai_limit,
-                ai_offset
+                run_in_context, app, _get_ai_embedding_recommendations,
+                user_id, list(viewed_book_ids), search_queries[:5], list(favorite_book_ids),
+                high_rated_books, explicit_genres, ai_pool_limit, 0, randomize
             )
             
-            # 2. Collaborative Filtering (Similar Users)
+            # CF
             futures["cf"] = executor.submit(
-                run_in_context,
-                app,
-                _get_cf_recommendations,
-                user_id, cf_limit, cf_offset
+                run_in_context, app, get_cf_similar, user_id, top_n=cf_pool_limit
             )
             
-            # 3. Exploration (Google Books / OpenLib based on explicit interests & searches)
-            def fetch_exploration():
-                # We reuse the same page logic for exploration
-                # 'offset' passed to parent function represents global offset
-                # We map it to 'page' for external APIs if needed
-                explore_page_num = page_num 
+            # Explore
+            def fetch_simple_explore():
                 results = []
                 seen_ex = set(viewed_google_ids)
-                
-                # Check if this is "View All" (High Limit)
-                is_view_all = limit > 25
-                
-                targets = []
-                
-                if is_view_all:
-                    # ✅ View All Strategy: Time Machine (Pagination = Back in Time)
-                    # Instead of showing EVERYTHING, we show a SLICE based on offset
-                    # Page 1 (offset 0): Newest Interests
-                    # Page 2 (offset > 0): Older Interests
-                    
-                    # 1. Build Full Chronological Timeline
-                    timeline = []
-                    
-                    # A) Search History (Newest First)
-                    seen_timeline = set()
-                    for q in search_queries:
-                        if q and q not in seen_timeline:
-                            timeline.append(q)
-                            seen_timeline.add(q)
-                            
-                    # B) High Weight Categories (After searches)
-                    sorted_cats = sorted(category_weights.items(), key=lambda x: x[1], reverse=True)
-                    for cat, _ in sorted_cats:
-                         if cat and cat not in seen_timeline:
-                             timeline.append(cat)
-                             seen_timeline.add(cat)
-                             
-                    # C) Explicit Genres
-                    for g in explicit_genres:
-                        if g and g not in seen_timeline:
-                            timeline.append(g)
-                            seen_timeline.add(g)
-                    
-                    # 2. Determine "Page" of interests
-                    # Assume we show 3-4 distinct topics per "page" of results
-                    # Each topic yields ~6 books. So 24 books ~= 4 topics.
-                    topics_per_page = 4
-                    current_page = page_num  # Use the calculated page number
-                    
-                    start_idx = current_page * topics_per_page
-                    end_idx = start_idx + topics_per_page
-                    
-                    # Get targets for THIS page
-                    targets = timeline[start_idx:end_idx]
-                    
-                    # If we ran out of timeline, maybe random fallback or loop?
-                    # Let's loop for infinite discovery but slightly shuffled
-                    if not targets and timeline:
-                        # Modulo wrap around
-                        wraparound_idx = start_idx % len(timeline)
-                        # Pick from there but randomize slightly to avoid exact duplicate pages
-                        targets = timeline[wraparound_idx:wraparound_idx+topics_per_page]
-                        if len(targets) < topics_per_page:
-                             targets.extend(timeline[:topics_per_page-len(targets)])
-                    
-                    logger.info(f"[Exploration] View All Page {current_page}: targets={targets}")
-                    
-                else:
-                    # ✅ Homepage Strategy: Focused & Diverse
-                    pass_pool = list(explicit_genres)
-
-                    # Add heavy weights
-                    for cat, count in category_weights.items():
-                        if count >= 2: pass_pool.append(cat)
-                    
-                    # 1. Top Priority: Last Search
-                    if search_queries:
-                        last_search = search_queries[0]
-                        targets.append(last_search)
-                    
-                    # 2. Random fill
-                    remaining_slots = 3 - len(targets)
-                    if remaining_slots > 0 and pass_pool:
+                target = search_queries[0] if search_queries else (explicit_genres[0] if explicit_genres else "Best Sellers")
+                try:
+                    # 🆕 Randomization for Explore
+                    start_index = 0
+                    if randomize:
                         import random
-                        pool_set = set(pass_pool) - set(targets)
-                        if pool_set:
-                            picked = random.sample(list(pool_set), min(remaining_slots, len(pool_set)))
-                            targets.extend(picked)
-
-                for i, topic in enumerate(targets):
-                    try:
-                        # Determine count based on mode
-                        # View All: 6 books per topic
-                        # Homepage: 8 for main, 4 for others
-                        if is_view_all:
-                            count = 6
-                        else:
-                            count = 8 if (search_queries and topic == search_queries[0]) else 4
-                        
-                        # Calculate offset for this specific topic based on page number
-                        # to ensure we don't show the same books for the same topic on page 2, 3, etc.
-                        topic_offset = page_num * count
-                        
-                        items, _ = fetch_google_books(f"subject:{topic}", max_results=count, start_index=topic_offset)
-                        if not items and search_queries and topic == search_queries[0]:
-                             items, _ = fetch_google_books(topic, max_results=count, start_index=topic_offset)
-
-                        for it in items or []:
-                            gid = it.get("id")
-                            if not gid or gid in seen_ex: continue
-                            seen_ex.add(gid)
-                            
-                            vi = it.get("volumeInfo", {})
-                            title = vi.get("title")
-                            if not title: continue
-                            
-                            img = (vi.get("imageLinks") or {}).get("thumbnail") or ""
-                            if img.startswith("http://"): img = "https://" + img[7:]
-                            
-                            # Score calculation for sorting preservation
-                            # Newest topics get higher score
-                            base_score = 0.95 - (i * 0.05) 
-                            if base_score < 0.5: base_score = 0.5
-                            
+                        # Use salt to deterministically shift window per cached version
+                        start_index = (salt * 10) % 200
+                    
+                    books, _ = fetch_google_books(target, max_results=explore_pool_limit, start_index=start_index)
+                    for b in books or []:
+                        gid = b.get('id')
+                        if gid and gid not in seen_ex:
+                            vi = b.get('volumeInfo', {})
                             results.append({
                                 "id": gid,
-                                "title": title,
+                                "title": vi.get("title"),
                                 "author": ", ".join(vi.get("authors") or []),
-                                "cover": img,
-                                "source": "اهتماماتك",
-                                "reason": f"✨ لأنك مهتم بـ: {topic}",
-                                "rating": vi.get("averageRating"),
-                                "score": base_score, 
-                                "rec_type": "exploration",
-                                "sort_index": i # Help preserve order
+                                "cover": (vi.get("imageLinks") or {}).get("thumbnail", "").replace("http://", "https://"),
+                                "source": "استكشاف الذكاء الاصطناعي",
+                                "reason": f"✨ مقترح بناءً على اهتمامك بـ {target}",
+                                "score": 0.5,
+                                "rec_type": "exploration"
                             })
-                    except Exception as e:
-                        logger.error(f"[Exploration] Error for {topic}: {e}")
+                            seen_ex.add(gid)
+                except: pass
                 return results
 
-            futures["explore"] = executor.submit(fetch_exploration)
-            
-            # تجميع النتائج
-            ai_recs = []
-            cf_recs = []
-            explore_recs = []
-            
+            futures["explore"] = executor.submit(run_in_context, app, fetch_simple_explore)
+
             for key, future in futures.items():
                 try:
-                    res = future.result(timeout=12)
-                    if key == "ai": ai_recs = res
-                    elif key == "cf": cf_recs = res
-                    elif key == "explore": explore_recs = res
+                    res = future.result(timeout=30)
+                    if res: all_recs.extend(res)
                 except Exception as e:
                     logger.error(f"[Behavior-Hybrid] Future {key} failed: {e}")
 
-        # ---------------------------------------------------------
-        # 3. الدمج والتنوع (Ranking & Diversity)
-        # ---------------------------------------------------------
+        # Remove duplicates
+        unique_final = []
+        seen_ids = set()
+        for r in all_recs:
+            rid = r.get('id')
+            if rid and rid not in seen_ids:
+                seen_ids.add(rid)
+                unique_final.append(r)
         
-        # دمج الكل
-        # دمج الكل - نعطي الأولوية لنتائج الاستكشاف (البحث) لأنها الأحدث والأكثر صلة بالنوايا الحالية
-        combined = explore_recs + ai_recs + cf_recs
-        
-        # إزالة التكرار
-        unique_recs = []
-        seen_final = set()
-        
-        # نضيف كتب من المكتبة المحلية أولاً (AI results usually local)
-        for r in combined:
-            rid = r.get("id")
-            if not rid or rid in seen_final: continue
-            seen_final.add(rid)
-            unique_recs.append(r)
-            
-        # تطبيق MMR للتنوع (اختياري, أو مجرد خلط ذكي)
-        # لنستخدم دالة التنوع الموجودة إذا أحببنا, أو نكتفي بالخلط
-        if limit > 25:
-             # ✅ View All Mode: Strict sorting by Score (Time/Relevance)
-             # We want to preserve the chronological order implied by scores in fetch_exploration
-             final_diverse = sorted(unique_recs, key=lambda x: x.get("score", 0), reverse=True)
-             
-             # Still ensure we don't have 10 books from same author in a row?
-             # For "My Interests" timeline, it's okay to have blocks of related content.
-        else:
-             # Homepage Mode: Use MMR for diversity
-             # سنستخدم _apply_mmr_diversity لضمان عدم طغيان مؤلف واحد
-             final_diverse = _apply_mmr_diversity(unique_recs, lambda_param=0.5, max_per_category=2)
-        
-        # تنظيف البيانات
-        final_output = []
-        for rec in final_diverse[:limit]:
-            # نحتفظ بالسبب والمصدر
-            # rec["reason"] is already set by helper functions
-            final_output.append(rec)
-            
-        logger.info(f"[Behavior-Hybrid] Returning {len(final_output)} recommendations. "
-                    f"(AI: {len(ai_recs)}, CF: {len(cf_recs)}, Explore: {len(explore_recs)})")
-        
-        return final_output
+        logger.info(f"[Behavior-Hybrid] Pool fetching complete. Total candidates: {len(unique_final)}")
+        return unique_final
 
     except Exception as e:
-        logger.error(f"[Behavior-Hybrid] Critical Error: {e}", exc_info=True)
-        # Fallback to trending
+        logger.error(f"[Behavior-Hybrid] Pool fetch fatal error: {e}", exc_info=True)
+        return []
+
+# Non-cached entry point to allow randomization on every refresh
+def get_behavior_based_recommendations(user_id, limit=12, offset=0, randomize=False):
+    """
+    توصيات ذكية شاملة (YouTube-Style) - نسخة محسنة بالأداء
+    """
+    import random
+    try:
+        # 1. جلب المرشحين من الكاش (يتم تحديثه كل 5 دقائق)
+        # 🆕 Randomization via Salt:
+        # If randomize=True, we rotate through 100 different cached pools (salts 0-99).
+        # This ensures we have 100 different sets of "fresh" recommendations cached,
+        # giving the user variety on refresh without hitting APIs every single time.
+        salt = random.randint(0, 100) if randomize else 0
+        
+        candidates = _fetch_behavior_hybrid_candidates(user_id, limit=limit, offset=offset, randomize=randomize, salt=salt)
+        
+        if not candidates:
+            return get_trending(limit=limit)
+
+        # 2. التنوع والخلط السريع (Refresh)
+        if randomize and len(candidates) > limit:
+            # نأخذ عينة عشوائية من القائمة الكبيرة لضمان تغيير النتائج مع كل ريفريش
+            # القائمة أصلاً بحدود 30-40 كتاب
+            sampled = random.sample(candidates, min(len(candidates), limit))
+        else:
+            sampled = candidates[:limit]
+            
+        logger.info(f"[Behavior-Hybrid] Refresh Fast-Sample: Returned {len(sampled)} books (Pool: {len(candidates)})")
+        return sampled
+
+    except Exception as e:
+        logger.error(f"[Behavior-Hybrid] Wrapper Error: {e}")
         return get_trending(limit=limit)
 
 
@@ -1772,8 +1712,8 @@ def semantic_search(query: str, limit: int = 12, exclude_book_ids: list = None):
 
 # recommender.py
 
-# @cache.memoize(timeout=60)  # DISABLED for pagination to work
-def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=None):
+    # @cache.memoize(timeout=60)  # DISABLED for pagination to work
+def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=None, randomize=False):
     """
     توصيات مبنية على اهتمامات المستخدم (Topic-Based Recommendations).
     محسّن: يستخدم التشغيل المتوازي لجلب الكتب من 5 مصادر في آن واحد!
@@ -1784,17 +1724,23 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         offset: بداية النتائج (للتصفح)
         prefs_limit: عدد التفضيلات المستخدمة
         recent_query: استعلام بحث فوري لتجاوز سجل البحث.
+        randomize: خلط الاهتمامات لضمان التنوع عند التحديث.
         
     Returns:
         قائمة من القواميس تمثل الكتب المقترحة من مصادر مختلفة
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
     
+    # 🔒 Security Hardening: Ensure user_id is valid
+    if not user_id:
+        logger.warning(f"[Topic] No user_id provided, returning empty.")
+        return {'books': [], 'interests_exhausted': True, 'total_interests': 0, 'current_page': 0}
+
+    logger.info(f"[Topic] Getting topic-based recommendations for user {user_id}, limit={limit}, offset={offset}")
+
     topics = []
     seen_topics = set()
     potential_topics = []
-    
-    logger.info(f"[Topic] Getting topic-based recommendations for user {user_id}, offset={offset}")
 
     # ---------------------------------------------------------
     # 🆕 تصفية الكتب التي يمتلكها المستخدم أو مهتم بها مسبقاً
@@ -1876,6 +1822,24 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
     # 🔧 FIX: التصفح عبر الاهتمامات حسب الصفحة
     # كل صفحة تعرض اهتمامات مختلفة (3 اهتمامات لكل صفحة)
     topics_per_page = 3
+    
+    # 🆕 Randomization logic for dynamic refresh
+    if randomize:
+        import random
+        # If randomizing, we pick a random subset of interests to show
+        # but we try to keep high-priority ones (first 3) in the mix more often
+        if len(all_unique_topics) > 3:
+             # Keep top 1 always roughly, shuffle rest?
+             # Or just shuffle specific slices.
+             # Simple approach: Shuffle everything to give total freshness
+             # But keep "recent query" (index 0 if exists) somewhat prioritized?
+             
+             # Let's shuffle the pool that comes AFTER the mandatory recent query
+             start_shuffle = 1 if recent_query else 0
+             pool_to_shuffle = all_unique_topics[start_shuffle:]
+             random.shuffle(pool_to_shuffle)
+             all_unique_topics = all_unique_topics[:start_shuffle] + pool_to_shuffle
+             
     current_page = (offset // limit) if limit > 0 else 0
     start_topic_idx = current_page * topics_per_page
     
@@ -1904,7 +1868,20 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
     # 🔧 استخدام رقم الصفحة للـ APIs
     # الصفحة الأولى من كل اهتمام (لأننا غيرنا الاهتمام نفسه)
     api_page = 1
+    
+    # 🆕 Randomization: Add random offset to API calls to get different books
+    # APIs differ in how they handle offsets/pagination.
+    # Google: startIndex (0-based index)
+    # OpenLib: offset (0-based index)
+    # ITBook/Gutenberg: page (1-based page number)
+    
     global_offset = 0
+    if randomize:
+        import random
+        # Random offset for index-based APIs (0 to 100) - Increased to ensure deep variety
+        global_offset = random.randint(0, 200)
+        # Random page for page-based APIs (1 to 10)
+        api_page = random.randint(1, 10)
     
     def process_google_result(items, topic):
         """معالجة نتائج Google Books"""
@@ -2090,6 +2067,10 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         if len(all_books) >= limit:
             break
 
+    if randomize and len(all_books) > 0:
+        import random
+        random.shuffle(all_books)
+
     result = all_books[:limit]
     logger.info(f"[Topic] Returning {len(result)} books for user {user_id} (from {len(all_books)} total found)")
     if len(result) == 0:
@@ -2249,16 +2230,20 @@ def get_personal_trending(user_id, limit=12):
     return result
 
 
-def get_last_search_recommendations(user_id, limit=12):
+def get_last_search_recommendations(user_id, limit=12, randomize=False):
     """
     جلب توصيات بناءً على آخر عملية بحث قام بها المستخدم حصراً.
     الغرض: إعطاء المستخدم شعوراً فورياً بتجاوب النظام.
     """
+    # 🔒 Security Hardening: Ensure user_id is valid
+    if not user_id:
+        return None, None
+
     books_dicts = []
     seen_ids = set()
     
     try:
-        # 1. جلب آخر بحث
+        # 1. جلب آخر بحث (Explicitly using sessions to avoid attribute errors)
         last_search = (
             db.session.query(SearchHistory)
             .filter_by(user_id=user_id)
@@ -2283,7 +2268,14 @@ def get_last_search_recommendations(user_id, limit=12):
                 pass
                 
         # 2. البحث في المصادر (Google Books بشكل أساسي للسرعة والتنوع)
-        gb_res = fetch_google_books(search_term, max_results=limit)
+        # Use a random startIndex if randomizing to get different pages of results
+        start_index = 0
+        if randomize:
+            # Safer range for search specific queries (0-40)
+            start_index = random.randint(0, 40)
+            
+        logger.info(f"[LastSearch] Fetching books for '{search_term}' (orig: '{query_text}') at index {start_index}")
+        gb_res = fetch_google_books(search_term, max_results=(limit * 3 if randomize else limit), start_index=start_index)
         items = gb_res[0] if isinstance(gb_res, tuple) else gb_res
         
         for it in items or []:
@@ -2294,6 +2286,19 @@ def get_last_search_recommendations(user_id, limit=12):
 
             vi = it.get("volumeInfo") or {}
             img = (vi.get("imageLinks") or {}).get("thumbnail")
+            
+            # 🧹 Data Quality Filters
+            # 1. Skip if no cover
+            if not img: continue
+            
+            # 2. Skip if title is too short (likely noise)
+            title = vi.get("title")
+            if not title or len(title) < 4: continue
+            
+            # 3. Skip if no authors
+            authors = vi.get("authors")
+            if not authors: continue
+
             if img:
                 if img.startswith("http://"):
                     img = img.replace("http://", "https://")
@@ -2302,19 +2307,24 @@ def get_last_search_recommendations(user_id, limit=12):
 
             books_dicts.append({
                 "id": gid,
-                "title": vi.get("title"),
-                "author": ", ".join(vi.get("authors") or []),
+                "title": title,
+                "author": ", ".join(authors),
                 "cover": img,
                 "source": "Google Books",
                 "reason": f"لأنك بحثت عن: {display_query}",
                 "rating": vi.get("averageRating"),
                 "ratings_count": vi.get("ratingsCount"),
+                "algo_tag": "Search History" # Explicit tag for badge color
             })
             
-            if len(books_dicts) >= limit:
+            if len(books_dicts) >= (limit * 3 if randomize else limit):
                 break
-                
-        return display_query, books_dicts
+        
+        if randomize and len(books_dicts) > 0:
+            random.shuffle(books_dicts)
+        
+        logger.info(f"[LastSearch] Found {len(books_dicts)} valid books for user {user_id}")
+        return display_query, books_dicts[:limit]
         
     except Exception as e:
         logger.error(f"[LastSearch] Error: {e}", exc_info=True)
