@@ -1,4 +1,12 @@
 # app/__init__.py أو flask_book_recommendation/__init__.py
+import sys
+import io
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 import logging
 # Force reload trigger v2
 from logging.handlers import RotatingFileHandler

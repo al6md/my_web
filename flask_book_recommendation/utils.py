@@ -19,14 +19,14 @@ print(f"DEBUG: Loading .env from {dotenv_path}")
 load_dotenv(dotenv_path, override=True)
 print(f"DEBUG: GEMINI_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
-@cache.memoize(timeout=1800)
+# @cache.memoize(timeout=1800) # DISABLED: We need completely fresh books for FreshInject
 def fetch_google_books(query, max_results=12, start_index=0, order_by="relevance"):
     params = {
         "q": query, "maxResults": max_results,
         "startIndex": start_index, "orderBy": order_by, "printType": "books"
     }
     try:
-        r = requests.get(API_URL, params=params, timeout=5) # تقليل الوقت لـ 5 ثواني
+        r = requests.get(API_URL, params=params, timeout=2.5) # Fast timeout to prevent blocking FreshInject pool
         if r.ok:
             data = r.json()
             return data.get("items", []), data.get("totalItems", 0)

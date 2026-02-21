@@ -189,24 +189,16 @@ def _deduplicate_dicts(items, key="id"):
 # ------------------------------------------------------------------
 
 
-@cache.memoize(timeout=60)  # Cache لمدة دقيقة واحدة فقط لتحديث أسرع
+# @cache.memoize(timeout=60)  # DISABLED: Allow fresh results on every refresh
 def get_trending(limit=12):
     """
-    يحصل على الكتب الرائجة من مكتبات المستخدمين فقط.
-    يعرض فقط الكتب التي أضافها المستخدمون (100%).
-    
-    Args:
-        limit: عدد الكتب المطلوبة
-        
-    Returns:
-        قائمة من القواميس تمثل الكتب الرائجة
+    يحصل على الكتب الرائجة مع fallback ذكي في حال كانت قاعدة البيانات فارغة.
     """
     books_dicts = []
     seen_ids = set()
 
-    # كتب من مكتبات المستخدمين فقط (100%)
     try:
-        # نحصل على الكتب التي أضافها المستخدمون (owner_id موجود)
+        # 1. أولاً: نحاول جلب الكتب التي أضافها المستخدمون (المفضلة)
         user_books = (
             Book.query
             .filter(Book.owner_id.isnot(None))
@@ -215,7 +207,11 @@ def get_trending(limit=12):
             .all()
         )
         
-        # نخلط القائمة لتنوع أفضل
+        # 2. ثانياً: إذا لم يكن هناك يوزر بوكس كافية، نجلب أي كتب من القاعدة
+        if len(user_books) < limit:
+            more_books = Book.query.order_by(func.random()).limit(limit * 3).all()
+            user_books.extend(more_books)
+            
         random.shuffle(user_books)
         
         for b in user_books:
@@ -224,26 +220,22 @@ def get_trending(limit=12):
                 continue
             seen_ids.add(book_id)
             
-            # فلترة الكتب السيئة
             if not b.title or b.title in ['Untitled', 'Unknown']:
                 continue
 
-            # معلومات المالك
             owner_name = "مستخدم"
             owner_id = None
-            if b.owner:
+            if getattr(b, "owner", None):
                 owner_id = b.owner.id
                 if b.owner.name:
                     owner_name = b.owner.name
-            
-            # بناء القاموس مع إضافة معلومات المالك
+                    
             book_dict = _book_to_dict(
                 b,
-                source="مكتبة المستخدمين",
-                reason=f"👤 أضافه: {owner_name}",
+                source="المكتبة",
+                reason=f"👤 أضافه: {owner_name}" if getattr(b, "owner", None) else "🔥 شائع محلياً",
             )
             
-            # إضافة معلومات المالك للقاموس
             if book_dict:
                 book_dict['owner_name'] = owner_name
                 book_dict['owner_id'] = owner_id
@@ -251,21 +243,46 @@ def get_trending(limit=12):
             
             if len(books_dicts) >= limit:
                 break
+                
+        # 3. ثالثاً: Fallback للإنترنت إذا كانت القاعدة فارغة تماماً
+        if len(books_dicts) < limit:
+            try:
+                from .utils import fetch_google_books
+                queries = ["أفضل الكتب", "روايات", "برمجة", "تاريخ", "تطوير الذات"]
+                items, _ = fetch_google_books(random.choice(queries), max_results=limit - len(books_dicts))
+                for item in items:
+                    v = item.get("volumeInfo", {})
+                    # محاكاة شكل قاموس الكتاب
+                    cover = v.get("imageLinks", {}).get("thumbnail")
+                    if cover and cover.startswith("http://"): cover = "https" + cover[4:]
+                    fallback_dict = {
+                        "id": item.get("id"),
+                        "title": v.get("title", "رائج الان"),
+                        "author": v.get("authors", ["غير معروف"])[0] if v.get("authors") else "غير معروف",
+                        "cover": cover,
+                        "source": "Google Books",
+                        "reason": "🔥 شائع عالمياً",
+                        "rating": v.get("averageRating")
+                    }
+                    books_dicts.append(fallback_dict)
+            except Exception as e:
+                logger.error(f"[Trending] Internet fallback error: {e}", exc_info=True)
+                
     except Exception as e:
-        logger.error(f"[Trending] User books error: {e}", exc_info=True)
+        logger.error(f"[Trending] Error: {e}", exc_info=True)
 
     # خلط النتائج النهائية لضمان التنوع
     random.shuffle(books_dicts)
     books_dicts = _deduplicate_dicts(books_dicts)
     result = books_dicts[:limit]
-    logger.info(f"[Trending] Returning {len(result)} trending books from user libraries")
+    logger.info(f"[Trending] Returning {len(result)} trending books")
     return result
 
 
 
 
 
-@cache.memoize(timeout=600)
+# @cache.memoize(timeout=600)  # DISABLED: Allow fresh results on every refresh
 def get_cf_similar(user_id, top_n=30, min_users=2, offset=0, randomize=False):
     """
     Get recommendations based on similar users (User-User Collaborative Filtering)
@@ -278,6 +295,10 @@ def get_cf_similar(user_id, top_n=30, min_users=2, offset=0, randomize=False):
     Returns:
         قائمة من القواميس (كتب مقترحة) للمستخدم المحدد
     """
+    # 🔒 Security Hardening: Ensure user_id is valid
+    if not user_id:
+        return []
+
     try:
         # كل التقييمات
         ratings = UserRatingCF.query.all()
@@ -403,6 +424,10 @@ def get_content_similar(user_id, top_n=30, history_limit=20, randomize=False):
     Returns:
         قائمة من القواميس تمثل الكتب المقترحة
     """
+    # 🔧 FIX #3: التحقق من صحة user_id لمنع مشاركة البيانات
+    if not user_id or user_id <= 0:
+        return []
+    
     # 1) آخر الكتب التي قيّمها المستخدم
     user_ratings = (
         UserRatingCF.query
@@ -533,6 +558,10 @@ def get_view_based_recommendations(user_id, top_n=12, history_limit=10, randomiz
     3. حساب "متجه الاهتمام الحالي" (متوسط المتجهات)
     4. البحث عن أقرب الكتب لهذا المتجه باستخدام Cosine Similarity
     """
+    # 🔧 FIX #3: التحقق من صحة user_id لمنع مشاركة البيانات
+    if not user_id or user_id <= 0:
+        return []
+
     try:
         # 1. جلب آخر الكتب المشاهدة
         recent_views = (
@@ -1025,9 +1054,9 @@ def get_deep_learning_recommendations(user_id, limit=10, randomize=False):
     
     with RecommendationPipelineLogger(user_id or 0) as pipeline_log:
         try:
-            stage_start = time.perf_counter()
+            # 1. Stage 1: Behavioral (User Context & Interest Analysis)
+            behavioral_start = time.perf_counter()
             
-            # 1. Fetch User Data
             recent_views = []
             if user_id:
                 recent_views = (
@@ -1071,11 +1100,55 @@ def get_deep_learning_recommendations(user_id, limit=10, randomize=False):
 
             # 🆕 Randomization: Add noise to user profile
             if randomize:
-                # Add slight noise to interest vector to vary results (Exploration)
                 noise = np.random.normal(0, 0.08, interest_vec.shape).astype(np.float32)
                 interest_vec = interest_vec + noise
+            
+            behavioral_time = (time.perf_counter() - behavioral_start) * 1000
+            pipeline_log.log_stage("behavioral", time_ms=behavioral_time, results=len(recent_views))
 
-            # 2. Prepare Candidates
+            # 2. Stage 2: Transformer (Candidate Retrieval & Embedding Lookup)
+            transformer_start = time.perf_counter()
+            
+            # 🆕 DYNAMIC INJECTION
+            if randomize:
+                try:
+                    from .utils import fetch_google_books, generate_book_embedding_if_missing
+                    import random
+                    
+                    themes = ["Machine Learning", "Classic Literature", "Future Technologies", "Startup Culture", "World History", "Psychology", "Science Fiction", "Data Science", "Modern Art"]
+                    theme = random.choice(themes)
+                    
+                    rec_logger.debug(f"[DL] Injecting dynamic books from theme: {theme}")
+                    items, _ = fetch_google_books(theme, max_results=4)
+                    
+                    for it in (items or []):
+                        gid = it.get("id")
+                        if not gid: continue
+                        vi = it.get("volumeInfo", {})
+                        title = vi.get("title")
+                        if not title: continue
+                        
+                        existing = Book.query.filter_by(google_id=gid).first()
+                        if not existing:
+                            imgs = vi.get("imageLinks", {}) or {}
+                            cover = imgs.get("thumbnail") or ""
+                            if cover.startswith("http://"): cover = "https://" + cover[7:]
+                            
+                            new_book = Book(
+                                google_id=gid,
+                                title=title[:150],
+                                author=", ".join(vi.get("authors", []))[:150],
+                                description=vi.get("description", ""),
+                                cover_image=cover,
+                                categories=", ".join(vi.get("categories", []))[:100]
+                            )
+                            db.session.add(new_book)
+                            db.session.commit()
+                            generate_book_embedding_if_missing(new_book)
+                except Exception as e:
+                    rec_logger.error(f"[DL-Inject] Failed dynamic injection: {e}")
+                    db.session.rollback()
+
             all_books = Book.query.all()
             candidate_features = {}
             book_metadata = {}
@@ -1098,11 +1171,10 @@ def get_deep_learning_recommendations(user_id, limit=10, randomize=False):
                 pipeline_log.set_final_count(0)
                 return []
 
-            # Log Transformer/Embedding stage
-            embedding_time = (time.perf_counter() - stage_start) * 1000
-            pipeline_log.log_stage("transformer", time_ms=embedding_time, results=len(candidate_features))
+            transformer_time = (time.perf_counter() - transformer_start) * 1000
+            pipeline_log.log_stage("transformer", time_ms=transformer_time, results=len(candidate_features))
             
-            # 3. Predict & Rank (Neural Model)
+            # 3. Stage 3: Neural (Two-Tower Prediction & Ranking)
             neural_start = time.perf_counter()
             user_data = {'history': history_arr, 'interests': interest_vec}
             candidates_list = list(book_metadata.values())
@@ -1180,6 +1252,61 @@ def get_deep_learning_recommendations(user_id, limit=10, randomize=False):
                     )
                     recs.append(d)
             
+            # 🆕 TRANSFORMER INJECTION: Add fresh external books if randomizing
+            # This ensures even if the neural model is static, we see new things.
+            if randomize:
+                try:
+                    import random
+                    from .utils import fetch_google_books
+                    
+                    # Same discovery pool
+                    discovery_pool = [
+                        "Best selling books 2024", "New York Times Best Sellers", "Man Booker Prize", 
+                        "Science Fiction Classics", "Must read biographies", "Self improvement trends",
+                        "Hidden gems literature", "Cyberpunk novels", "Psychological thrillers",
+                        "History of Science", "Modern Philosophy", "Artificial Intelligence Production"
+                    ]
+                    
+                    # Pick a random topic
+                    random_topic = random.choice(discovery_pool)
+                    # Random offset
+                    rnd_offset = random.randint(0, 100)
+                    
+                    gb_res = fetch_google_books(random_topic, max_results=4, start_index=rnd_offset)
+                    items = gb_res[0] if isinstance(gb_res, tuple) else gb_res
+                    
+                    for it in items or []:
+                        if not isinstance(it, dict): continue
+                        gid = it.get("id")
+                        if not gid: continue
+                        
+                        # Avoid duplicates
+                        if any(r['id'] == gid for r in recs): continue
+                        
+                        vi = it.get("volumeInfo") or {}
+                        img = (vi.get("imageLinks") or {}).get("thumbnail")
+                        if img:
+                             if img.startswith("http://"): img = img.replace("http://", "https://")
+                             if '&edge=curl' in img: img = img.replace('&edge=curl', '').replace('&edge=curl&', '&')
+                        
+                        recs.append({
+                            "id": gid,
+                            "title": vi.get("title"),
+                            "author": ", ".join(vi.get("authors") or []),
+                            "cover": img,
+                            "source": "Transformer (External)",
+                            "reason": f"✨ Discovery: {random_topic}",
+                            "rating": vi.get("averageRating"),
+                            "score": 0.5 + (random.random() * 0.4), # Random score to mix in
+                            "algo_tag": "Transformer"
+                        })
+                        
+                    # Shuffle again to mix external with neural
+                    random.shuffle(recs)
+                    
+                except Exception as e:
+                    rec_logger.error(f"[DL-Rec] Error injecting external books: {e}")
+            
             print(f"DEBUG: Transformer generated {len(recs)} recommendations")
             rec_logger.info(f"DEBUG: Transformer generated {len(recs)} recommendations")
 
@@ -1223,11 +1350,12 @@ def _get_cf_recommendations(user_id, limit=6, offset=0):
         return []
 
 
-@cache.memoize(timeout=300) 
+# 🔧 FIX #3: تمت إزالة @cache.memoize لتجنب مشاركة البيانات بين المستخدمين
+# نستخدم كاش مخصص داخل الدالة بدلاً من ذلك
 def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=False, salt=0):
     """
     Heavy lifting: Fetches a large pool of hybrid candidates from various sources.
-    This is cached for 5 minutes.
+    🔧 FIX #3: تم إزالة الكاش المشترك لضمان عزل بيانات المستخدمين
     """
     from datetime import datetime, timedelta
     from collections import defaultdict
@@ -1299,7 +1427,20 @@ def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=Fal
             def fetch_simple_explore():
                 results = []
                 seen_ex = set(viewed_google_ids)
+                
+                # 🆕 DYNAMIC EXPLORE: If randomize, pick a random topic!
                 target = search_queries[0] if search_queries else (explicit_genres[0] if explicit_genres else "Best Sellers")
+                
+                if randomize:
+                    import random
+                    discovery_pool = [
+                        "Best selling books 2024", "New York Times Best Sellers", "Man Booker Prize", 
+                        "Science Fiction Classics", "Must read biographies", "Self improvement trends",
+                        "Hidden gems literature", "Cyberpunk novels", "Psychological thrillers",
+                        "History of Science", "Modern Philosophy", "Artificial Intelligence Production"
+                    ]
+                    target = random.choice(discovery_pool)
+                    logger.info(f"[Hybrid-Explore] Switched target to '{target}' for variety")
                 try:
                     # 🆕 Randomization for Explore
                     start_index = 0
@@ -1357,14 +1498,15 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0, randomize=Fa
     """
     توصيات ذكية شاملة (YouTube-Style) - نسخة محسنة بالأداء
     """
+    # 🔧 FIX: Validate user_id
+    if not user_id:
+        return []
+
     import random
+    import time
     try:
-        # 1. جلب المرشحين من الكاش (يتم تحديثه كل 5 دقائق)
-        # 🆕 Randomization via Salt:
-        # If randomize=True, we rotate through 100 different cached pools (salts 0-99).
-        # This ensures we have 100 different sets of "fresh" recommendations cached,
-        # giving the user variety on refresh without hitting APIs every single time.
-        salt = random.randint(0, 100) if randomize else 0
+        # Instead of user_id based salt that might be static, use time for true reshuffle
+        salt = int(time.time() * 1000) % 100 if randomize else 0
         
         candidates = _fetch_behavior_hybrid_candidates(user_id, limit=limit, offset=offset, randomize=randomize, salt=salt)
         
@@ -1372,10 +1514,9 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0, randomize=Fa
             return get_trending(limit=limit)
 
         # 2. التنوع والخلط السريع (Refresh)
-        if randomize and len(candidates) > limit:
-            # نأخذ عينة عشوائية من القائمة الكبيرة لضمان تغيير النتائج مع كل ريفريش
-            # القائمة أصلاً بحدود 30-40 كتاب
-            sampled = random.sample(candidates, min(len(candidates), limit))
+        if randomize and len(candidates) > 0:
+            random.shuffle(candidates)
+            sampled = candidates[:limit]
         else:
             sampled = candidates[:limit]
             
@@ -1815,6 +1956,27 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
             all_unique_topics.append(topic_to_use)
             seen_topics.add(topic_to_use.lower())
 
+    # 🆕 DYNAMIC INJECTION: If randomizing, inject fresh "Discovery" topics from the web/list
+    # This solves the "static" feeling by querying for something new every time.
+    if randomize:
+        import random
+        # List of dynamic discovery topics
+        discovery_pool = [
+            "Best selling books 2024", "New York Times Best Sellers", "Man Booker Prize", 
+            "Science Fiction Classics", "Must read biographies", "Self improvement trends",
+            "Hidden gems literature", "Cyberpunk novels", "Psychological thrillers",
+            "History of Science", "Modern Philosophy", "Artificial Intelligence Production"
+        ]
+        # Inject 2 random topics from pool
+        new_topics = random.sample(discovery_pool, 2)
+        for t in new_topics:
+            if t.lower() not in seen_topics:
+                # Insert at random positions to mix with personal interests
+                insert_pos = random.randint(1, len(all_unique_topics)) if len(all_unique_topics) > 0 else 0
+                all_unique_topics.insert(insert_pos, t)
+                seen_topics.add(t.lower())
+                logger.info(f"[Topic] Injected discovery topic: '{t}'")
+
     if not all_unique_topics:
         logger.debug(f"[Topic] No topics found for user {user_id}")
         return []
@@ -1879,6 +2041,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
     if randomize:
         import random
         # Random offset for index-based APIs (0 to 100) - Increased to ensure deep variety
+        # 🔧 FIX: Ensure randomness is actually effective per request
         global_offset = random.randint(0, 200)
         # Random page for page-based APIs (1 to 10)
         api_page = random.randint(1, 10)
@@ -2016,9 +2179,9 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
             
             # 🛡️ معالجة الـ timeout بأمان
             try:
-                for future in as_completed(futures, timeout=8):
+                for future in as_completed(futures, timeout=2.5):
                     try:
-                        source, books = future.result(timeout=6)
+                        source, books = future.result(timeout=2.0)
                         results.extend(books)
                     except Exception as e:
                         logger.error(f"[Topic] Future error for '{topic}': {e}")
@@ -2027,45 +2190,49 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         
         return results
     
-    # جلب الكتب لكل موضوع
-    for i, t in enumerate(topics):
-        current_limit = per_topic_limit + 2 if i == 0 else per_topic_limit
+    # جلب الكتب لكل موضوع بالتوازي
+    def _fetch_topic_books(t, index):
+        current_limit = per_topic_limit + 2 if index == 0 else per_topic_limit
         per_source = max(4, int(current_limit / 3))
-        
-        # 🔧 FIX: نستخدم الصفحة الأولى من كل اهتمام جديد
-        this_offset = global_offset
-        this_page = api_page
-        
-        logger.debug(f"[Topic] Searching for '{t}' with limit {per_source}, offset {this_offset}, page {this_page}")
-        
-        topic_books = fetch_all_sources_for_topic(t, per_source, this_offset, this_page)
-        
-        for book in topic_books:
-            bid = book.get("id")
-            title = book.get("title")
-            
-            # 🔧 FIX: ضمان أن العنوان نص وليس كائن
-            if title:
-                title = str(title).strip()
-                book["title"] = title
-            
-            # 🔧 FIX: تجاهل الكتب التي ليس لها عنوان صحيح أو تبدو ككائنات تالفة
-            if not bid or bid in seen_ids or bid in exclude_gids: # 🆕 Check against exclude_gids
-                continue
-            
-            # تجاهل العناوين التي تبدو كتمثيل لكائن Python (<...>)
-            if title and (title.startswith('<') and '>' in title and 'object at' in title):
-                 logger.warning(f"[Topic] Skipping corrupted title book: {bid} - {title}")
-                 continue
+        logger.debug(f"[Topic] Searching for '{t}' with limit {per_source}, offset {global_offset}, page {api_page}")
+        return fetch_all_sources_for_topic(t, per_source, global_offset, api_page)
 
-            if not title:
-                logger.debug(f"[Topic] Skipping book {bid} - no title")
-                continue
-            seen_ids.add(bid)
-            all_books.append(book)
+    with ThreadPoolExecutor(max_workers=len(topics)) as executor:
+        topic_futures = [executor.submit(_fetch_topic_books, t, i) for i, t in enumerate(topics)]
         
-        if len(all_books) >= limit:
-            break
+        for future in as_completed(topic_futures, timeout=3.5):
+            try:
+                topic_books = future.result()
+                for book in topic_books:
+                    bid = book.get("id")
+                    title = book.get("title")
+                    
+                    # 🔧 FIX: ضمان أن العنوان نص وليس كائن
+                    if title:
+                        title = str(title).strip()
+                        book["title"] = title
+                    
+                    # 🔧 FIX: تجاهل الكتب التي ليس لها عنوان صحيح أو تبدو ككائنات تالفة
+                    if not bid or bid in seen_ids or bid in exclude_gids: # 🆕 Check against exclude_gids
+                        continue
+                    
+                    # تجاهل العناوين التي تبدو كتمثيل لكائن Python (<...>)
+                    if title and (title.startswith('<') and '>' in title and 'object at' in title):
+                         logger.warning(f"[Topic] Skipping corrupted title book: {bid} - {title}")
+                         continue
+        
+                    if not title:
+                        continue
+                        
+                    seen_ids.add(bid)
+                    all_books.append(book)
+                    
+                    if len(all_books) >= limit:
+                        break
+            except Exception as e:
+                logger.error(f"[Topic] Error processing topic future: {e}")
+            if len(all_books) >= limit:
+                break
 
     if randomize and len(all_books) > 0:
         import random
@@ -2103,6 +2270,10 @@ def get_personal_trending(user_id, limit=12):
     Returns:
         قائمة من القواميس تمثل الكتب الرائجة المخصصة
     """
+    # 🔧 FIX #3: التحقق من صحة user_id لمنع مشاركة البيانات
+    if not user_id or user_id <= 0:
+        return get_trending(limit)
+    
     books_dicts = []
     seen_ids = set()
     topics_to_search = []
@@ -2343,6 +2514,10 @@ def get_archive_ai_recommendations(user_id, limit=16):
     Returns:
         قائمة من القواميس تمثل الكتب من Archive
     """
+    # 🔧 FIX #3: التحقق من صحة user_id لمنع مشاركة البيانات
+    if not user_id or user_id <= 0:
+        return []
+    
     books = []
     seen_ids = set()
     search_topics = []

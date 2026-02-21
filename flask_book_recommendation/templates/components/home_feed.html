@@ -1,0 +1,164 @@
+{% from "components/macros.html" import render_book_card, render_carousel_section, render_ai_score, render_algo_badge,
+render_stars, render_confidence %}
+
+{# ═══════════════════════════════════════════════════════════════════════
+[2] UNIFIED AI RECOMMENDATIONS (Featured)
+═══════════════════════════════════════════════════════════════════════ #}
+{% if unified_recommendations and unified_recommendations|length > 0 %}
+<section class="mb-5 fadeInAnimation">
+    <div class="glass-section-header">
+        <div class="glass-title">
+            <i class="ph-fill ph-circles-three-plus"></i>
+            <span>Unified AI Picks</span>
+        </div>
+        <span class="badge badge-purple-subtle">
+            <i class="ph-fill ph-check-circle"></i> Highest Confidence
+        </span>
+    </div>
+
+    <p class="text-muted mb-4">
+        Curated by our Ensemble Engine combining <strong>Hybrid, Transformer, and Graph</strong> algorithms.
+    </p>
+
+    {# NEW: Main Unified Carousel always appears at the top if results exist #}
+    {{ render_carousel_section(
+    title='Top Unified Recommendations',
+    icon='ph-fill ph-star-four',
+    books=unified_recommendations,
+    id_prefix='unified_rec',
+    badges=[{'text': 'Ensemble Choice', 'pulse': true}],
+    view_all_url=url_for('main.browse', category='unified'),
+    color='purple'
+    ) }}
+
+    {# ═══════════════════════════════════════════════════════════════════════
+    [3] SEARCH HISTORY SECTION (DYNAMICS / DISTINCTIVE MARK)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if algo_buckets.search_history_results and algo_buckets.search_history_results|length > 0 %}
+    <section class="search-history-distinctive mb-5">
+        {{ render_carousel_section(
+        title='Based on Your Search',
+        icon='ph-bold ph-magnifying-glass',
+        books=algo_buckets.search_history_results,
+        id_prefix='search_hist',
+        badges=[{'text': 'Found for You', 'pulse': true}],
+        color='red'
+        ) }}
+    </section>
+    {% endif %}
+
+    {# ═══════════════════════════════════════════════════════════════════════
+    [4] INTEREST MATCH (TOPIC BASED)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if algo_buckets.interest_results and algo_buckets.interest_results|length > 0 %}
+    <section class="interest-match mb-5">
+        {{ render_carousel_section(
+        title='Because of Your Interests',
+        icon='ph-fill ph-heart',
+        books=algo_buckets.interest_results,
+        id_prefix='interest_match',
+        badges=[{'text': 'Personalized'}],
+        color='pink'
+        ) }}
+    </section>
+    {% endif %}
+
+    {# Removed Hybrid Behavior Match section as requested #}
+
+    {# Removed Deep Learning Discoveries section as requested #}
+
+    {# ═══════════════════════════════════════════════════════════════════════
+    [7] COLLABORATIVE FILTERING (SIMILAR READERS)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if algo_buckets.collaborative_results and algo_buckets.collaborative_results|length > 0 %}
+    <section class="collaborative-recs mb-5">
+        {{ render_carousel_section(
+        title='Similar Readers Loved',
+        icon='ph-fill ph-users-three',
+        books=algo_buckets.collaborative_results,
+        id_prefix='cf_match',
+        badges=[{'text': 'Community'}],
+        color='teal'
+        ) }}
+    </section>
+    {% endif %}
+
+    {# ═══════════════════════════════════════════════════════════════════════
+    [8] VECTOR SIMILARITY (CONTENT BASED)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if algo_buckets.vector_results and algo_buckets.vector_results|length > 0 %}
+    <section class="vector-recs mb-5">
+        {{ render_carousel_section(
+        title='Because You Read...',
+        icon='ph-fill ph-book-open',
+        books=algo_buckets.vector_results,
+        id_prefix='vector_match',
+        badges=[{'text': 'Content Match'}],
+        color='orange'
+        ) }}
+    </section>
+    {% endif %}
+
+    {# ═══════════════════════════════════════════════════════════════════════
+    [9] NEURAL RERANKER (VIEW HISTORY)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if algo_buckets.reranker_results and algo_buckets.reranker_results|length > 0 %}
+    <section class="reranker-recs mb-5">
+        {{ render_carousel_section(
+        title='Inspired by Your Browsing',
+        icon='ph-fill ph-eye',
+        books=algo_buckets.reranker_results,
+        id_prefix='reranker_match',
+        badges=[{'text': 'View Based'}],
+        color='cyan'
+        ) }}
+    </section>
+    {% endif %}
+
+</section>
+{% endif %}
+
+{# ═══════════════════════════════════════════════════════════════════════
+[4] HIGHEST RATED BY USERS
+═══════════════════════════════════════════════════════════════════════ #}
+{% if top_rated_books_sorted and top_rated_books_sorted|length > 0 %}
+{{ render_carousel_section(
+title='Highest Rated by Community',
+icon='ph-fill ph-star',
+books=top_rated_books_sorted,
+id_prefix='top_rated',
+badges=[{'text': 'Reader Favorites', 'pulse': false}],
+view_all_url=url_for('main.browse', category='top_rated'),
+color='warning'
+) }}
+{% endif %}
+
+{# ═══════════════════════════════════════════════════════════════════════
+[5] HIGHEST VIEWED (POPULARITY)
+═══════════════════════════════════════════════════════════════════════ #}
+{% if most_viewed_books and most_viewed_books|length > 0 %}
+{{ render_carousel_section(
+title='Most Viewed This Week',
+icon='ph-fill ph-eye',
+books=most_viewed_books,
+id_prefix='most_viewed',
+badges=[{'text': 'Trending', 'pulse': true}],
+view_all_url=url_for('main.browse', category='most_viewed'),
+color='accent'
+) }}
+{% endif %}
+
+{# ═══════════════════════════════════════════════════════════════════════
+[6] TRENDING IN LIBRARIES
+═══════════════════════════════════════════════════════════════════════ #}
+{% if trending_by_libraries and trending_by_libraries|length > 0 %}
+{{ render_carousel_section(
+title='Trending in User Libraries',
+icon='ph-fill ph-books',
+books=trending_by_libraries,
+id_prefix='lib_trending',
+badges=[{'text': 'Hot Picks'}],
+view_all_url=url_for('main.browse', category='trending_libs'),
+color='success'
+) }}
+{% endif %}

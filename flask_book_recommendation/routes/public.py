@@ -118,9 +118,9 @@ def list_books():
                 from ..recommender import get_behavior_based_recommendations
                 cache.delete_memoized(get_behavior_based_recommendations)
                 
-                print(f"🧹 Cache cleared for all users after search by user {current_user.id}.")
+                print(f"Cache cleared for all users after search by user {current_user.id}.")
             except Exception as e:
-                print(f"⚠️ Error clearing cache: {e}")
+                print(f"Error clearing cache: {e}")
             
         except Exception as e:
             db.session.rollback()
@@ -231,11 +231,11 @@ def list_books():
         'برمجة', 'بايثون', 'جافا', 'قواعد بيانات', 'تطوير', 'ذكاء اصطناعي'
     ]
     is_tech_query = any(kw in base_query.lower() or kw in english_query.lower() for kw in TECH_KEYWORDS)
-    print(f"🔧 IT Bookstore Filter: query='{base_query}', is_tech={is_tech_query}")
+    print(f"IT Bookstore Filter: query='{base_query}', is_tech={is_tech_query}")
     
     def fetch_it():
         if not is_tech_query:
-            print(f"⛔ Skipping IT Bookstore for non-tech query: '{base_query}'")
+            print(f"Skipping IT Bookstore for non-tech query: '{base_query}'")
             return ("itbook", [])  # لا نبحث في IT Bookstore لمواضيع غير تقنية
         try:
             return ("itbook", fetch_itbook_books(english_query, page=current_page, limit=per) or [])
@@ -613,9 +613,9 @@ def book_detail(gid):
                         )
                         db.session.add(local_book)
                         db.session.flush()  # للحصول على ID
-                        print(f"📚 [AutoSave] Saved book {gid} to DB for behavior analysis")
+                        print(f"[AutoSave] Saved book {gid} to DB for behavior analysis")
                 except Exception as save_err:
-                    print(f"⚠️ [AutoSave] Could not save book: {save_err}")
+                    print(f"[AutoSave] Could not save book: {save_err}")
             
             # البحث عن مشاهدة سابقة
             view = UserBookView.query.filter_by(user_id=current_user.id, google_id=gid).first()
@@ -638,7 +638,7 @@ def book_detail(gid):
                 db.session.add(view)
             
             db.session.commit()
-            print(f"👁️ [BookView] Recorded view for user {current_user.id}, book {gid}")
+            print(f"[BookView] Recorded view for user {current_user.id}, book {gid}")
             
             # --- AI Engine Feedback Loop ---
             try:
@@ -694,7 +694,7 @@ def book_detail(gid):
                         db.session.add(pref)
                 
                 db.session.commit()
-                print(f"⭐ [Interests] Updated interests for user {current_user.id}: {[t[0] for t in topics_to_boost]}")
+                print(f"[Interests] Updated interests for user {current_user.id}: {[t[0] for t in topics_to_boost]}")
                 
                 # إبطال الكاش للتحديث الفوري
                 try:
@@ -703,7 +703,7 @@ def book_detail(gid):
                 except: pass
                 
             except Exception as e_pref:
-                print(f"⚠️ [Interests] Error updating preferences: {e_pref}")
+                print(f"[Interests] Error updating preferences: {e_pref}")
 
         except Exception as e:
             db.session.rollback()

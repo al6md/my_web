@@ -34,9 +34,9 @@ root_app.mount("/", WSGIMiddleware(flask_app))
 PORT = int(os.environ.get("PORT", 5000))
 
 if __name__ == "__main__":
-    print(f"🚀 Starting Unified Server on http://localhost:{PORT}")
-    print(f"📘 Flask (Website): http://localhost:{PORT}/")
-    print(f"🤖 AI Engine (API): http://localhost:{PORT}/api/docs")
+    print(f"Starting Unified Server on http://localhost:{PORT}")
+    print(f"Flask (Website): http://localhost:{PORT}/")
+    print(f"AI Engine (API): http://localhost:{PORT}/api/docs")
     
     # Run using Uvicorn
     uvicorn.run(root_app, host="0.0.0.0", port=PORT)

@@ -245,103 +245,57 @@ render_stars, render_confidence %}
   </section>
 
   <div class="container pb-5">
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [2] UNIFIED AI RECOMMENDATIONS (Featured)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if unified_recommendations and unified_recommendations|length > 0 %}
-    <section class="mb-5">
-      <div class="glass-section-header">
-        <div class="glass-title">
-          <i class="ph-fill ph-circles-three-plus"></i>
-          <span>Unified AI Picks</span>
+    <div id="home-feed-container">
+      <!-- SKELETON LOADER -->
+      <div class="skeleton-feed">
+        {% for i in range(3) %}
+        <div class="mb-5">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="skeleton-pulse rounded" style="width: 200px; height: 32px;"></div>
+            <div class="skeleton-pulse rounded-pill" style="width: 80px; height: 28px;"></div>
+          </div>
+          <div class="d-flex gap-3 overflow-hidden">
+            {% for j in range(6) %}
+            <div class="skeleton-pulse rounded-4" style="min-width: 180px; height: 280px; flex-shrink: 0;"></div>
+            {% endfor %}
+          </div>
         </div>
-        <span class="badge badge-purple-subtle">
-          <i class="ph-fill ph-check-circle"></i> Highest Confidence
-        </span>
+        {% endfor %}
+        <style>
+          .skeleton-pulse {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+          }
+
+          @keyframes skeleton-loading {
+            0% {
+              background-position: 200% 0;
+            }
+
+            100% {
+              background-position: -200% 0;
+            }
+          }
+
+          .fadeInAnimation {
+            animation: fadeIn 0.5s ease-in;
+          }
+
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        </style>
       </div>
-
-      <p class="text-muted mb-4">
-        Curated by our Ensemble Engine combining <strong>Hybrid, Transformer, and Graph</strong> algorithms.
-      </p>
-
-      {# ═══════════════════════════════════════════════════════════════════════
-      [3] SEARCH HISTORY SECTION (DYNAMICS / DISTINCTIVE MARK)
-      [MOVE] Moved inside Unified Section as requested
-      ═══════════════════════════════════════════════════════════════════════ #}
-      {% if algo_buckets.search_history_results and algo_buckets.search_history_results|length > 0 %}
-      <section class="search-history-distinctive">
-        {{ render_carousel_section(
-        title='Special Search Discovery',
-        icon='ph-bold ph-magnifying-glass',
-        books=algo_buckets.search_history_results,
-        id_prefix='search_hist',
-        badges=[{'text': 'Found for You', 'pulse': true}],
-        color='red'
-        ) }}
-      </section>
-      {% endif %}
-
-      {# Using existing macro for consistent card design #}
-      {{ render_carousel_section(
-      title='Top Unified Recommendations',
-      icon='ph-fill ph-star-four',
-      books=unified_recommendations,
-      id_prefix='unified_rec',
-      badges=[{'text': 'Ensemble Choice', 'pulse': true}],
-      view_all_url=url_for('main.browse', category='unified'),
-      color='purple'
-      ) }}
-    </section>
-    {% endif %}
-
-
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [4] HIGHEST RATED BY USERS
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if top_rated_books_sorted and top_rated_books_sorted|length > 0 %}
-    {{ render_carousel_section(
-    title='Highest Rated by Community',
-    icon='ph-fill ph-star',
-    books=top_rated_books_sorted,
-    id_prefix='top_rated',
-    badges=[{'text': 'Reader Favorites', 'pulse': false}],
-    view_all_url=url_for('main.browse', category='top_rated'),
-    color='warning'
-    ) }}
-    {% endif %}
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [5] HIGHEST VIEWED (POPULARITY)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if most_viewed_books and most_viewed_books|length > 0 %}
-    {{ render_carousel_section(
-    title='Most Viewed This Week',
-    icon='ph-fill ph-eye',
-    books=most_viewed_books,
-    id_prefix='most_viewed',
-    badges=[{'text': 'Trending', 'pulse': true}],
-    view_all_url=url_for('main.browse', category='most_viewed'),
-    color='accent'
-    ) }}
-    {% endif %}
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [6] TRENDING IN LIBRARIES
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if trending_by_libraries and trending_by_libraries|length > 0 %}
-    {{ render_carousel_section(
-    title='Trending in User Libraries',
-    icon='ph-fill ph-books',
-    books=trending_by_libraries,
-    id_prefix='lib_trending',
-    badges=[{'text': 'Hot Picks'}],
-    view_all_url=url_for('main.browse', category='trending_libs'),
-    color='success'
-    ) }}
-    {% endif %}
-
+    </div>
   </div>
 
   {# SVG Gradient Definitions for AI Score Rings #}
@@ -387,24 +341,21 @@ MICRO-INTERACTIONS SCRIPT
     });
 
     // Intersection Observer for Cards Animation
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // entry.target.style.opacity = '1';
-          // entry.target.style.transform = 'translateY(0)';
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.05 });
+    function initCardObserver() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.05 });
 
-    // Observe all cards
-    document.querySelectorAll('.glass-book-card').forEach((card) => {
-      // card.style.opacity = '0';
-      // card.style.transform = 'translateY(20px)';
-      // card.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
-      observer.observe(card);
-    });
+      // Observe all cards
+      document.querySelectorAll('.glass-book-card').forEach((card) => {
+        observer.observe(card);
+      });
+    }
 
     // Add FadeIn style if not exists
     if (!document.getElementById('card-animations')) {
@@ -420,9 +371,46 @@ MICRO-INTERACTIONS SCRIPT
                     opacity: 1;
                     transform: translateY(0);
                 }
+                /* Safety fallback: if JS fails or slow, show cards eventually */
+                @media (prefers-reduced-motion: reduce) {
+                    .glass-book-card { opacity: 1 !important; transform: none !important; }
+                }
             `;
       document.head.appendChild(style);
     }
+
+    // Fetch async home feed
+    document.addEventListener("DOMContentLoaded", function () {
+      const feedContainer = document.getElementById("home-feed-container");
+      if (feedContainer) {
+        fetch("/feed/home")
+          .then(res => res.json())
+          .then(data => {
+            if (data.html) {
+              feedContainer.innerHTML = data.html;
+
+              // 🎯 RE-INITIALIZE OBSERVER FOR NEW CONTENT
+              initCardObserver();
+
+              // Initialize any tooltips inside newly loaded content
+              if (window.bootstrap) {
+                var tooltipTriggerList = [].slice.call(feedContainer.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                  return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+              }
+            }
+          })
+          .catch(err => {
+            console.error("Failed to load home feed:", err);
+            // Fallback: show skeleton error or message
+            feedContainer.innerHTML = '<div class="alert alert-soft-danger text-center">Failed to load recommendations. Please refresh.</div>';
+          });
+      }
+
+      // Initialize observer for any static content present
+      initCardObserver();
+    });
   })();
 </script>
 {% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Reset Data Confirmation | ALHAM{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="card glass-panel border-danger p-4" style="max-width: 500px; width: 100%;">
+        <div class="text-center mb-4">
+            <div class="mb-3">
+                <i class="ph-fill ph-warning-circle text-danger" style="font-size: 4rem;"></i>
+            </div>
+            <h2 class="text-white fw-bold">Are you sure?</h2>
+            <p class="text-white-50">
+                This action will <strong>permanently delete</strong> your:
+            </p>
+            <ul class="text-start text-white-50 d-inline-block mx-auto">
+                <li>Search History</li>
+                <li>Book Interests & Preferences</li>
+                <li>Ratings & Reviews</li>
+                <li>Reading Status & Progress</li>
+                <li>Personalized Recommendations</li>
+            </ul>
+            <p class="text-danger mt-3 small">
+                ⚠️ This action cannot be undone.
+            </p>
+        </div>
+
+        <form action="{{ url_for('auth.reset_user_data') }}" method="POST" class="d-grid gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <button type="submit" class="btn btn-danger btn-lg fw-bold">
+                <i class="ph-bold ph-trash"></i> Yes, Delete Everything
+            </button>
+            <a href="{{ url_for('explore.index') }}" class="btn btn-outline-light">
+                Cancel, Keep My Data
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
