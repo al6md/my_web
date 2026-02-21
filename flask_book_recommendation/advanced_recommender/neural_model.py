@@ -58,10 +58,11 @@ class ItemTower(nn.Module):
         self.dropout = nn.Dropout(0.2)
         
     def forward(self, book_vectors):
-        # book_vectors shape: (B, 768)
+        # book_vectors shape: (B, 384)
         x = F.relu(self.fc1(book_vectors))
         x = self.dropout(x)
         x = F.relu(self.fc2(x))
+        x = self.dropout(x)
         x = self.fc3(x)
         
         # Normalize for Cosine Similarity

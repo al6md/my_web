@@ -1,301 +1,209 @@
-# -*- coding: utf-8 -*-
-"""
-🎓 تدريب نموذج التوصيات من قاعدة البيانات الحقيقية
-====================================================
-
-هذا السكريبت يقوم بـ:
-1. تحميل بيانات التفاعلات (تقييمات، مشاهدات) من قاعدة البيانات
-2. تحميل متجهات الكتب (Book Embeddings)
-3. تدريب نموذج Two-Tower على البيانات الحقيقية
-
-الاستخدام:
-    python scripts/train_from_database.py
-"""
-
 import os
 import sys
+import torch
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
-from datetime import datetime
+import random
+from tqdm import tqdm
 
-# إضافة المشروع إلى المسار
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(basedir)
 
-# تحميل Flask app للوصول لقاعدة البيانات
 from flask_book_recommendation.app import create_app
 from flask_book_recommendation.extensions import db
-from flask_book_recommendation.models import (
-    User, Book, UserRatingCF, BookReview, UserBookView, 
-    BookEmbedding, BookStatus
-)
+from flask_book_recommendation.models import UserRatingCF, BookStatus, UserBookView, BookEmbedding, Book
+from flask_book_recommendation.advanced_recommender.neural_model import TwoTowerModel
 
-from ai_book_recommender.training.data_loader import InteractionSample, create_data_loaders
-from ai_book_recommender.training.train import Trainer, TrainingConfig
-from ai_book_recommender.models.two_tower_v2 import TwoTowerV2
-
-
-def load_interactions_from_db():
-    """
-    تحميل تفاعلات المستخدمين من قاعدة البيانات.
-    
-    يجمع بين:
-    - التقييمات الصريحة (UserRatingCF, BookReview) -> label = rating/5
-    - المشاهدات الضمنية (UserBookView) -> label = 1.0
-    - حالة الكتب (BookStatus: favorite, finished) -> label = 1.0
-    """
-    interactions = []
-    
-    print("📊 جاري تحميل البيانات من قاعدة البيانات...")
-    
-    # 1. تقييمات CF
-    ratings_cf = UserRatingCF.query.all()
-    print(f"  - تقييمات CF: {len(ratings_cf)}")
-    for r in ratings_cf:
-        interactions.append(InteractionSample(
-            user_id=r.user_id,
-            item_id=r.google_id,
-            label=min(r.rating / 5.0, 1.0)  # تطبيع إلى 0-1
-        ))
-    
-    # 2. مراجعات الكتب
-    reviews = BookReview.query.all()
-    print(f"  - مراجعات الكتب: {len(reviews)}")
-    for r in reviews:
-        item_id = r.google_id or f"book_{r.book_id}"
-        interactions.append(InteractionSample(
-            user_id=r.user_id,
-            item_id=item_id,
-            label=min(r.rating / 5.0, 1.0)
-        ))
-    
-    # 3. مشاهدات الكتب (تفاعل ضمني)
-    views = UserBookView.query.all()
-    print(f"  - مشاهدات الكتب: {len(views)}")
-    for v in views:
-        item_id = v.google_id or f"book_{v.book_id}"
-        # كلما زادت المشاهدات، زادت الأهمية
-        label = min(0.3 + (v.view_count * 0.1), 1.0)
-        interactions.append(InteractionSample(
-            user_id=v.user_id,
-            item_id=item_id,
-            label=label
-        ))
-    
-    # 4. حالة الكتب (المفضلة، المنتهية)
-    statuses = BookStatus.query.filter(
-        BookStatus.status.in_(['favorite', 'finished'])
-    ).all()
-    print(f"  - الكتب المفضلة/المنتهية: {len(statuses)}")
-    for s in statuses:
-        book = Book.query.get(s.book_id)
-        if book:
-            item_id = book.google_id or f"book_{book.id}"
-            interactions.append(InteractionSample(
-                user_id=s.user_id,
-                item_id=item_id,
-                label=1.0  # تفاعل إيجابي قوي
-            ))
-    
-    print(f"\n✅ إجمالي التفاعلات: {len(interactions)}")
-    return interactions
-
-
-def load_embeddings_from_db():
-    """
-    تحميل متجهات الكتب المحسوبة مسبقاً.
-    """
-    print("\n📦 جاري تحميل متجهات الكتب...")
-    
-    item_embeddings = {}
-    
-    embeddings = BookEmbedding.query.all()
-    for emb in embeddings:
-        book = Book.query.get(emb.book_id)
-        if book and emb.vector is not None:
-            item_id = book.google_id or f"book_{book.id}"
-            vector = np.array(emb.vector, dtype=np.float32)
-            
-            # التأكد من أن البعد صحيح
-            if len(vector.shape) == 1:
-                item_embeddings[item_id] = vector
-    
-    print(f"✅ تم تحميل {len(item_embeddings)} متجه")
-    
-    # استخراج البعد
-    if item_embeddings:
-        sample_vec = list(item_embeddings.values())[0]
-        print(f"📏 بُعد المتجهات: {len(sample_vec)}")
-    
-    return item_embeddings
-
-
-def create_user_embeddings(interactions, item_embeddings, target_dim=None):
-    """
-    إنشاء متجهات المستخدمين من متوسط متجهات الكتب التي تفاعلوا معها.
-    """
-    print("\n👤 جاري إنشاء متجهات المستخدمين...")
-    
-    from collections import defaultdict
-    
-    # تحديد البعد المطلوب
-    if target_dim is None and item_embeddings:
-        # استخدام أول متجه لتحديد البعد
-        target_dim = len(list(item_embeddings.values())[0])
-    
-    # فلترة الـ item_embeddings ليكون لها نفس البعد
-    filtered_embeddings = {
-        k: v for k, v in item_embeddings.items() 
-        if len(v) == target_dim
-    }
-    
-    print(f"  - البعد المستهدف: {target_dim}")
-    print(f"  - عدد الكتب بنفس البعد: {len(filtered_embeddings)}")
-    
-    user_items = defaultdict(list)
-    for inter in interactions:
-        if inter.label > 0.5 and inter.item_id in filtered_embeddings:
-            user_items[inter.user_id].append(filtered_embeddings[inter.item_id])
-    
-    user_embeddings = {}
-    for user_id, vectors in user_items.items():
-        if vectors:
-            avg_vec = np.mean(vectors, axis=0).astype(np.float32)
-            user_embeddings[user_id] = avg_vec
-    
-    print(f"✅ تم إنشاء متجهات لـ {len(user_embeddings)} مستخدم")
-    return user_embeddings, target_dim, filtered_embeddings
-
-
-def main():
-    # إنشاء Flask app وسياق التطبيق
+def get_db_data():
     app = create_app()
-    
     with app.app_context():
-        print("="*60)
-        print("🎓 بدء عملية التدريب على البيانات الحقيقية")
-        print("="*60)
+        print("Fetching embeddings...")
+        embeddings = {}
+        for row in BookEmbedding.query.filter(BookEmbedding.vector.isnot(None)).all():
+            if row.vector:
+                embeddings[row.book_id] = np.array(row.vector, dtype=np.float32)
+                
+        # Mapping from google_id to book_id
+        google_to_local = {b.google_id: b.id for b in Book.query.with_entities(Book.google_id, Book.id).all() if b.google_id}
         
-        # 1. تحميل البيانات
-        interactions = load_interactions_from_db()
+        print("Fetching user interactions...")
+        # user_interactions: user_id -> {book_id: weight}
+        user_interactions = {}
         
-        if len(interactions) < 10:
-            print("\n⚠️ عدد التفاعلات قليل جداً للتدريب!")
-            print("💡 جرب إضافة المزيد من التقييمات والمشاهدات في التطبيق أولاً.")
-            return
-        
-        # 2. تحميل المتجهات
-        item_embeddings = load_embeddings_from_db()
-        
-        if len(item_embeddings) < 5:
-            print("\n⚠️ عدد متجهات الكتب قليل!")
-            print("💡 تحتاج لتشغيل عملية حساب embeddings أولاً.")
+        # 1. UserRatingCF
+        for r in UserRatingCF.query.all():
+            bid = google_to_local.get(r.google_id)
+            if not bid: continue
+            weight = float(r.rating) # weight=rating value
+            user_interactions.setdefault(r.user_id, {})[bid] = max(user_interactions[r.user_id].get(bid, 0), weight)
             
-            # إنشاء متجهات عشوائية للتجربة
-            print("🔄 سيتم إنشاء متجهات عشوائية للتجربة...")
-            unique_items = set(i.item_id for i in interactions)
-            for item_id in unique_items:
-                if item_id not in item_embeddings:
-                    item_embeddings[item_id] = np.random.randn(384).astype(np.float32)
-        
-        # 3. إنشاء متجهات المستخدمين (مع التأكد من تناسق الأبعاد)
-        user_embeddings, embedding_dim, item_embeddings = create_user_embeddings(interactions, item_embeddings)
-        
-        # 4. تصفية التفاعلات - فقط التي لها user و item embeddings
-        print("\n🔍 تصفية التفاعلات...")
-        valid_interactions = []
-        for inter in interactions:
-            if inter.user_id in user_embeddings and inter.item_id in item_embeddings:
-                valid_interactions.append(inter)
-        
-        print(f"  - تفاعلات صالحة (لها embeddings): {len(valid_interactions)} من {len(interactions)}")
-        
-        if len(valid_interactions) < 10:
-            print("\n⚠️ عدد التفاعلات الصالحة قليل جداً!")
-            print("💡 تحتاج لمزيد من البيانات أو حساب المزيد من embeddings.")
-            return
-        
-        interactions = valid_interactions
-        
-        # 5. تقسيم البيانات
-        np.random.shuffle(interactions)
-        split_idx = int(0.8 * len(interactions))
-        train_data = interactions[:split_idx]
-        val_data = interactions[split_idx:]
-        
-        print(f"\n📊 تقسيم البيانات:")
-        print(f"  - بيانات التدريب: {len(train_data)}")
-        print(f"  - بيانات التحقق: {len(val_data)}")
-        
-        # 5. إنشاء DataLoaders
-        train_loader, val_loader = create_data_loaders(
-            train_data=train_data,
-            val_data=val_data,
-            user_embeddings=user_embeddings,
-            item_embeddings=item_embeddings,
-            batch_size=32,
-            num_workers=0  # Windows fix
-        )
-        
-        # 6. إنشاء نموذج MLP بسيط للعمل مع المتجهات المحسوبة مسبقاً
-        print(f"\n🧠 إنشاء نموذج MLP (input_dim={embedding_dim})")
-        
-        import torch
-        import torch.nn as nn
-        
-        class SimpleScoringModel(nn.Module):
-            """نموذج بسيط لحساب التوافق بين المستخدم والكتاب"""
-            def __init__(self, embedding_dim, hidden_dim=256):
-                super().__init__()
-                # يأخذ تمثيل المستخدم + تمثيل الكتاب
-                self.scorer = nn.Sequential(
-                    nn.Linear(embedding_dim * 2, hidden_dim),
-                    nn.ReLU(),
-                    nn.Dropout(0.3),
-                    nn.Linear(hidden_dim, hidden_dim // 2),
-                    nn.ReLU(),
-                    nn.Dropout(0.2),
-                    nn.Linear(hidden_dim // 2, 1)
-                )
+        # 2. BookStatus
+        for s in BookStatus.query.all():
+            bid = s.book_id
+            if s.status == 'finished': w = 5.0
+            elif s.status == 'favorite': w = 4.0
+            elif s.status == 'later': w = 1.5
+            else: w = 1.0
+            user_interactions.setdefault(s.user_id, {})[bid] = max(user_interactions[s.user_id].get(bid, 0), w)
             
-            def forward(self, user_embedding, item_embedding, **kwargs):
-                combined = torch.cat([user_embedding, item_embedding], dim=-1)
-                return self.scorer(combined).squeeze(-1)
-        
-        model = SimpleScoringModel(embedding_dim, hidden_dim=256)
-        
-        # 7. إعداد التدريب
-        config = TrainingConfig(
-            model_name="simple_recommender",
-            epochs=10,
-            batch_size=32,
-            learning_rate=0.001,
-            checkpoint_dir="instance/checkpoints",
-            device="cpu"  # غيّر إلى "cuda" إذا كان لديك GPU
-        )
-        
-        trainer = Trainer(
-            model=model,
-            config=config,
-            train_loader=train_loader,
-            val_loader=val_loader
-        )
-        
-        # 8. بدء التدريب
-        print(f"\n{'='*60}")
-        print(f"🚀 بدء التدريب - {datetime.now().strftime('%H:%M:%S')}")
-        print(f"{'='*60}")
-        
-        results = trainer.train()
-        
-        print(f"\n{'='*60}")
-        print(f"✅ انتهى التدريب - {datetime.now().strftime('%H:%M:%S')}")
-        print(f"{'='*60}")
-        
-        print(f"\n📈 النتائج:")
-        print(f"  - أفضل أداء: {results['best_metric']:.4f}")
-        print(f"  - أفضل Epoch: {results['best_epoch'] + 1}")
-        print(f"  - آخر Loss: {results['final_loss']:.4f}")
-        print(f"\n💾 تم حفظ النموذج في: {config.checkpoint_dir}/{config.model_name}")
+        # 3. UserBookView
+        for v in UserBookView.query.all():
+            bid = v.book_id or google_to_local.get(v.google_id)
+            if not bid: continue
+            w = 2.0 if (v.view_count and v.view_count > 3) else 1.0
+            user_interactions.setdefault(v.user_id, {})[bid] = max(user_interactions[v.user_id].get(bid, 0), w)
+            
+        return user_interactions, embeddings
 
+class BPRDataset(Dataset):
+    def __init__(self, user_interactions, embeddings, num_negative=4):
+        self.samples = []
+        self.embeddings = embeddings
+        self.num_negative = num_negative
+        
+        self.all_book_ids = list(embeddings.keys())
+        
+        print("Building Dataset Samples...")
+        self.user_profiles = {}
+        for uid, interactions in user_interactions.items():
+            books = list(interactions.keys())
+            b_embs = [self.embeddings[b] for b in books if b in self.embeddings]
+            if not b_embs: continue
+            
+            # History vector (pad to 10 max recent logic is simplified here)
+            hist = b_embs[-10:]
+            while len(hist) < 10:
+                hist.append(np.zeros(384, dtype=np.float32))
+            hist_vec = np.array(hist)
+            
+            # Interest vector (mean of available)
+            int_vec = np.mean(np.array(b_embs), axis=0)
+            
+            self.user_profiles[uid] = (hist_vec, int_vec)
+            
+            for bid, weight in interactions.items():
+                if bid in self.embeddings:
+                    self.samples.append((uid, bid, weight))
+                    
+    def __len__(self):
+        return len(self.samples)
+        
+    def __getitem__(self, idx):
+        uid, pos_bid, weight = self.samples[idx]
+        hist_vec, int_vec = self.user_profiles[uid]
+        
+        pos_emb = self.embeddings[pos_bid]
+        
+        # Sample negative items
+        neg_embs = []
+        for _ in range(self.num_negative):
+            neg_bid = random.choice(self.all_book_ids)
+            # basic ensure not positive
+            while neg_bid == pos_bid:
+                neg_bid = random.choice(self.all_book_ids)
+            neg_embs.append(self.embeddings[neg_bid])
+            
+        neg_embs = np.array(neg_embs)
+        
+        return {
+            'user_id': uid,
+            'history': hist_vec,
+            'interest': int_vec,
+            'pos_item': pos_emb,
+            'neg_items': neg_embs,
+            'weight': weight
+        }
 
+def collate_fn(batch):
+    uids = torch.tensor([b['user_id'] for b in batch], dtype=torch.long)
+    hists = torch.tensor(np.array([b['history'] for b in batch]), dtype=torch.float32)
+    ints = torch.tensor(np.array([b['interest'] for b in batch]), dtype=torch.float32)
+    pos_items = torch.tensor(np.array([b['pos_item'] for b in batch]), dtype=torch.float32)
+    neg_items = torch.tensor(np.array([b['neg_items'] for b in batch]), dtype=torch.float32)
+    weights = torch.tensor([b['weight'] for b in batch], dtype=torch.float32)
+    
+    return uids, hists, ints, pos_items, neg_items, weights
+
+def train():
+    user_interactions, embeddings = get_db_data()
+    
+    if not user_interactions or not embeddings:
+        print("Not enough data to train!")
+        return
+        
+    dataset = BPRDataset(user_interactions, embeddings)
+    total = len(dataset)
+    print(f"Total training samples: {total}")
+    
+    tr_len = int(0.8 * total)
+    val_len = int(0.1 * total)
+    test_len = total - tr_len - val_len
+    
+    from torch.utils.data import random_split
+    tr_ds, val_ds, test_ds = random_split(dataset, [tr_len, val_len, test_len], generator=torch.Generator().manual_seed(42))
+    
+    tr_dl = DataLoader(tr_ds, batch_size=128, shuffle=True, collate_fn=collate_fn)
+    
+    model = TwoTowerModel()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Training on device: {device}")
+    model.to(device)
+    
+    epochs = 10
+    
+    os.makedirs('instance/models', exist_ok=True)
+    
+    for epoch in range(epochs):
+        model.train()
+        total_loss = 0
+        
+        for uids, hists, ints, pos_items, neg_items, weights in tqdm(tr_dl, desc=f"Epoch {epoch+1}/{epochs}"):
+            # Move to device optionally, clamp uids to dict size
+            uids = torch.clamp(uids, 0, 9999).to(device)
+            hists = hists.to(device)
+            ints = ints.to(device)
+            pos_items = pos_items.to(device)
+            neg_items = neg_items.to(device)
+            weights = weights.to(device)
+            
+            optimizer.zero_grad()
+            
+            user_input = (uids, hists, ints)
+            u_emb = model.user_tower(*user_input)
+            pos_emb = model.item_tower(pos_items)
+            
+            B, num_neg, dim = neg_items.shape
+            neg_items_flat = neg_items.view(-1, dim)
+            neg_emb_flat = model.item_tower(neg_items_flat)
+            neg_emb = neg_emb_flat.view(B, num_neg, -1)
+            
+            pos_score = (u_emb * pos_emb).sum(dim=1)
+            u_emb_expanded = u_emb.unsqueeze(1)
+            neg_score = (u_emb_expanded * neg_emb).sum(dim=2)
+            
+            pos_score_expanded = pos_score.unsqueeze(1)
+            loss_per_neg = -F.logsigmoid(pos_score_expanded - neg_score)
+            
+            loss = (loss_per_neg.mean(dim=1) * weights).mean()
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+            
+        print(f"Epoch {epoch+1} Loss: {total_loss / len(tr_dl):.4f}")
+        torch.save(model.state_dict(), f"instance/models/twotower_v{epoch+1}.pt")
+    
+    # Save final model state
+    torch.save(model.state_dict(), "instance/models/two_tower_model.pt")
+    
+    # Save test dataset for evaluate_model.py
+    torch.save({
+        'test_indices': test_ds.indices,
+        'user_interactions': user_interactions,
+    }, "instance/models/test_set_metadata.pt")
+    print("Training complete!")
+    
 if __name__ == "__main__":
-    main()
+    train()

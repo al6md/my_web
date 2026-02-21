@@ -253,3 +253,92 @@ class BookQuote(db.Model):
 
     def __repr__(self):
         return f"<BookQuote user={self.user_id} book={self.book_id or self.google_id}>"
+
+
+class UserEvent(db.Model):
+    """
+    نموذج تتبع أحداث المستخدم بدقة أعلى من UserBookView.
+    يدعم أنواع أحداث متعددة مع بيانات سلوكية إضافية.
+    """
+    __tablename__ = "user_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+
+    # نوع الحدث: view / click / read / abandon / share / rate
+    event_type = db.Column(db.String(20), nullable=False, index=True)
+
+    # معرف الكتاب (Google Books ID)
+    book_google_id = db.Column(db.String(128), nullable=True, index=True)
+
+    # معرف الجلسة (لربط أحداث متعددة ضمن نفس الزيارة)
+    session_id = db.Column(db.String(64), nullable=True, index=True)
+
+    # مدة التفاعل بالثواني (مثلاً: مدة قراءة صفحة التفاصيل)
+    duration_seconds = db.Column(db.Integer, nullable=True)
+
+    # عمق التمرير (0.0 = أعلى الصفحة, 1.0 = أسفل الصفحة)
+    scroll_depth = db.Column(db.Float, nullable=True)
+
+    # بيانات إضافية بصيغة JSON نصية
+    metadata_json = db.Column(db.Text, nullable=True)
+
+    # وقت الحدث
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    # العلاقات
+    user = db.relationship("User", backref=db.backref("events", lazy="dynamic"))
+
+    def __repr__(self):
+        return f"<UserEvent user={self.user_id} type={self.event_type} book={self.book_google_id}>"
+
+class Experiment(db.Model):
+    """
+    نموذج لاختبارات A/B (Experiments).
+    يحتوي على إعدادات التجربة مثل نسبة التقسيم وحالتها.
+    """
+    __tablename__ = "experiments"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text, nullable=True)
+    
+    traffic_split = db.Column(db.Float, default=0.5) # e.g., 0.2 means 20% in treatment
+    status = db.Column(db.String(20), default='active') # 'active', 'paused', 'completed'
+    
+    start_date = db.Column(db.DateTime, default=datetime.utcnow)
+    end_date = db.Column(db.DateTime, nullable=True)
+    
+    winning_variant = db.Column(db.String(50), nullable=True)
+
+class ExperimentAssignment(db.Model):
+    """
+    تعيينات المستخدمين لتجارب A/B بشكل ثابت (Deterministic).
+    """
+    __tablename__ = "experiment_assignments"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    experiment_id = db.Column(db.Integer, db.ForeignKey("experiments.id"), nullable=False, index=True)
+    
+    variant = db.Column(db.String(50), nullable=False) # 'control' or 'treatment'
+    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "experiment_id", name="uq_user_experiment"),
+    )
+
+class ExperimentMetric(db.Model):
+    """
+    سجل المقاييس (Metrics) المرتبطة باختبارات A/B.
+    """
+    __tablename__ = "experiment_metrics"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    experiment_id = db.Column(db.Integer, db.ForeignKey("experiments.id"), nullable=False, index=True)
+    variant = db.Column(db.String(50), nullable=False, index=True)
+    
+    metric_name = db.Column(db.String(100), nullable=False, index=True)
+    metric_value = db.Column(db.Float, nullable=False)
+    
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)

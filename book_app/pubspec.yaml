@@ -38,6 +38,9 @@ dependencies:
   # HTTP client for API calls
   http: ^1.2.0
   
+  # SharedPreferences for local storage
+  shared_preferences: ^2.2.2
+  
   # State management
   provider: ^6.1.2
   

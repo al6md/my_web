@@ -318,3 +318,48 @@ def get_books_by_category(category_id: str):
             'error': str(e),
             'books': []
         })
+
+
+@api_books_bp.route('/event', methods=['POST'])
+@jwt_required()
+def log_event():
+    """
+    POST /api/books/event
+    تسجيل حدث تفاعل المستخدم مع كتاب (view, click, read, abandon, share, rate).
+    """
+    from flask_book_recommendation.models import UserEvent
+    from flask_book_recommendation.extensions import db
+
+    user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+
+    event_type = data.get('event_type')
+    if not event_type or event_type not in ('view', 'click', 'read', 'abandon', 'share', 'rate'):
+        return jsonify({'success': False, 'error': 'Invalid or missing event_type'}), 400
+
+    book_google_id = data.get('book_google_id')
+    if not book_google_id:
+        return jsonify({'success': False, 'error': 'Missing book_google_id'}), 400
+
+    try:
+        import json
+        metadata_json = None
+        if data.get('metadata'):
+            metadata_json = json.dumps(data['metadata'], ensure_ascii=False)
+
+        event = UserEvent(
+            user_id=user_id,
+            event_type=event_type,
+            book_google_id=book_google_id,
+            session_id=data.get('session_id'),
+            duration_seconds=data.get('duration_seconds'),
+            scroll_depth=data.get('scroll_depth'),
+            metadata_json=metadata_json,
+        )
+        db.session.add(event)
+        db.session.commit()
+
+        return jsonify({'success': True, 'event_id': event.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500

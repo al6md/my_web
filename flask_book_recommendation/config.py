@@ -25,8 +25,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # إعدادات Caching
-    CACHE_TYPE = "SimpleCache"  # للبيئة المحلية، استخدم Redis في الإنتاج
-    CACHE_DEFAULT_TIMEOUT = 300  # 5 دقائق
+    CACHE_TYPE = 'RedisCache' if os.environ.get('REDIS_URL') else 'SimpleCache'
+    CACHE_REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    CACHE_DEFAULT_TIMEOUT = 600
     
     # إعدادات CSRF و Session
     WTF_CSRF_ENABLED = True
