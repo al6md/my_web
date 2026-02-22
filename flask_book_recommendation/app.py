@@ -126,6 +126,13 @@ def create_app():
         except Exception as e:
             app.logger.warning(f"Could not create tables (may already exist): {e}")
 
+    # Start the Daily Embedding Updater Scheduler
+    try:
+        from training.scheduler import start_scheduler
+        start_scheduler(app)
+    except Exception as e:
+        app.logger.warning(f"Could not start scheduler: {e}")
+
     return app
 
 

@@ -109,6 +109,14 @@ def add_to_library(gid: str):
     
     db.session.commit()
     
+    # --- 🆕 User Embedding Update (Phase 2) ---
+    try:
+        from ...ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+        user_embedding_manager.update_user_embedding(user_id, book_id=book.id)
+    except Exception as e_emb:
+        print(f"Embedding update error: {e_emb}")
+    # ------------------------------------------
+    
     return jsonify({
         'success': True,
         'message': f'تم إضافة الكتاب كـ {status}'
@@ -225,6 +233,14 @@ def rate_book(gid: str):
     
     db.session.commit()
     
+    # --- 🆕 User Embedding Update (Phase 2) ---
+    try:
+        from ...ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+        user_embedding_manager.update_user_embedding(user_id, google_id=gid)
+    except Exception as e_emb:
+        print(f"Embedding update error: {e_emb}")
+    # ------------------------------------------
+    
     return jsonify({
         'success': True,
         'message': 'تم حفظ التقييم'
@@ -310,6 +326,14 @@ def log_book_view():
             db.session.add(view)
         
         db.session.commit()
+        
+        # --- 🆕 User Embedding Update (Phase 2) ---
+        try:
+            from ...ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+            user_embedding_manager.update_user_embedding(user_id, book_id=book_id, google_id=google_id)
+        except Exception as e_emb:
+            print(f"Embedding update error: {e_emb}")
+        # ------------------------------------------
         
         # تحديث التفضيلات تلقائياً
         if book_info:

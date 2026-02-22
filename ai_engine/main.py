@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import numpy as np
@@ -12,6 +13,15 @@ from .retrieval import RetrievalEngine
 from .embeddings import embedding_service
 
 app = FastAPI(title=settings.APP_NAME, version=settings.VERSION)
+
+# Enable CORS for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global State
 model = SuperIntelligentTwoTower()
@@ -31,6 +41,11 @@ class SearchRequest(BaseModel):
 class RecommendationResponse(BaseModel):
     user_id: int
     recommendations: List[dict] # {book_id, score}
+
+class RealtimeRecommendRequest(BaseModel):
+    user_id: int
+    k: int = 10
+    candidates: Optional[List[int]] = None # Optional list of pre-selected candidates to re-rank
 
 @app.on_event("startup")
 def load_resources():
@@ -139,6 +154,113 @@ async def log_feedback(req: FeedbackRequest):
     print(f"RL Feedback received: User {req.user_id} -> Book {req.book_id} [{req.event_type}]")
     # TODO: Write to 'interactions.csv' or Kafka
     return {"status": "recorded"}
+
+@app.post("/recommend/realtime")
+async def realtime_recommend(req: RealtimeRecommendRequest):
+    """
+    Real-time re-ranking endpoint (Phase 3).
+    Fetches the user's running mean embedding from the database,
+    fetches candidates (trending/top rated if none provided),
+    and re-ranks them using cosine similarity.
+    """
+    try:
+        from flask_book_recommendation.extensions import db
+        from flask_book_recommendation.models import UserEmbedding, BookEmbedding, Book
+        from sqlalchemy.orm import sessionmaker
+        from sqlalchemy import create_engine
+        
+        # 1. We need a DB session. We'll use the existing SQLAlchemy setup.
+        # Ensure we are using the correct connection string to the main application DB
+        from flask_book_recommendation.config import Config
+        db_url = Config.SQLALCHEMY_DATABASE_URI
+        engine = create_engine(db_url)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        session = SessionLocal()
+        
+        try:
+            # 2. Fetch User Embedding
+            user_emb = session.query(UserEmbedding).filter_by(user_id=req.user_id).first()
+            if not user_emb or user_emb.vector is None:
+                # Cold start: Return some popular books if no vector exists
+                # Fallback to random or basic query since Book doesn't have ratings_count
+                top_books = session.query(Book).limit(req.k).all()
+                return {
+                    "user_id": req.user_id,
+                    "status": "cold_start",
+                    "recommendations": [{"book_id": b.id, "score": 0.0, "title": b.title} for b in top_books]
+                }
+            
+            user_vector = np.array(user_emb.vector)
+            
+            # 3. Fetch Candidates
+            candidate_ids = req.candidates
+            if not candidate_ids:
+                # If no specific candidates provided, we pull a mix of popular/trending books
+                # For this endpoint, let's grab random 100 books to re-rank
+                cand_query = session.query(Book.id).limit(100).all()
+                candidate_ids = [c[0] for c in cand_query]
+            
+            if not candidate_ids:
+                return {"user_id": req.user_id, "status": "no_candidates", "recommendations": []}
+                
+            # 4. Fetch Emdeddings for Candidates
+            book_embs = session.query(BookEmbedding).filter(BookEmbedding.book_id.in_(candidate_ids)).all()
+            
+            book_vectors = []
+            valid_bids = []
+            
+            for be in book_embs:
+                if be.vector is not None:
+                    book_vectors.append(np.array(be.vector))
+                    valid_bids.append(be.book_id)
+            
+            if not book_vectors:
+                # Fallback if candidates have no embeddings
+                return {"user_id": req.user_id, "status": "no_candidate_embeddings", "recommendations": []}
+                
+            # 5. Compute Cosine Similarity
+            # Normalize vectors first
+            u_norm = np.linalg.norm(user_vector)
+            u_vec_n = user_vector / u_norm if u_norm > 0 else user_vector
+            
+            b_matrix = np.array(book_vectors)
+            b_norms = np.linalg.norm(b_matrix, axis=1, keepdims=True)
+            # Avoid division by zero
+            b_norms = np.where(b_norms == 0, 1e-10, b_norms)
+            b_matrix_n = b_matrix / b_norms
+            
+            # Dot product of normalized vectors = Cosine Similarity
+            similarities = np.dot(b_matrix_n, u_vec_n)
+            
+            # 6. Sort and Re-rank
+            # Pair scores with IDs and sort descending
+            scored_candidates = list(zip(valid_bids, similarities))
+            scored_candidates.sort(key=lambda x: x[1], reverse=True)
+            
+            # Take top K
+            top_recs = scored_candidates[:req.k]
+            
+            # Form response
+            formatted_recs = []
+            for bid, score in top_recs:
+                formatted_recs.append({
+                    "book_id": bid,
+                    "score": float(score)  # Ensure JSON serializable
+                })
+                
+            return {
+                "user_id": req.user_id,
+                "status": "success",
+                "recommendations": formatted_recs
+            }
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        print(f"Error in realtime recommend: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/admin/build_index")
 async def trigger_index_build(background_tasks: BackgroundTasks):

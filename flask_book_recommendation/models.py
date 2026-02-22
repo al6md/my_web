@@ -128,6 +128,20 @@ class BookEmbedding(db.Model):
     book_id = db.Column(db.Integer, db.ForeignKey("books.id"), nullable=False, unique=True, index=True)
 
     vector = db.Column(db.PickleType)
+
+class UserEmbedding(db.Model):
+    __tablename__ = "user_embeddings"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    
+    # Stores the numpy embedding (running mean)
+    vector = db.Column(db.PickleType)
+    
+    # Number of interactions used to compute this vector
+    interaction_count = db.Column(db.Integer, default=0)
+    
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 class BookStatus(db.Model):
     __tablename__ = "book_status"
 

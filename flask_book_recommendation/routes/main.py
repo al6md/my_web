@@ -72,34 +72,47 @@ def home_feed():
 
     # ✅ FIX: Always generate fresh data on every refresh (no cache)
     # This ensures the user sees different books every time they refresh
-    unified_recommendations, algo_buckets, top_rated_books_sorted, most_viewed_books, trending_by_libraries = _generate_home_data(user_id)
+    unified_recommendations, algo_buckets, top_rated_books_sorted, most_viewed_books, trending_by_libraries, top_interest = _generate_home_data(user_id)
 
-    # ✅ Re-shuffle and re-sample unified on EVERY request for fresh results
-    import random
-    if unified_recommendations:
-        random.shuffle(unified_recommendations)
-        sample_size = min(40, len(unified_recommendations))
-        unified_recommendations = random.sample(unified_recommendations, sample_size)
-        
-        # Heavy jitter to ensure order varies each time and gives dynamic feel
-        for b in unified_recommendations:
-            base_score = float(b.get('score') or b.get('confidence') or 0.5)
-            # Add significant random noise (-0.8 to +0.8) so high confidence doesn't permanently lock position
-            b['_sort_score'] = base_score + random.uniform(-0.8, 0.8)
+    # -----------------------------------------------------
+    # Phase 10: Dynamic Sorting of Sections based on User Preference
+    # -----------------------------------------------------
+    sorted_sections = []
+    
+    label_map = {
+        'search_history_results': 'Based on Your Recent Searches',
+        'interest_results': f'Top Picks in: {top_interest}',
+        'hybrid_results': 'Recommended For You',
+        'transformer_results': 'Deep Learning Suggestions',
+        'collaborative_results': 'Readers Similar to You Liked',
+        'graph_results': 'Graph-Based Connections',
+        'vector_results': 'Semantic Similarities',
+        'reranker_results': 'Curated Based on Viewing Habits'
+    }
+
+    for key, books in algo_buckets.items():
+        if books:
+            # Calculate mean score of all books in this section
+            valid_scores = [b.get('score', 0) for b in books if isinstance(b.get('score', 0), (int, float))]
+            section_score = sum(valid_scores) / len(valid_scores) if valid_scores else 0
             
-        unified_recommendations.sort(key=lambda x: x.get('_sort_score', 0), reverse=True)
+            sorted_sections.append({
+                'key': key,
+                'title': label_map.get(key, key.replace('_', ' ').title()),
+                'score': section_score,
+                'books': books
+            })
 
-    if algo_buckets:
-        for key, books in algo_buckets.items():
-            if books and len(books) > 3:
-                random.shuffle(books)
+    # Sort descending by section_score
+    sorted_sections.sort(key=lambda x: x['score'], reverse=True)
                 
     html = render_template("components/home_feed.html",
         unified_recommendations=unified_recommendations,
-        algo_buckets=algo_buckets,
+        sorted_sections=sorted_sections,
         top_rated_books_sorted=top_rated_books_sorted,
         most_viewed_books=most_viewed_books,
-        trending_by_libraries=trending_by_libraries
+        trending_by_libraries=trending_by_libraries,
+        top_interest=top_interest
     )
     return jsonify({"success": True, "html": html})
 
@@ -107,8 +120,25 @@ def _generate_home_data(user_id):
     """
     Helper to generate all homepage data (Unified + Sections).
     Used by home() and background refresh.
-    Returns: (unified, buckets, top_rated, most_viewed, trending_libs)
+    Returns: (unified, buckets, top_rated, most_viewed, trending_libs, top_interest)
     """
+    from ..models import UserPreference, UserGenre, Genre
+    
+    top_interest = "AI & Discovery" # Default
+    if user_id:
+        try:
+            # 1. Get from UserPreference (most explicit)
+            best_pref = UserPreference.query.filter_by(user_id=user_id).order_by(UserPreference.weight.desc()).first()
+            if best_pref:
+                top_interest = best_pref.topic
+            else:
+                # 2. Get from UserGenre
+                best_genre = db.session.query(Genre.name).join(UserGenre).filter(UserGenre.user_id == user_id).first()
+                if best_genre:
+                    top_interest = best_genre[0]
+        except Exception:
+            pass
+
     from ..recommender import (
         get_trending, get_top_rated, get_cf_similar,
         get_behavior_based_recommendations, get_content_similar,
@@ -379,7 +409,8 @@ def _generate_home_data(user_id):
         algo_buckets, 
         cat_results.get('top_rated', []), 
         cat_results.get('most_viewed', []), 
-        cat_results.get('trending_libs', [])
+        cat_results.get('trending_libs', []),
+        top_interest
     )
 
 def _refresh_background(app, user_id):

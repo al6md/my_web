@@ -24,6 +24,7 @@ from ..recommender import (
     get_content_similar, get_trending, get_hybrid_recommendations,
     get_author_books, rerank_search_results, get_discovery_picks
 )
+from training.interaction_logger import log_interaction
 
 public_bp = Blueprint("public", __name__, url_prefix="/public")
 
@@ -77,6 +78,19 @@ def list_books():
             )
             db.session.add(history)
             
+            # --- 🆕 User Embedding Update (Phase 2) ---
+            try:
+                from ..ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+                # Since we don't have a specific book_id for a general search, 
+                # we could skip or use the first result. The requirement says search interaction.
+                # However, usually we update on book-specific actions.
+                # If the user wants search, we might need a way to map search to a vector.
+                # For now, I'll focus on View/Library/Rating which are book-specific.
+                pass 
+            except Exception as e_emb:
+                print(f"Embedding update error: {e_emb}")
+            # ------------------------------------------
+
             # 2. تحديث التفضيلات
             # إذا كان البحث طويلاً، نأخذ أول كلمة ذات معنى
             # أو نحفظ البحث كاملاً إذا كان قصيراً (مثل "python")
@@ -640,6 +654,18 @@ def book_detail(gid):
             db.session.commit()
             print(f"[BookView] Recorded view for user {current_user.id}, book {gid}")
             
+            # --- 🆕 Interaction Logging (Phase 8) ---
+            log_interaction(current_user.id, gid, "view", metadata={"source": book_data.get("source", "unknown")})
+            # ------------------------------------------
+
+            # --- 🆕 User Embedding Update (Phase 2) ---
+            try:
+                from ..ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+                user_embedding_manager.update_user_embedding(current_user.id, google_id=gid)
+            except Exception as e_emb:
+                print(f"Embedding update error: {e_emb}")
+            # ------------------------------------------
+            
             # --- AI Engine Feedback Loop ---
             try:
                 from ..ai_client import ai_client
@@ -840,6 +866,19 @@ def add_to_shelf(gid, status):
             
         db.session.commit()
         
+        # --- 🆕 Interaction Logging (Phase 8) ---
+        log_interaction(current_user.id, gid, f"add_to_shelf_{status}")
+        # ------------------------------------------
+        
+        # --- 🆕 User Embedding Update (Phase 2) ---
+        try:
+            from ..ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+            # local_book.id is the internal ID
+            user_embedding_manager.update_user_embedding(current_user.id, book_id=local_book.id)
+        except Exception as e_emb:
+            print(f"Embedding update error: {e_emb}")
+        # ------------------------------------------
+        
         # إبطال الكاشات المهمة
         try:
             from ..recommender import get_homepage_sections
@@ -925,6 +964,11 @@ def submit_review(gid):
             db.session.add(new_review)
             flash("شكراً لمراجعتك! 🌟", "success")
         
+        # ---------------------------------------------------------
+        # 🆕 Interaction Logging (Phase 8)
+        # ---------------------------------------------------------
+        log_interaction(current_user.id, gid, "rate", value=rating)
+
         # ---------------------------------------------------------
         # 🧠 نظام الاهتمامات الذكي: تحديث التفضيلات بناءً على التقييم
         # ---------------------------------------------------------

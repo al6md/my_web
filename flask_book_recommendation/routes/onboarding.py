@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from ..extensions import db
 from ..models import Genre, UserGenre, UserPreference
+from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
 
 onboarding_bp = Blueprint("onboarding", __name__, url_prefix="/api/onboarding")
 
@@ -49,6 +50,12 @@ def save_interests():
         current_user.onboarding_completed = True
         db.session.commit()
         
+        # 4. Initialize User Embedding in background (or inline for now)
+        try:
+            user_embedding_manager.initialize_from_interests(current_user.id, interests)
+        except Exception as e:
+            logger.error(f"Error initializing user embedding: {e}")
+
         return jsonify({"status": "success", "message": "Interests saved"}), 200
         
     except Exception as e:

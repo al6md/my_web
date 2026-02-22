@@ -234,7 +234,7 @@ class FeatureStore:
             # Import models dynamically to avoid circular imports
             from flask_book_recommendation.models import (
                 User, UserBookView, BookRating, UserBookStatus,
-                Book, BookEmbedding, UserPreference
+                Book, BookEmbedding, UserPreference, UserEmbedding
             )
             
             # Get user
@@ -271,8 +271,13 @@ class FeatureStore:
             total_interactions = features.view_count + features.rating_count
             features.is_cold_start = total_interactions < 5
             
-            # Compute history embedding (weighted average of viewed books)
-            if features.view_count > 0:
+            # 🆕 Use pre-calculated UserEmbedding if available (Phase 2)
+            user_emb = db_session.query(UserEmbedding).filter_by(user_id=user_id).first()
+            if user_emb and user_emb.vector is not None:
+                features.history_embedding = np.array(user_emb.vector)
+                logger.debug(f"Loaded pre-calculated embedding for user {user_id}")
+            elif features.view_count > 0:
+                # Fallback to on-the-fly calculation
                 viewed_book_ids = [v.book_id for v in views[-20:]]  # Last 20
                 embeddings = db_session.query(BookEmbedding).filter(
                     BookEmbedding.book_id.in_(viewed_book_ids)

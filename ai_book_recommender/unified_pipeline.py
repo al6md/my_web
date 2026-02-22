@@ -150,32 +150,35 @@ class UnifiedPipeline:
                 norm_source = self._normalize_source_name(source)
                 candidates_map[bid]['scores'][norm_source] = score
 
-        # 4. Preparing for Ensemble Ranker
+        # 4. Weighted Fusion (Hybrid Engine)
         all_ids = list(candidates_map.keys())
         if not all_ids:
             return []
             
-        # Build score vectors for Ensemble
-        # Expects: scores = {'two_tower': np.array([...]), ...}
-        ensemble_inputs = {
-            'two_tower': [], 'graph': [], 'collaborative': [], 'semantic': [], 'popularity': []
-        }
-        
+        ranked_results = []
         for bid in all_ids:
             c_scores = candidates_map[bid]['scores']
-            ensemble_inputs['two_tower'].append(c_scores.get('two_tower', 0.0))
-            ensemble_inputs['graph'].append(c_scores.get('graph', 0.0))
-            ensemble_inputs['collaborative'].append(c_scores.get('collaborative', 0.0))
-            ensemble_inputs['semantic'].append(c_scores.get('hybrid', 0.0)) # Mapping Hybrid to Semantic
-            ensemble_inputs['popularity'].append(c_scores.get('trending', 0.0))
             
-        # Convert to numpy
-        for k in ensemble_inputs:
-            ensemble_inputs[k] = np.array(ensemble_inputs[k])
+            collaborative_score = float(c_scores.get('collaborative', 0.0))
+            content_score = float(c_scores.get('content', 0.0))
+            transformer_score = float(c_scores.get('two_tower', 0.0))
             
-        # 5. Run Ensemble
-        ranked_results = self.ensemble.combine(ensemble_inputs, all_ids)
-        # ranked_results is list of (id, final_score, breakdown)
+            final_score = (
+                0.4 * collaborative_score +
+                0.3 * content_score +
+                0.3 * transformer_score
+            )
+            
+            breakdown = {
+                'collaborative': round(collaborative_score, 4),
+                'content': round(content_score, 4),
+                'two_tower': round(transformer_score, 4)
+            }
+            
+            ranked_results.append((bid, final_score, breakdown))
+            
+        # 5. Sort
+        ranked_results.sort(key=lambda x: x[1], reverse=True)
         
         # 6. Formatting Final Output
         final_output = []
@@ -233,7 +236,7 @@ class UnifiedPipeline:
         if "two-tower" in name: return "two_tower"
         if "graph" in name: return "graph"
         if "collaborative" in name: return "collaborative"
-        if "content" in name: return "semantic" # Treat content as semantic-ish
+        if "content" in name: return "content"
         if "hybrid" in name: return "semantic"
         if "trending" in name: return "popularity"
         return "popularity"
@@ -243,6 +246,7 @@ class UnifiedPipeline:
             "two_tower": "Deep Learning Two-Tower",
             "graph": "Graph Neural Network",
             "collaborative": "Collaborative Filtering",
+            "content": "Content-Based",
             "semantic": "Hybrid Retrieval",
             "popularity": "Global Trends"
         }

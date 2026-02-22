@@ -2,120 +2,66 @@
 render_stars, render_confidence %}
 
 {# ═══════════════════════════════════════════════════════════════════════
-[2] UNIFIED AI RECOMMENDATIONS (Featured)
+[2] UNIFIED AI RECOMMENDATIONS (Personalized Rows)
 ═══════════════════════════════════════════════════════════════════════ #}
 {% if unified_recommendations and unified_recommendations|length > 0 %}
-<section class="mb-5 fadeInAnimation">
-    <div class="glass-section-header">
-        <div class="glass-title">
-            <i class="ph-fill ph-circles-three-plus"></i>
-            <span>Unified AI Picks</span>
-        </div>
-        <span class="badge badge-purple-subtle">
-            <i class="ph-fill ph-check-circle"></i> Highest Confidence
-        </span>
+<div class="carousel-row fadeInAnimation">
+    <h2 class="row-title">
+        <i class="ph-fill ph-sparkle"></i>
+        <span>Because you're interested in {{ top_interest|default("AI & Discovery") }}</span>
+    </h2>
+
+    <div class="horizontal-scroll">
+        {% for book in unified_recommendations %}
+        {{ render_book_card(book, card_class='') }}
+        {% endfor %}
     </div>
+</div>
+{% endif %}
 
-    <p class="text-muted mb-4">
-        Curated by our Ensemble Engine combining <strong>Hybrid, Transformer, and Graph</strong> algorithms.
-    </p>
+{# ═══════════════════════════════════════════════════════════════════════
+[3] DYNAMIC PERSONALIZED SECTIONS (Sorted by Section Score)
+═══════════════════════════════════════════════════════════════════════ #}
+{% if sorted_sections %}
+{% for section in sorted_sections %}
+{% set icon = 'ph-bold ph-magnifying-glass' %}
+{% set color = 'red' %}
+{% set badge_text = 'Personalized' %}
 
-    {# NEW: Main Unified Carousel always appears at the top if results exist #}
+{% if section.key == 'interest_results' %}
+{% set icon = 'ph-fill ph-heart' %}
+{% set color = 'pink' %}
+{% elif section.key == 'hybrid_results' %}
+{% set icon = 'ph-fill ph-magic-wand' %}
+{% set color = 'purple' %}
+{% elif section.key == 'transformer_results' %}
+{% set icon = 'ph-fill ph-brain' %}
+{% set color = 'indigo' %}
+{% elif section.key == 'collaborative_results' %}
+{% set icon = 'ph-fill ph-users-three' %}
+{% set color = 'teal' %}
+{% set badge_text = 'Community' %}
+{% elif section.key == 'vector_results' %}
+{% set icon = 'ph-fill ph-book-open' %}
+{% set color = 'orange' %}
+{% set badge_text = 'Content Match' %}
+{% elif section.key == 'reranker_results' %}
+{% set icon = 'ph-fill ph-eye' %}
+{% set color = 'cyan' %}
+{% set badge_text = 'View Based' %}
+{% endif %}
+
+<section class="dynamic-section-{{ loop.index }} mb-5">
     {{ render_carousel_section(
-    title='Top Unified Recommendations',
-    icon='ph-fill ph-star-four',
-    books=unified_recommendations,
-    id_prefix='unified_rec',
-    badges=[{'text': 'Ensemble Choice', 'pulse': true}],
-    view_all_url=url_for('main.browse', category='unified'),
-    color='purple'
+    title=section.title,
+    icon=icon,
+    books=section.books,
+    id_prefix=section.key,
+    badges=[{'text': badge_text, 'pulse': loop.first}],
+    color=color
     ) }}
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [3] SEARCH HISTORY SECTION (DYNAMICS / DISTINCTIVE MARK)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if algo_buckets.search_history_results and algo_buckets.search_history_results|length > 0 %}
-    <section class="search-history-distinctive mb-5">
-        {{ render_carousel_section(
-        title='Based on Your Search',
-        icon='ph-bold ph-magnifying-glass',
-        books=algo_buckets.search_history_results,
-        id_prefix='search_hist',
-        badges=[{'text': 'Found for You', 'pulse': true}],
-        color='red'
-        ) }}
-    </section>
-    {% endif %}
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [4] INTEREST MATCH (TOPIC BASED)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if algo_buckets.interest_results and algo_buckets.interest_results|length > 0 %}
-    <section class="interest-match mb-5">
-        {{ render_carousel_section(
-        title='Because of Your Interests',
-        icon='ph-fill ph-heart',
-        books=algo_buckets.interest_results,
-        id_prefix='interest_match',
-        badges=[{'text': 'Personalized'}],
-        color='pink'
-        ) }}
-    </section>
-    {% endif %}
-
-    {# Removed Hybrid Behavior Match section as requested #}
-
-    {# Removed Deep Learning Discoveries section as requested #}
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [7] COLLABORATIVE FILTERING (SIMILAR READERS)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if algo_buckets.collaborative_results and algo_buckets.collaborative_results|length > 0 %}
-    <section class="collaborative-recs mb-5">
-        {{ render_carousel_section(
-        title='Similar Readers Loved',
-        icon='ph-fill ph-users-three',
-        books=algo_buckets.collaborative_results,
-        id_prefix='cf_match',
-        badges=[{'text': 'Community'}],
-        color='teal'
-        ) }}
-    </section>
-    {% endif %}
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [8] VECTOR SIMILARITY (CONTENT BASED)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if algo_buckets.vector_results and algo_buckets.vector_results|length > 0 %}
-    <section class="vector-recs mb-5">
-        {{ render_carousel_section(
-        title='Because You Read...',
-        icon='ph-fill ph-book-open',
-        books=algo_buckets.vector_results,
-        id_prefix='vector_match',
-        badges=[{'text': 'Content Match'}],
-        color='orange'
-        ) }}
-    </section>
-    {% endif %}
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    [9] NEURAL RERANKER (VIEW HISTORY)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if algo_buckets.reranker_results and algo_buckets.reranker_results|length > 0 %}
-    <section class="reranker-recs mb-5">
-        {{ render_carousel_section(
-        title='Inspired by Your Browsing',
-        icon='ph-fill ph-eye',
-        books=algo_buckets.reranker_results,
-        id_prefix='reranker_match',
-        badges=[{'text': 'View Based'}],
-        color='cyan'
-        ) }}
-    </section>
-    {% endif %}
-
 </section>
+{% endfor %}
 {% endif %}
 
 {# ═══════════════════════════════════════════════════════════════════════
