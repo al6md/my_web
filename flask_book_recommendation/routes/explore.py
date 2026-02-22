@@ -13,7 +13,6 @@ from ..recommender import (
     get_top_rated,
     analyze_user_profile_with_ai,
     get_cf_similar,
-    get_hidden_gems,
     get_view_based_recommendations,
     get_behavior_based_recommendations,
     get_deep_learning_recommendations,

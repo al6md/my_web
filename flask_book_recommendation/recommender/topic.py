@@ -97,7 +97,7 @@ def get_topic_based(user_id, limit=24, offset=0, prefs_limit=3, recent_query=Non
         discovery_pool = [
             "Best selling books 2024", "New York Times Best Sellers", "Man Booker Prize", 
             "Science Fiction Classics", "Must read biographies", "Self improvement trends",
-            "Hidden gems literature", "Cyberpunk novels", "Psychological thrillers",
+            "Cyberpunk novels", "Psychological thrillers",
             "History of Science", "Modern Philosophy", "Artificial Intelligence Production"
         ]
         new_topics = random.sample(discovery_pool, 2)

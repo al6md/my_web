@@ -18,7 +18,7 @@ from .content import get_content_similar
 from .topic import get_topic_based, get_last_search_recommendations, get_archive_ai_recommendations
 from .trending import get_trending, get_trending_by_period
 from .hybrid import (
-    get_top_rated, get_hidden_gems, get_genre_explorer,
+    get_top_rated, get_genre_explorer,
     get_because_you_read, get_similar_users_favorites
 )
 from .mood import get_mood_based_recommendations
@@ -267,20 +267,6 @@ def get_homepage_sections(user_id, recent_query=None):
             "query": "special:trending"
         })
 
-    # E) Hidden Gems
-    try:
-        hidden_gems = get_hidden_gems(limit=12)
-        if hidden_gems:
-            sections.append({
-                "title": "💎 جواهر مخفية",
-                "subtitle": "كتب رائعة لم تحظَ بالشهرة التي تستحقها بعد",
-                "books": hidden_gems,
-                "style": "gold",
-                "icon": "diamond",
-                "query": "special:hidden-gems"
-            })
-    except Exception as e:
-        logger.error(f"[Homepage] Hidden Gems error: {e}")
 
     # F) Genre Explorer
     try:

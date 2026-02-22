@@ -364,46 +364,7 @@ def get_similar_users_favorites(user_id, limit=12):
         return []
 
 
-@cache.memoize(timeout=300)
-def get_hidden_gems(limit=12):
-    """
-    جلب الكتب التي لها تقييم عالٍ ولكن عدد مشاهدات منخفض.
-    """
-    try:
-        high_rated_subquery = db.session.query(
-            UserRatingCF.google_id,
-            func.avg(UserRatingCF.rating).label('avg_rating'),
-            func.count(UserRatingCF.id).label('rating_count')
-        ).group_by(UserRatingCF.google_id).having(func.avg(UserRatingCF.rating) >= 4.0).subquery()
-        
-        candidates = db.session.query(
-            high_rated_subquery.c.google_id,
-            high_rated_subquery.c.avg_rating
-        ).all()
-        
-        results = []
-        for gid, rating in candidates:
-            if len(results) >= limit: break
-            
-            views_sum = db.session.query(func.sum(UserBookView.view_count))\
-                .filter(UserBookView.google_id == gid).scalar() or 0
-                
-            if views_sum < 50:
-                book = Book.query.filter_by(google_id=gid).first()
-                if book:
-                    book_dict = _book_to_dict(
-                        book, 
-                        source="Hidden Gem", 
-                        reason=f"💎 جوهرة مخفية (تقييم {rating:.1f}/5)"
-                    )
-                    results.append(book_dict)
 
-        logger.info(f"[Hidden Gems] Found {len(results)} books")
-        return results
-        
-    except Exception as e:
-        logger.error(f"[Hidden Gems] Error: {e}")
-        return []
 
 
 def get_genre_explorer(user_id, limit=12):

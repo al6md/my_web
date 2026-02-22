@@ -32,7 +32,7 @@ class UCB1Explorer:
         
         # إذا لم يُعرض الكتيب أبدًا، نعطيه أولوية قصوى لضمان ظهوره الأولي (Exploration)
         if impressions == 0:
-            return float('inf')
+            return 99.0
             
         ctr = clicks / impressions
         # عامل الاستكشاف (Exploration Term): 

@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from ..extensions import db, csrf
+from ..extensions import db, csrf, cache
 from ..models import User, UserPreference
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -37,6 +37,12 @@ def login():
             return redirect(url_for("auth.login"))
 
         login_user(user)
+        
+        # مسح الكاش لضمان بيانات جديدة لهذا المستخدم
+        try:
+            cache.clear()
+        except Exception:
+            pass
         
         # إذا لم يكمل الـ onboarding، وجهه لصفحة الاهتمامات
         if not user.onboarding_completed:
@@ -114,6 +120,12 @@ def onboarding():
         current_user.onboarding_completed = True
         db.session.commit()
         
+        # مسح الكاش لتفعيل الاهتمامات الجديدة فوراً
+        try:
+            cache.clear()
+        except Exception:
+            pass
+        
         flash("مرحباً! تم حفظ اهتماماتك بنجاح 🎉", "success")
         return redirect(url_for("explore.index"))
     
@@ -123,6 +135,18 @@ def onboarding():
 @auth_bp.route("/logout")
 @login_required
 def logout():
+    # مسح الكاش قبل تسجيل الخروج لمنع تسرب البيانات
+    try:
+        cache.clear()
+    except Exception:
+        pass
+    # مسح كاش pipeline العصبي للمستخدم الحالي
+    try:
+        from ai_book_recommender.unified_pipeline import get_unified_engine
+        engine = get_unified_engine()
+        engine.clear_user_cache(current_user.id)
+    except Exception:
+        pass
     logout_user()
     return redirect(url_for("auth.login"))
 

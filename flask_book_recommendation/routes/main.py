@@ -62,355 +62,247 @@ def home():
 @main_bp.route("/feed/home")
 def home_feed():
     """
-    API endpoint لجلب أقسام الصفحة الرئيسية بشكل غير متزامن.
+    API endpoint — delivers homepage sections powered by the FULL Neural Stack.
+    Each section calls a different strategy variant of the UnifiedRecommendationPipeline.
     """
-    import time
+    import time as _time
     from flask import jsonify, render_template, current_app
-    import threading
-    
+    import uuid
+
     user_id = current_user.id if current_user.is_authenticated else None
+    session_id = request.cookies.get("session", str(uuid.uuid4()))
+    now_ts = _time.time()
 
-    # ✅ FIX: Always generate fresh data on every refresh (no cache)
-    # This ensures the user sees different books every time they refresh
-    unified_recommendations, algo_buckets, top_rated_books_sorted, most_viewed_books, trending_by_libraries, top_interest = _generate_home_data(user_id)
+    # ── Initialize Unified Engine (lazy, one-time) ──
+    from ai_book_recommender.unified_pipeline import get_unified_engine
+    engine = get_unified_engine()
+    if engine.flask_app is None:
+        engine.flask_app = current_app._get_current_object()
 
-    # -----------------------------------------------------
-    # Phase 10: Dynamic Sorting of Sections based on User Preference
-    # -----------------------------------------------------
-    sorted_sections = []
-    
-    label_map = {
-        'search_history_results': 'Based on Your Recent Searches',
-        'interest_results': f'Top Picks in: {top_interest}',
-        'hybrid_results': 'Recommended For You',
-        'transformer_results': 'Deep Learning Suggestions',
-        'collaborative_results': 'Readers Similar to You Liked',
-        'graph_results': 'Graph-Based Connections',
-        'vector_results': 'Semantic Similarities',
-        'reranker_results': 'Curated Based on Viewing Habits'
+    # ── Build context ──
+    ctx = {
+        "page": "home",
+        "device": "web",
+        "time": now_ts,
+        "session": session_id,
     }
 
-    for key, books in algo_buckets.items():
-        if books:
-            # Calculate mean score of all books in this section
-            valid_scores = [b.get('score', 0) for b in books if isinstance(b.get('score', 0), (int, float))]
-            section_score = sum(valid_scores) / len(valid_scores) if valid_scores else 0
-            
-            sorted_sections.append({
-                'key': key,
-                'title': label_map.get(key, key.replace('_', ' ').title()),
-                'score': section_score,
-                'books': books
-            })
+    # ── Get user's top interest for display ──
+    top_interest = _get_user_top_interest(user_id)
 
-    # Sort descending by section_score
-    sorted_sections.sort(key=lambda x: x['score'], reverse=True)
-                
-    html = render_template("components/home_feed.html",
-        unified_recommendations=unified_recommendations,
-        sorted_sections=sorted_sections,
-        top_rated_books_sorted=top_rated_books_sorted,
-        most_viewed_books=most_viewed_books,
-        trending_by_libraries=trending_by_libraries,
-        top_interest=top_interest
-    )
-    return jsonify({"success": True, "html": html})
+    # ═══════════════════════════════════════════════════════════════════
+    # NEURAL SECTIONS — each calls a different strategy variant
+    # ═══════════════════════════════════════════════════════════════════
 
-def _generate_home_data(user_id):
-    """
-    Helper to generate all homepage data (Unified + Sections).
-    Used by home() and background refresh.
-    Returns: (unified, buckets, top_rated, most_viewed, trending_libs, top_interest)
-    """
-    from ..models import UserPreference, UserGenre, Genre
-    
-    top_interest = "AI & Discovery" # Default
-    if user_id:
-        try:
-            # 1. Get from UserPreference (most explicit)
-            best_pref = UserPreference.query.filter_by(user_id=user_id).order_by(UserPreference.weight.desc()).first()
-            if best_pref:
-                top_interest = best_pref.topic
-            else:
-                # 2. Get from UserGenre
-                best_genre = db.session.query(Genre.name).join(UserGenre).filter(UserGenre.user_id == user_id).first()
-                if best_genre:
-                    top_interest = best_genre[0]
-        except Exception:
-            pass
+    neural_sections = {}
+
+    try:
+        neural_sections["recommended_for_you"] = engine.recommend_full_stack(
+            user_id=user_id, top_k=30, context=ctx
+        )
+    except Exception as e:
+        current_app.logger.error(f"[Neural] recommended_for_you failed: {e}")
+        neural_sections["recommended_for_you"] = []
+
+    try:
+        neural_sections["trending_for_you"] = engine.recommend_trending(
+            user_id=user_id, top_k=20, context=ctx
+        )
+    except Exception as e:
+        current_app.logger.error(f"[Neural] trending_for_you failed: {e}")
+        neural_sections["trending_for_you"] = []
+
+    try:
+        neural_sections["because_you_read"] = engine.recommend_because_you_read(
+            user_id=user_id, top_k=20, context=ctx
+        )
+    except Exception as e:
+        current_app.logger.error(f"[Neural] because_you_read failed: {e}")
+        neural_sections["because_you_read"] = []
+
+    try:
+        neural_sections["top_neural_picks"] = engine.recommend_top_neural(
+            user_id=user_id, top_k=20, context=ctx
+        )
+    except Exception as e:
+        current_app.logger.error(f"[Neural] top_neural_picks failed: {e}")
+        neural_sections["top_neural_picks"] = []
+
+    try:
+        neural_sections["graph_discovery"] = engine.recommend_graph_discovery(
+            user_id=user_id, top_k=20, context=ctx
+        )
+    except Exception as e:
+        current_app.logger.error(f"[Neural] graph_discovery failed: {e}")
+        neural_sections["graph_discovery"] = []
+
+    # ═══════════════════════════════════════════════════════════════════
+    # COMMUNITY SECTIONS (Top Rated, Most Viewed, Trending Libraries)
+    # ═══════════════════════════════════════════════════════════════════
+
+    # ═══════════════════════════════════════════════════════════════════
+    # COMMUNITY & DISCONNECTED AI SECTIONS
+    # ═══════════════════════════════════════════════════════════════════
 
     from ..recommender import (
-        get_trending, get_top_rated, get_cf_similar,
-        get_behavior_based_recommendations, get_content_similar,
-        get_deep_learning_recommendations, get_view_based_recommendations,
-        get_last_search_recommendations, get_topic_based
+        get_top_rated, get_cf_similar,
+        get_deep_learning_recommendations,
     )
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    from flask import current_app
+    from ..recommender.exploration import UCB1Explorer
+    from ..recommender.mood import get_mood_based_recommendations, MOOD_MAPPING
+    
+    import random
+    
+    # Pick a random mood for the user
+    mood_keys = list(MOOD_MAPPING.keys())
+    user_mood_key = random.choice(mood_keys)
+    mood_info = MOOD_MAPPING[user_mood_key]
 
-    # Try import explore helpers
     try:
         from .explore import get_trending_by_libraries, get_most_viewed_books_custom
     except ImportError:
         get_trending_by_libraries = lambda limit: []
         get_most_viewed_books_custom = lambda limit: []
 
-    unified_recommendations = []
-    algo_buckets = {
-        'search_history_results': [],
-        'interest_results': [],
-        'hybrid_results': [],
-        'transformer_results': [],
-        'collaborative_results': [],
-        'graph_results': [],
-        'vector_results': [],
-        'reranker_results': []
-    }
-    seen_ids = set()
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    def _add(book_dict, algo_key, algo_label, confidence=0.7, reason=None, force_top=False):
-        if not book_dict: return
-        bid = book_dict.get('id')
-        if not bid: return
-
-        book_dict.setdefault('score', book_dict.get('ai_score', 0))
-        book_dict.setdefault('confidence', confidence)
-        book_dict['algo_tag'] = algo_label
-        if reason:
-            book_dict['reason'] = reason
-        else:
-            book_dict.setdefault('reason', book_dict.get('explanation', 'Recommended by AI'))
-
-        if algo_key in algo_buckets:
-            if not any(b['id'] == bid for b in algo_buckets[algo_key]):
-                algo_buckets[algo_key].append(book_dict)
-
-        if bid not in seen_ids:
-            seen_ids.add(bid)
-            book_dict['contributing_algorithms'] = [algo_label]
-            book_dict['algo_tag'] = algo_label
-            if force_top:
-                unified_recommendations.insert(0, book_dict)
-            else:
-                unified_recommendations.append(book_dict)
-        else:
-            for existing in unified_recommendations:
-                if existing['id'] == bid:
-                    if algo_label not in existing.get('contributing_algorithms', []):
-                        existing['contributing_algorithms'].append(algo_label)
-                    # If forcing to top, move it
-                    if force_top and existing in unified_recommendations:
-                        unified_recommendations.remove(existing)
-                        unified_recommendations.insert(0, existing)
-                    break
-    
-    # Helper to run safely
-    def run_safe(app_obj, func, *args, **kwargs):
+    def _run_safe(app_obj, func, *args, **kwargs):
         with app_obj.app_context():
             return func(*args, **kwargs)
 
-    # 1. Unified Recommendations
-    if user_id:
-        tasks = [
-            {'name': 'search_history', 'func': get_last_search_recommendations, 'args': (user_id,), 'kwargs': {'limit': 20, 'randomize': True}, 'bucket': 'search_history_results', 'label': 'Search History', 'conf': 0.96, 'process': lambda res: res[1] if res and res[1] else [], 'reason': lambda r, res: f"لأنك بحثت عن: {res[0]}" if res and res[0] else "Based on your search"},
-            {'name': 'topic', 'func': get_topic_based, 'args': (user_id,), 'kwargs': {'limit': 50, 'randomize': True}, 'bucket': 'interest_results', 'label': 'Interest Match', 'conf': 0.94, 'process': lambda res: (res.get('books', []) if isinstance(res, dict) else res) or [], 'reason': lambda r, _: r.get('reason', "Based on your interests")},
-            {'name': 'hybrid', 'func': get_behavior_based_recommendations, 'args': (user_id,), 'kwargs': {'limit': 50, 'randomize': True}, 'bucket': 'hybrid_results', 'label': 'Hybrid', 'conf': 0.92, 'process': lambda res: res or [], 'reason': lambda r, _: "Based on your overall reading behavior"},
-            {'name': 'transformer', 'func': get_deep_learning_recommendations, 'args': (user_id,), 'kwargs': {'limit': 50, 'randomize': True}, 'bucket': 'transformer_results', 'label': 'Transformer', 'conf': 0.88, 'process': lambda res: res or [], 'reason': lambda r, _: "Deep Learning Match"},
-            {'name': 'cf', 'func': get_cf_similar, 'args': (user_id,), 'kwargs': {'top_n': 50, 'randomize': True}, 'bucket': 'collaborative_results', 'label': 'Collaborative', 'conf': 0.82, 'process': lambda res: res or [], 'reason': lambda r, _: "Similar readers liked this"},
-            {'name': 'content', 'func': get_content_similar, 'args': (user_id,), 'kwargs': {'top_n': 50, 'randomize': True}, 'bucket': 'vector_results', 'label': 'Vector Similarity', 'conf': 0.78, 'process': lambda res: res or [], 'reason': lambda r, _: "Content similarity to your library"},
-            {'name': 'reranker', 'func': get_view_based_recommendations, 'args': (user_id,), 'kwargs': {'top_n': 50, 'randomize': True}, 'bucket': 'reranker_results', 'label': 'Neural Reranker', 'conf': 0.85, 'process': lambda res: res or [], 'reason': lambda r, _: "Re-ranked based on your browsing history"},
-        ]
-        
-        app_obj = current_app._get_current_object()
-        executor = ThreadPoolExecutor(max_workers=6)
-        future_to_task = {executor.submit(run_safe, app_obj, t['func'], *t['args'], **t['kwargs']): t for t in tasks}
-        
-        try:
-            from concurrent.futures import TimeoutError
-            for future in as_completed(future_to_task, timeout=15.0):
-                task = future_to_task[future]
-                try:
-                    raw_result = future.result()
-                    processed_books = task['process'](raw_result)
-                    for book in processed_books:
-                        reason_text = task['reason'](book, raw_result)
-                        _add(book, task['bucket'], task['label'], confidence=task['conf'], reason=reason_text)
-                except Exception as e:
-                    current_app.logger.error(f"Task {task['name']} failed: {e}")
-        except TimeoutError:
-            current_app.logger.warning("Unified recommendations hit 15s timeout, returning partial results.")
-        finally:
-            executor.shutdown(wait=False)
-
-        # 🛑 Fallback Fix: If empty, use Topic Based with recent query, then Trending
-        if not unified_recommendations:
-            # Try to get recent search from DB context
-            try:
-                last_search = SearchHistory.query.filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).first()
-                q = last_search.query if last_search else None
-                fallback_res = get_topic_based(user_id, limit=50, recent_query=q, randomize=True)
-                books = fallback_res.get('books', []) if isinstance(fallback_res, dict) else fallback_res
-                for b in books:
-                    _add(b, 'interest_results', 'Interest Match', 0.85, "Fallback Recommendations")
-            except Exception as e:
-                current_app.logger.error(f"Fallback error: {e}")
-            
-            # 🔧 FIX #3: إذا لم نجد توصيات، نستخدم Trending أيضاً للمستخدمين المسجلين
-            if not unified_recommendations:
-                try:
-                    for r in get_trending(limit=30):
-                        _add(r, 'hybrid_results', 'Trending', confidence=0.65, reason="Trending in our community")
-                except Exception as e:
-                    current_app.logger.error(f"Trending fallback error: {e}")
-
-    else:
-        # Guest: Trending
-        try:
-            for r in get_trending(limit=30):
-                _add(r, 'hybrid_results', 'Trending', confidence=0.65, reason="Trending worldwide")
-        except Exception: pass
-
-    # ═══════════════════════════════════════════════════════════════════
-    # 🆕 FRESH BOOKS INJECTION — Guarantees different books on every refresh
-    # Fetches directly from OpenLibrary API with random topics + random offset
-    # ═══════════════════════════════════════════════════════════════════
-    import random
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    try:
-        from ..utils import fetch_openlib_books
-        from ..models import UserPreference, Genre, UserGenre
-
-        # 1. Build topic pool from user's actual interests + discovery topics
-        user_topics = []
-        if user_id:
-            # Get user genres from onboarding
-            try:
-                genres = db.session.query(Genre.name).join(UserGenre).filter(UserGenre.user_id == user_id).all()
-                user_topics.extend([g[0] for g in genres if g[0]])
-            except Exception:
-                pass
-            # Get user preferences
-            try:
-                prefs = UserPreference.query.filter_by(user_id=user_id).all()
-                for p in prefs:
-                    if p.topic and not p.topic.startswith('special:') and len(p.topic) > 2:
-                        user_topics.append(p.topic)
-            except Exception:
-                pass
-
-        # Discovery pool — diverse real book topics
-        discovery_pool = [
-            "best novels 2024", "science fiction bestsellers", "self help books",
-            "mystery thriller books", "historical fiction", "biography autobiography",
-            "psychology books", "philosophy books", "romance novels",
-            "fantasy books", "horror novels", "business leadership",
-            "artificial intelligence books", "poetry collection", "adventure novels",
-            "cooking books", "travel books", "children books",
-            "graphic novels", "true crime books", "classic literature",
-            "dystopian fiction", "space exploration", "economics books",
-            "arabic novels", "programming books", "data science",
-            "motivational books", "health wellness", "world history",
-            "technology future", "startup business", "financial literacy"
-        ]
-
-        # Pick 5 random topics: 2 from user interests (if any) + 3 from discovery
-        query_topics = []
-        if user_topics:
-            random.shuffle(user_topics)
-            query_topics.extend(user_topics[:2])
-        
-        # Always add discovery topics for variety
-        query_topics.extend(random.sample(discovery_pool, 5 - len(query_topics)))
-
-        # 2. Fetch fresh books from OpenLibrary for each topic in parallel for speed
-        def fetch_topic(topic):
-            # Max 30 for offset to avoid empty pages for niche topics
-            start_offset = random.randint(0, 30) 
-            # Smart query: if topic contains arabic, append "كتب", if english append "books"
-            search_query = topic
-            if any("\u0600" <= c <= "\u06FF" for c in topic):
-                search_query = f"{topic} كتب"
-            else:
-                search_query = f"{topic} books"
-                
-            books_list = fetch_openlib_books(search_query, limit=10, offset=start_offset)
-            return topic, books_list
-
-        with ThreadPoolExecutor(max_workers=5) as fresh_executor:
-            future_to_topic = {fresh_executor.submit(fetch_topic, t): t for t in query_topics}
-            
-            for future in as_completed(future_to_topic, timeout=5.0):
-                try:
-                    topic, books_list = future.result()
-                    for b in (books_list or []):
-                        gid = b.get("id")
-                        if not gid: continue
-                        
-                        book_dict = {
-                            "id": gid,
-                            "title": b.get("title", "Untitled"),
-                            "author": b.get("author", "Unknown"),
-                            "cover": b.get("cover", ""),
-                            "source": "OpenLibrary",
-                            "reason": f"📚 اكتشاف جديد: {topic}",
-                            "rating": b.get("rating"),
-                            "score": random.uniform(0.8, 0.99), # High score so they appear at top
-                            "confidence": random.uniform(0.8, 0.99),
-                        }
-                        # force_top=True guarantees these fresh books appear in unified_recommendations
-                        _add(book_dict, 'interest_results', 'Fresh Discovery', confidence=0.85, reason=f"📚 اكتشاف جديد: {topic}", force_top=True)
-                except Exception as e:
-                    pass
-
-        current_app.logger.info(f"[FreshInject] After injection: {len(unified_recommendations)} total books")
-    except Exception as e:
-        current_app.logger.error(f"[FreshInject] Fatal error: {e}")
-
-    # ✅ Keep full pool — re-sampling happens per-request in home_feed()
-    random.shuffle(unified_recommendations)
-
-    # Graph Results
-    if user_id:
-        for book in unified_recommendations:
-            if len(book.get('contributing_algorithms', [])) >= 2:
-                if len(algo_buckets['graph_results']) < 12:
-                    algo_buckets['graph_results'].append(book)
-
-    # 2. Sections (Top Rated etc)
-    cat_tasks = [
-        {'name': 'most_viewed', 'func': get_most_viewed_books_custom, 'kwargs': {'limit': 20}},
-        {'name': 'trending_libs', 'func': get_trending_by_libraries, 'kwargs': {'limit': 20}}
-    ]
-    # Only add Top Rated if we want it separately.
-    # Note: User requirement says "Only in separate top_rated section".
-    cat_tasks.insert(0, {'name': 'top_rated', 'func': get_top_rated, 'kwargs': {'limit': 20}})
-
-    cat_results = {}
     app_obj = current_app._get_current_object()
-    executor2 = ThreadPoolExecutor(max_workers=3)
-    f_to_name = {executor2.submit(run_safe, app_obj, t['func'], **t['kwargs']): t['name'] for t in cat_tasks}
+    cat_results = {}
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futs = {
+            # Basic AI
+            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=12, randomize=True): "deep_learning",
+            
+            # Interactive / Community
+            ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=12): "mood_ai",
+            ex.submit(_run_safe, app_obj, get_cf_similar, user_id=user_id, top_n=12): "similar_minds",
+            
+            # Stats for "Hot Right Now"
+            ex.submit(_run_safe, app_obj, get_top_rated, limit=15): "top_rated",
+            ex.submit(_run_safe, app_obj, get_most_viewed_books_custom, limit=15): "most_viewed",
+        }
+        try:
+            for f in as_completed(futs, timeout=10.0):
+                name = futs[f]
+                try:
+                    cat_results[name] = f.result() or []
+                except Exception:
+                    cat_results[name] = []
+        except Exception:
+            pass
+            
+    # Combine Top Rated and Most Viewed into "Hot Right Now"
+    hot_now = []
+    tr = cat_results.get("top_rated", [])
+    mv = cat_results.get("most_viewed", [])
     
+    # Simple weave: one from each
+    for i in range(max(len(tr), len(mv))):
+        if i < len(mv): hot_now.append(mv[i])
+        if i < len(tr): hot_now.append(tr[i])
+        
+    # Remove duplicates
+    seen = set()
+    hot_now_unique = []
+    for b in hot_now:
+        bid = b.get("id") or b.get("google_id")
+        if bid not in seen:
+            seen.add(bid)
+            hot_now_unique.append(b)
+    cat_results["hot_right_now"] = hot_now_unique[:20]
+
+    # ── Render template ──
+    html = render_template(
+        "components/home_feed.html",
+        neural_sections=neural_sections,
+        top_interest=top_interest,
+        
+        # Elite Sections
+        deep_learning_books=cat_results.get("deep_learning", []),
+        mood_ai_books=cat_results.get("mood_ai", []),
+        mood_info=mood_info,
+        similar_minds=cat_results.get("similar_minds", []),
+        hot_right_now=cat_results.get("hot_right_now", []),
+    )
+    resp = jsonify({"success": True, "html": html})
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
+
+
+def _get_user_top_interest(user_id):
+    """Get the user's top interest topic for display."""
+    from ..models import UserPreference, UserGenre, Genre
+    top_interest = "AI & Discovery"
+    if user_id:
+        try:
+            best_pref = UserPreference.query.filter_by(user_id=user_id).order_by(
+                UserPreference.weight.desc()
+            ).first()
+            if best_pref:
+                top_interest = best_pref.topic
+            else:
+                best_genre = (
+                    db.session.query(Genre.name)
+                    .join(UserGenre)
+                    .filter(UserGenre.user_id == user_id)
+                    .first()
+                )
+                if best_genre:
+                    top_interest = best_genre[0]
+        except Exception:
+            pass
+    return top_interest
+
+
+def _generate_home_data(user_id):
+    """
+    Legacy helper — kept for backward compatibility with background refresh.
+    Delegates to the unified neural engine.
+    """
+    from flask import current_app
+    from ai_book_recommender.unified_pipeline import get_unified_engine
+    import uuid, time as _time
+
+    engine = get_unified_engine()
+    if engine.flask_app is None:
+        engine.flask_app = current_app._get_current_object()
+
+    ctx = {"page": "home", "device": "web", "time": _time.time(), "session": str(uuid.uuid4())}
+    top_interest = _get_user_top_interest(user_id)
+
+    recs = engine.recommend_full_stack(user_id=user_id, top_k=30, context=ctx)
+
+    # Build simple algo_buckets from unified results for backward compat
+    algo_buckets = {
+        'search_history_results': [],
+        'interest_results': [],
+        'hybrid_results': recs[:10] if recs else [],
+        'transformer_results': recs[10:20] if len(recs) > 10 else [],
+        'collaborative_results': [],
+        'graph_results': [],
+        'vector_results': [],
+        'reranker_results': recs[20:30] if len(recs) > 20 else [],
+    }
+
+    from ..recommender import get_top_rated
     try:
-        from concurrent.futures import TimeoutError
-        for f in as_completed(f_to_name, timeout=3.0):
-            name = f_to_name[f]
-            try:
-                cat_results[name] = f.result() or []
-            except Exception as e:
-                current_app.logger.error(f"Section {name} failed: {e}")
-                cat_results[name] = []
-    except TimeoutError:
-        current_app.logger.warning("Category sections hit 3s timeout, returning partial results.")
-    finally:
-        executor2.shutdown(wait=False)
+        from .explore import get_trending_by_libraries, get_most_viewed_books_custom
+    except ImportError:
+        get_trending_by_libraries = lambda limit: []
+        get_most_viewed_books_custom = lambda limit: []
 
     return (
-        unified_recommendations, 
-        algo_buckets, 
-        cat_results.get('top_rated', []), 
-        cat_results.get('most_viewed', []), 
-        cat_results.get('trending_libs', []),
-        top_interest
+        recs,
+        algo_buckets,
+        get_top_rated(limit=20),
+        get_most_viewed_books_custom(limit=20),
+        get_trending_by_libraries(limit=20),
+        top_interest,
     )
 
 def _refresh_background(app, user_id):

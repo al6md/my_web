@@ -93,7 +93,6 @@ from .hybrid import (
     get_top_rated,
     get_because_you_read,
     get_similar_users_favorites,
-    get_hidden_gems,
     get_genre_explorer,
 )
 

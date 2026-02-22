@@ -570,9 +570,9 @@ def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=Fal
                 
                 if randomize:
                     discovery_pool = [
-                        "Best selling books 2024", "New York Times Best Sellers", "Man Booker Prize", 
-                        "Science Fiction Classics", "Must read biographies", "Self improvement trends",
-                        "Hidden gems literature", "Cyberpunk novels", "Psychological thrillers",
+                        "Religion & spirituality", "Politics & current events", "Sports & outdoors",
+                        "Health & fitness", "Crafts & hobbies", "Home & garden", "Education & teaching",
+                        "Cyberpunk novels", "Psychological thrillers",
                         "History of Science", "Modern Philosophy", "Artificial Intelligence Production"
                     ]
                     target = random.choice(discovery_pool)

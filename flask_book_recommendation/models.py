@@ -62,7 +62,7 @@ class BookGenre(db.Model):
 class SearchEvent(db.Model):
     __tablename__ = "search_events"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, index=True, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True, nullable=True)
     query = db.Column(db.String(255), nullable=False)
     topics = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)

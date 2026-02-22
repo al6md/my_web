@@ -2,109 +2,102 @@
 render_stars, render_confidence %}
 
 {# ═══════════════════════════════════════════════════════════════════════
-[2] UNIFIED AI RECOMMENDATIONS (Personalized Rows)
+GROUP 1: 🧠 الذكاء الاصطناعي الفائق (Elite AI)
 ═══════════════════════════════════════════════════════════════════════ #}
-{% if unified_recommendations and unified_recommendations|length > 0 %}
-<div class="carousel-row fadeInAnimation">
-    <h2 class="row-title">
-        <i class="ph-fill ph-sparkle"></i>
-        <span>Because you're interested in {{ top_interest|default("AI & Discovery") }}</span>
-    </h2>
 
-    <div class="horizontal-scroll">
-        {% for book in unified_recommendations %}
-        {{ render_book_card(book, card_class='') }}
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-{# ═══════════════════════════════════════════════════════════════════════
-[3] DYNAMIC PERSONALIZED SECTIONS (Sorted by Section Score)
-═══════════════════════════════════════════════════════════════════════ #}
-{% if sorted_sections %}
-{% for section in sorted_sections %}
-{% set icon = 'ph-bold ph-magnifying-glass' %}
-{% set color = 'red' %}
-{% set badge_text = 'Personalized' %}
-
-{% if section.key == 'interest_results' %}
-{% set icon = 'ph-fill ph-heart' %}
-{% set color = 'pink' %}
-{% elif section.key == 'hybrid_results' %}
-{% set icon = 'ph-fill ph-magic-wand' %}
-{% set color = 'purple' %}
-{% elif section.key == 'transformer_results' %}
-{% set icon = 'ph-fill ph-brain' %}
-{% set color = 'indigo' %}
-{% elif section.key == 'collaborative_results' %}
-{% set icon = 'ph-fill ph-users-three' %}
-{% set color = 'teal' %}
-{% set badge_text = 'Community' %}
-{% elif section.key == 'vector_results' %}
-{% set icon = 'ph-fill ph-book-open' %}
-{% set color = 'orange' %}
-{% set badge_text = 'Content Match' %}
-{% elif section.key == 'reranker_results' %}
-{% set icon = 'ph-fill ph-eye' %}
-{% set color = 'cyan' %}
-{% set badge_text = 'View Based' %}
-{% endif %}
-
-<section class="dynamic-section-{{ loop.index }} mb-5">
-    {{ render_carousel_section(
-    title=section.title,
-    icon=icon,
-    books=section.books,
-    id_prefix=section.key,
-    badges=[{'text': badge_text, 'pulse': loop.first}],
-    color=color
-    ) }}
-</section>
-{% endfor %}
-{% endif %}
-
-{# ═══════════════════════════════════════════════════════════════════════
-[4] HIGHEST RATED BY USERS
-═══════════════════════════════════════════════════════════════════════ #}
-{% if top_rated_books_sorted and top_rated_books_sorted|length > 0 %}
+{# [1] 🧠 RECOMMENDED FOR YOU — Full Neural Stack #}
+{% set rfy = neural_sections.get('recommended_for_you', []) if neural_sections is defined else [] %}
+{% if rfy and rfy|length > 0 %}
 {{ render_carousel_section(
-title='Highest Rated by Community',
-icon='ph-fill ph-star',
-books=top_rated_books_sorted,
-id_prefix='top_rated',
-badges=[{'text': 'Reader Favorites', 'pulse': false}],
-view_all_url=url_for('main.browse', category='top_rated'),
-color='warning'
+title='Recommended For You',
+icon='ph-fill ph-sparkle',
+books=rfy,
+id_prefix='rfy',
+badges=[{'text': 'Full Neural Stack', 'pulse': true}],
+color='purple'
+) }}
+{% endif %}
+
+{# [2] 🧬 DEEP LEARNING PICKS — Two-Tower Model #}
+{% if deep_learning_books is defined and deep_learning_books and deep_learning_books|length > 0 %}
+{{ render_carousel_section(
+title='Deep Learning Picks',
+icon='ph-fill ph-robot',
+books=deep_learning_books,
+id_prefix='deep_learning',
+badges=[{'text': 'Two-Tower Model', 'pulse': true}],
+color='purple'
+) }}
+{% endif %}
+
+{# [3] 🕸️ GRAPH-BASED DISCOVERY — Graph Recommender Output #}
+{% set gbd = neural_sections.get('graph_discovery', []) if neural_sections is defined else [] %}
+{% if gbd and gbd|length > 0 %}
+{{ render_carousel_section(
+title='Graph-Based Discovery',
+icon='ph-fill ph-graph',
+books=gbd,
+id_prefix='graph_discovery',
+badges=[{'text': 'Graph Neural Network', 'pulse': false}],
+color='teal'
 ) }}
 {% endif %}
 
 {# ═══════════════════════════════════════════════════════════════════════
-[5] HIGHEST VIEWED (POPULARITY)
+GROUP 2: 🎯 اكتشاف مخصص (Personal Discovery)
 ═══════════════════════════════════════════════════════════════════════ #}
-{% if most_viewed_books and most_viewed_books|length > 0 %}
+
+{# [4] 📚 BECAUSE YOU READ ... — Content + Transformer #}
+{% set byr = neural_sections.get('because_you_read', []) if neural_sections is defined else [] %}
+{% if byr and byr|length > 0 %}
 {{ render_carousel_section(
-title='Most Viewed This Week',
-icon='ph-fill ph-eye',
-books=most_viewed_books,
-id_prefix='most_viewed',
-badges=[{'text': 'Trending', 'pulse': true}],
-view_all_url=url_for('main.browse', category='most_viewed'),
+title='Because You Read ...',
+icon='ph-fill ph-book-open-text',
+books=byr,
+id_prefix='because_you_read',
+badges=[{'text': 'Content + Transformer', 'pulse': false}],
+color='pink'
+) }}
+{% endif %}
+
+{# [5] 😃 MOOD AI — Semantic Emotion Matching #}
+{% if mood_ai_books is defined and mood_ai_books and mood_ai_books|length > 0 %}
+{{ render_carousel_section(
+title=mood_info['emoji'] ~ ' تشعر بـ ' ~ mood_info['title'] ~ '؟',
+icon='ph-fill ph-mask-happy',
+books=mood_ai_books,
+id_prefix='mood_ai',
+badges=[{'text': 'Mood AI Matching', 'pulse': true}],
+color='pink'
+) }}
+{% endif %}
+
+
+
+{# ═══════════════════════════════════════════════════════════════════════
+GROUP 3: 📊 المجتمع والتريند (Social & Popularity)
+═══════════════════════════════════════════════════════════════════════ #}
+
+{# [7] 👥 SIMILAR MINDS — Matrix Factorization CF #}
+{% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
+{{ render_carousel_section(
+title='قرّاء يشبهونك',
+icon='ph-fill ph-users',
+books=similar_minds,
+id_prefix='similar_minds',
+badges=[{'text': 'Collaborative Filtering', 'pulse': false}],
+color='purple'
+) }}
+{% endif %}
+
+{# [8] 🔥 HOT RIGHT NOW — Top Rated + Most Viewed Merged #}
+{% if hot_right_now is defined and hot_right_now and hot_right_now|length > 0 %}
+{{ render_carousel_section(
+title='الأبرز حالياً | Hot Right Now',
+icon='ph-fill ph-fire',
+books=hot_right_now,
+id_prefix='hot_right_now',
+badges=[{'text': 'Trending + Top Rated', 'pulse': true}],
 color='accent'
-) }}
-{% endif %}
-
-{# ═══════════════════════════════════════════════════════════════════════
-[6] TRENDING IN LIBRARIES
-═══════════════════════════════════════════════════════════════════════ #}
-{% if trending_by_libraries and trending_by_libraries|length > 0 %}
-{{ render_carousel_section(
-title='Trending in User Libraries',
-icon='ph-fill ph-books',
-books=trending_by_libraries,
-id_prefix='lib_trending',
-badges=[{'text': 'Hot Picks'}],
-view_all_url=url_for('main.browse', category='trending_libs'),
-color='success'
 ) }}
 {% endif %}

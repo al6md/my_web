@@ -133,6 +133,18 @@ def create_app():
     except Exception as e:
         app.logger.warning(f"Could not start scheduler: {e}")
 
+    # ═══════════════════════════════════════════════════════════════
+    # 🧠 Initialize Unified Neural Recommendation Pipeline
+    # Models loaded ONCE at startup — never reloaded
+    # ═══════════════════════════════════════════════════════════════
+    try:
+        from ai_book_recommender.unified_pipeline import get_unified_engine
+        unified_engine = get_unified_engine()
+        unified_engine.flask_app = app
+        app.logger.info("[SUCCESS] UnifiedRecommendationPipeline loaded at startup")
+    except Exception as e:
+        app.logger.warning(f"[WARNING] Could not initialize UnifiedRecommendationPipeline: {e}")
+
     return app
 
 
