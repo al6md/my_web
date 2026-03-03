@@ -109,117 +109,59 @@ Usage: {{ render_ai_score(85) }}
     {% endmacro %}
 
     {# ─────────────────────────────────────────────────────────────────────────────
-    🎴 Glass Book Card - Next-Gen Design
+    🎴 Museum Book Card - Premium 3D Luxury Design
     Usage: {{ render_book_card(book, show_score=true) }}
     ───────────────────────────────────────────────────────────────────────────── #}
-    {% macro render_book_card(book, show_score=true, show_algo=true, show_reason=true, card_class='') %}
+    {% macro render_book_card(book, show_score=false, show_algo=false, show_reason=false, card_class='') %}
     {% set book_id = book.id|default('') %}
     {% set cover_val = book.cover|default(book.cover_url) %}
-    {% set cover = cover_val if cover_val and cover_val != 'None' else
-    'https://placehold.co/400x600/1a1a24/64748b?text=No+Cover' %}
+    {% set has_cover = cover_val and cover_val != 'None' and 'placehold' not in (cover_val|string) %}
+    {% set cover = cover_val if has_cover else '' %}
     {% set title = book.title|default('Untitled Book') %}
     {% set author = book.author|default('Unknown Author') %}
-    {% set score = book.score|default(book.ai_score)|default(0)|float %}
-    {% set algo_tag = book.algo_tag|default('AI') %}
-    {# Fallback: If algo_tag is generic, check contributing_algorithms list #}
-    {% if (algo_tag == 'AI' or not algo_tag) and book.contributing_algorithms %}
-    {% set algo_tag = book.contributing_algorithms[0] %}
-    {% endif %}
-    {% set reason = book.reason|default(book.explanation)|default('') %}
     {% set rating = book.rating|default(book.rating_avg)|default(0)|float %}
-    {% set score_color = '#4ade80' if score >= 80 else ('#facc15' if score >= 60 else '#f87171') %}
+    {% set category = book.category|default(book.genre)|default('') %}
 
-    {# 🎨 Dynamic Algorithm Colors #}
-    {% set algo_clean = algo_tag|lower %}
-    {% set context_color = score_color %} {# Default to score color #}
-
-    {% if 'transformer' in algo_clean or 'deep' in algo_clean %}
-    {% set context_color = '#22d3ee' %} {# Cyan #}
-    {% elif 'search' in algo_clean %}
-    {% set context_color = '#ef4444' %} {# Red #}
-    {% elif 'interest' in algo_clean %}
-    {% set context_color = '#f472b6' %} {# Pink #}
-    {% elif 'hybrid' in algo_clean %}
-    {% set context_color = '#a78bfa' %} {# Purple #}
-    {% elif 'collaborative' in algo_clean or 'users' in algo_clean %}
-    {% set context_color = '#4ade80' %} {# Green #}
-    {% elif 'vector' in algo_clean or 'content' in algo_clean %}
-    {% set context_color = '#fb923c' %} {# Orange #}
-    {% elif 'reranker' in algo_clean %}
-    {% set context_color = '#34d399' %} {# Emerald #}
-    {% endif %}
-
-    {# 🎨 VISIBILITY FIX: Apply permanent border and subtle glow #}
-    <article class="glass-book-card {{ card_class }}" data-algo="{{ algo_tag }}" style="--glow-color: {{ context_color }}; 
-           border: 2px solid {{ context_color }}; 
-           box-shadow: 0 4px 20px {{ context_color }}40;">
-        <div class="card-glass-inner">
-            <div class="card-cover-glass">
+    <article class="museum-book-card {{ card_class }}">
+        <a href="{{ url_for('public.book_detail', gid=book_id) }}" class="museum-book-link"
+            style="display:block; text-decoration:none;">
+            <div class="museum-book-cover-wrap">
+                {% if has_cover %}
                 <img src="{{ cover }}" alt="{{ title }}" loading="lazy"
-                    style="width: 100%; height: 100%; object-fit: cover; aspect-ratio: 2/3;"
-                    onerror="this.src='https://placehold.co/400x600/1a1a24/64748b?text=No+Cover'">
-
-                {# AI Score Ring #}
-                {% if show_score and score > 0 %}
-                <div class="card-ai-ring" style="--ring-glow: {{ context_color }}">
-                    {{ render_ai_score(score, 'sm') }}
-                </div>
+                    onerror="this.parentElement.classList.add('no-cover-fallback'); this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 {% endif %}
 
-                {# Hover Overlay #}
+                {# Premium No-Cover Placeholder #}
+                <div class="card-no-cover" {% if has_cover %}style="display:none;" {% endif %}>
+                    <div class="no-cover-pattern">
+                        <i class="ph-thin ph-book-open"></i>
+                    </div>
+                </div>
+
+                {# Hover Overlay with Actions #}
                 <div class="card-overlay-glass">
-                    <div class="overlay-badges">
-                        <span class="badge-ai">
-                            <i class="ph-fill ph-sparkle"></i> AI
-                        </span>
-                        {% if score >= 80 %}
-                        <span class="badge-match">{{ score|int }}% Match</span>
-                        {% endif %}
-                    </div>
                     <div class="overlay-actions">
-                        <a href="{{ url_for('public.book_detail', gid=book_id) }}" class="action-btn-glass primary">
-                            <i class="ph ph-eye"></i> View
-                        </a>
-                        <button class="action-btn-glass secondary">
-                            <i class="ph ph-plus"></i>
-                        </button>
+                        <span class="action-btn-glass primary">
+                            <i class="ph ph-eye"></i> عرض
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <div class="card-info-glass">
-                {# Algorithm Badge #}
-                {% if show_algo and algo_tag %}
-                <div style="margin-bottom: 0.5rem;">
-                    {{ render_algo_badge(algo_tag) }}
-                </div>
-                {% endif %}
-
-                {# Title & Author #}
-                <h5 class="card-title">
-                    <a href="{{ url_for('public.book_detail', gid=book_id) }}"
-                        style="color: inherit; text-decoration: none;">
-                        {{ title }}
-                    </a>
-                </h5>
-                <p class="card-author">{{ author }}</p>
-
-                {# Rating #}
-                {% if rating > 0 %}
-                <div style="margin-bottom: 0.5rem;">
-                    {{ render_stars(rating) }}
-                </div>
-                {% endif %}
-
-                {# AI Reason #}
-                {% if show_reason and reason %}
-                <div class="ai-reason">
-                    <i class="ph-fill ph-sparkle"></i>
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ reason }}</span>
-                </div>
-                {% endif %}
+            <div class="museum-book-info">
+                {# Title — Serif #}
+                <h5 class="museum-book-title">{{ title }}</h5>
+                {# Author — Gold Muted #}
+                <p class="museum-book-author">{{ author }}</p>
             </div>
+        </a>
+
+        {# Optional rating below #}
+        {% if rating > 0 %}
+        <div class="card-rating-row" style="margin-top:0.5rem; justify-content:center;">
+            {{ render_stars(rating) }}
         </div>
+        {% endif %}
     </article>
     {% endmacro %}
 
@@ -364,25 +306,19 @@ Usage: {{ render_ai_score(85) }}
     view_all_url='#',
     color='purple') %}
     {% if books and books|length > 0 %}
-    <section class="carousel-section-ng" id="section-{{ id_prefix }}">
+    <section class="carousel-section-ng lux-section" id="section-{{ id_prefix }}">
         <div class="container">
-            <div class="section-header-ng">
-                <div class="section-title-ng">
-                    <i class="{{ icon }}"></i>
-                    <h2>{{ title }}</h2>
-                    <div class="section-badges">
-                        {% for badge in badges %}
-                        <span
-                            class="{% if badge.pulse %}badge-live{% else %}badge-new{% endif %} {{ badge.class|default('') }}">
-                            {% if badge.pulse %}<span class="pulse-dot"></span>{% endif %}
-                            {{ badge.text }}
-                        </span>
-                        {% endfor %}
-                    </div>
+            <div class="lux-section-header">
+                <div class="lux-section-title-row">
+                    <i class="{{ icon }}" style="color:var(--lux-gold);font-size:1.1rem;"></i>
+                    <h2
+                        style="font-family:var(--lux-font-display, serif);font-weight:600;font-size:1.5rem;color:var(--lux-cream, #f5ead4);letter-spacing:0.02em;margin:0;">
+                        {{ title }}</h2>
                 </div>
                 {% if view_all_url and view_all_url != '#' %}
-                <a href="{{ view_all_url }}" class="see-all-ng">
-                    See All <i class="ph ph-arrow-right"></i>
+                <a href="{{ view_all_url }}"
+                    style="color:var(--lux-gold-dim);font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;text-decoration:none;">
+                    عرض الكل <i class="ph ph-arrow-right"></i>
                 </a>
                 {% endif %}
             </div>

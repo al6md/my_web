@@ -4,899 +4,519 @@
 
 {% block head %}
 <style>
-  /* ═══════════════════════════════════════════════════════════════════════
-   📚 BOOKS PAGE - UNIFIED PREMIUM DESIGN V2
-   ═══════════════════════════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════
+     📚 LIBRARY PAGE — Professional Clean Design
+     ═══════════════════════════════════════════ */
 
-  :root {
-    --glass-bg: rgba(255, 255, 255, 0.65);
-    --glass-border: rgba(255, 255, 255, 0.6);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
-    --card-radius: 20px;
+  .library-page {
+    padding: 0 0 3rem;
   }
 
-  [data-theme="dark"] {
-    --glass-bg: rgba(30, 41, 59, 0.75);
-    --glass-border: rgba(255, 255, 255, 0.08);
-  }
-
-  /* ═══════════════════════════════════════════════════════════════════════
-   🎯 HERO SECTION - COMPACT & ELEGANT
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .favorites-hero {
-    padding: 2rem 0 1rem;
+  /* ─── Hero ─── */
+  .lib-hero {
+    padding: 2.5rem 0 1.5rem;
     position: relative;
   }
 
-  .favorites-hero::before {
+  .lib-hero::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.12), transparent);
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.1), transparent);
     pointer-events: none;
   }
 
-  .hero-title {
+  .lib-hero-inner {
     display: flex;
     align-items: center;
     gap: 1rem;
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  .lib-hero-icon {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: white;
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.3);
+    flex-shrink: 0;
+  }
+
+  .lib-hero h1 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
     font-weight: 800;
-    margin-bottom: 0.5rem;
+    margin: 0;
     letter-spacing: -0.02em;
   }
 
-  .hero-title-icon {
-    width: 56px;
-    height: 56px;
-    background: var(--gradient-primary);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: white;
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
-    flex-shrink: 0;
-  }
-
-  .hero-subtitle {
+  .lib-hero p {
     color: var(--text-muted);
-    font-size: 1rem;
-    margin: 0;
-    max-width: 500px;
+    font-size: 0.9rem;
+    margin: 0.25rem 0 0;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════
-   📊 STATS GRID - COMPACT CARDS
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .reading-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 1rem;
-    margin: 1.5rem 0;
-  }
-
-  @media (max-width: 992px) {
-    .reading-stats-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  @media (max-width: 576px) {
-    .reading-stats-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .stat-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 1rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    box-shadow: var(--glass-shadow);
-  }
-
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
-  }
-
-  .stat-card-icon {
-    width: 44px;
-    height: 44px;
-    margin: 0 auto 0.6rem;
-    border-radius: 12px;
+  /* ─── Stats Bar ─── */
+  .lib-stats {
     display: flex;
-    align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    color: white;
+    gap: 2rem;
+    padding: 1.25rem 0;
+    margin: 1rem 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
-  .stat-card-icon.books {
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
+  .lib-stat {
+    text-align: center;
   }
 
-  .stat-card-icon.finished {
-    background: linear-gradient(135deg, #10b981, #059669);
-  }
-
-  .stat-card-icon.favorite {
-    background: linear-gradient(135deg, #f43f5e, #e11d48);
-  }
-
-  .stat-card-icon.progress {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  }
-
-  .stat-card-icon.pages {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
-  }
-
-  .stat-card-icon.later {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-  }
-
-  .stat-card-value {
+  .lib-stat-val {
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--text-main);
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
     line-height: 1;
-    margin-bottom: 0.15rem;
   }
 
-  .stat-card-label {
-    font-size: 0.75rem;
-    font-weight: 600;
+  .lib-stat-lbl {
+    font-size: 0.72rem;
     color: var(--text-muted);
-  }
-
-  /* ═══════════════════════════════════════════════════════════════════════
-   🏷️ FILTER PILLS - HORIZONTAL SCROLL
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .stats-row {
-    display: flex;
-    gap: 0.75rem;
-    overflow-x: auto;
-    padding: 0.5rem 0 1rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .stats-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .stat-pill {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.6rem 1rem;
-    background: var(--bg-surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: 100px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    white-space: nowrap;
-  }
-
-  .stat-pill:hover {
-    border-color: var(--primary-300);
-    background: var(--bg-surface-2);
-  }
-
-  .stat-pill.active {
-    background: var(--primary-500);
-    border-color: var(--primary-500);
-    color: white;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-  }
-
-  .stat-pill.active .stat-pill-label,
-  .stat-pill.active .stat-pill-value {
-    color: white;
-  }
-
-  .stat-pill-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    color: white;
-  }
-
-  .stat-pill.active .stat-pill-icon {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .stat-pill-value {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-main);
-  }
-
-  .stat-pill-label {
-    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
+    margin-top: 0.2rem;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════
-   🔧 TOOLBAR - INTEGRATED SEARCH & CONTROLS
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .toolbar {
+  /* ─── Filter Pills ─── */
+  .lib-filters {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+
+  .lib-pill {
+    display: inline-flex;
     align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 1.25rem;
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-surface-2, rgba(255, 255, 255, 0.05));
+    border: 1px solid transparent;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .lib-pill:hover {
+    background: var(--bg-surface-3, rgba(255, 255, 255, 0.08));
+    color: var(--text-body);
+  }
+
+  .lib-pill.active {
+    background: #6366f1;
+    color: white;
+    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.25);
+  }
+
+  .lib-pill i {
+    font-size: 0.95rem;
+  }
+
+  /* ─── Toolbar ─── */
+  .lib-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
-    box-shadow: var(--glass-shadow);
     flex-wrap: wrap;
   }
 
-  .search-box {
-    position: relative;
+  .lib-search {
     flex: 1;
     min-width: 200px;
-    max-width: 400px;
+    max-width: 360px;
+    position: relative;
   }
 
-  .search-icon {
+  .lib-search input {
+    width: 100%;
+    padding: 0.65rem 2.5rem 0.65rem 1rem;
+    background: var(--bg-surface-2, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    font-size: 0.88rem;
+    color: var(--text-body);
+    transition: all 0.2s;
+  }
+
+  .lib-search input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  .lib-search input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .lib-search .s-icon {
     position: absolute;
-    right: 1rem;
+    right: 0.85rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 1.1rem;
     pointer-events: none;
   }
 
-  .search-input {
-    width: 100%;
-    padding: 0.7rem 2.5rem 0.7rem 1rem;
-    background: var(--bg-surface-2);
-    border: 1px solid transparent;
-    border-radius: var(--radius-full);
-    font-size: 0.9rem;
-    color: var(--text-body);
-    transition: all 0.2s ease;
-  }
-
-  .search-input:focus {
-    outline: none;
-    border-color: var(--primary-400);
-    background: var(--bg-surface-1);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
-  }
-
-  .search-clear {
-    position: absolute;
-    left: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: none;
-    background: var(--bg-surface-3);
+  .lib-count {
+    font-size: 0.82rem;
     color: var(--text-muted);
-    cursor: pointer;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
+    margin-right: auto;
   }
 
-  .search-clear.visible {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .controls-row {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .view-toggle {
-    display: flex;
-    background: var(--bg-surface-2);
-    border-radius: var(--radius-md);
-    padding: 3px;
-    border: 1px solid var(--border-subtle);
-  }
-
-  .view-toggle-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-  }
-
-  .view-toggle-btn:hover {
-    color: var(--primary-500);
-  }
-
-  .view-toggle-btn.active {
-    background: white;
-    color: var(--primary-600);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  [data-theme="dark"] .view-toggle-btn.active {
-    background: var(--bg-surface-1);
-    color: var(--primary-400);
-  }
-
-  .filter-dropdown {
-    position: relative;
-  }
-
-  .filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.9rem;
-    background: transparent;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    color: var(--text-body);
-    font-weight: 500;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .filter-btn:hover {
-    background: var(--bg-surface-2);
-    border-color: var(--primary-300);
-  }
-
-  .filter-btn i {
-    font-size: 1rem;
-  }
-
-  .filter-menu {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    left: 0;
-    min-width: 180px;
-    background: var(--bg-surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-    z-index: 100;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-8px);
-    transition: all 0.2s ease;
-    padding: 0.5rem;
-  }
-
-  .filter-dropdown:hover .filter-menu,
-  .filter-menu:hover {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-
-  .filter-menu-title {
-    padding: 0.5rem 0.75rem;
-    font-weight: 700;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--border-subtle);
-    margin-bottom: 0.25rem;
-  }
-
-  .filter-option {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.5rem 0.75rem;
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition: background 0.15s;
-    font-size: 0.85rem;
-  }
-
-  .filter-option:hover {
-    background: var(--bg-surface-2);
-  }
-
-  .filter-option input {
-    accent-color: var(--primary-500);
-  }
-
-  .books-count {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    white-space: nowrap;
-  }
-
-  .books-count strong {
-    color: var(--primary-500);
+  .lib-count strong {
+    color: #6366f1;
     font-weight: 700;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════
-   📚 BOOKS GRID
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .books-showcase {
+  /* ─── Book Grid ─── */
+  .lib-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
     gap: 1.25rem;
   }
 
-  .books-showcase.view-grid-lg {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .books-showcase.view-list {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .books-showcase.view-list .book-card {
-    display: grid;
-    grid-template-columns: 80px 1fr auto;
-    gap: 1rem;
-    align-items: center;
-    padding: 0.75rem;
-  }
-
-  .books-showcase.view-list .book-cover-wrap {
-    width: 80px;
-    aspect-ratio: 2/3;
-  }
-
-  .books-showcase.view-list .book-info {
-    padding: 0;
-  }
-
-  .books-showcase.view-list .book-status-badge {
-    position: static;
-  }
-
   @media (max-width: 576px) {
-    .books-showcase {
+    .lib-grid {
       grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
+      gap: 0.75rem;
     }
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════
-   📖 BOOK CARD
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .book-card {
-    background: var(--bg-surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--card-radius);
+  /* ─── Book Card ─── */
+  .lib-card {
+    background: var(--bg-surface-1, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+    border-radius: 16px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
-  .book-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
-    border-color: var(--primary-200);
+  .lib-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
   }
 
-  [data-theme="dark"] .book-card:hover {
-    border-color: var(--primary-700);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
-  }
-
-  .book-status-badge {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    padding: 0.3rem 0.7rem;
-    border-radius: 100px;
-    font-size: 0.65rem;
-    font-weight: 700;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  .book-status-badge.favorite {
-    background: rgba(244, 63, 94, 0.9);
-    color: white;
-  }
-
-  .book-status-badge.finished {
-    background: rgba(16, 185, 129, 0.9);
-    color: white;
-  }
-
-  .book-status-badge.later {
-    background: rgba(245, 158, 11, 0.9);
-    color: white;
-  }
-
-  .book-status-badge.reading {
-    background: rgba(139, 92, 246, 0.9);
-    color: white;
-  }
-
-  .book-status-badge.on_hold {
-    background: rgba(107, 114, 128, 0.9);
-    color: white;
-  }
-
-  .book-status-badge.dropped {
-    background: rgba(239, 68, 68, 0.9);
-    color: white;
-  }
-
-  .book-cover-wrap {
+  /* Cover */
+  .lib-cover {
     position: relative;
     aspect-ratio: 2/3;
     overflow: hidden;
-    background: linear-gradient(135deg, var(--neutral-100), var(--neutral-200));
+    background: linear-gradient(135deg, var(--bg-surface-2, #1e293b), var(--bg-surface-3, #334155));
   }
 
-  [data-theme="dark"] .book-cover-wrap {
-    background: linear-gradient(135deg, var(--neutral-800), var(--neutral-700));
-  }
-
-  .book-cover-wrap img {
+  .lib-cover img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    transition: transform 0.4s ease;
   }
 
-  .book-card:hover .book-cover-wrap img {
-    transform: scale(1.08);
+  .lib-card:hover .lib-cover img {
+    transform: scale(1.06);
   }
 
-  .cover-progress {
+  /* Status Badge */
+  .lib-badge {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 100px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    z-index: 3;
+  }
+
+  .lib-badge.favorite {
+    background: rgba(244, 63, 94, 0.88);
+  }
+
+  .lib-badge.finished {
+    background: rgba(16, 185, 129, 0.88);
+  }
+
+  .lib-badge.later {
+    background: rgba(245, 158, 11, 0.88);
+  }
+
+  .lib-badge.reading {
+    background: rgba(139, 92, 246, 0.88);
+  }
+
+  .lib-badge.on_hold {
+    background: rgba(107, 114, 128, 0.88);
+  }
+
+  .lib-badge.dropped {
+    background: rgba(239, 68, 68, 0.88);
+  }
+
+  /* Progress bar on cover */
+  .lib-progress-bar {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     height: 3px;
-    background: rgba(0, 0, 0, 0.25);
-    z-index: 5;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 2;
   }
 
-  .cover-progress-fill {
+  .lib-progress-fill {
     height: 100%;
-    background: var(--gradient-primary);
-    transition: width 0.4s ease;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+    transition: width 0.4s;
   }
 
-  .book-hover-overlay {
+  .lib-progress-fill.done {
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+
+  /* Hover overlay */
+  .lib-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 50%, transparent 100%);
+    background: linear-gradient(to top, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.3) 50%, transparent 100%);
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: flex-end;
-    padding: 1rem;
+    align-items: center;
+    padding: 0.75rem;
     opacity: 0;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.25s;
+    z-index: 4;
     pointer-events: none;
   }
 
-  .book-card:hover .book-hover-overlay {
+  .lib-card:hover .lib-overlay {
     opacity: 1;
     pointer-events: auto;
   }
 
-  .hover-quick-info {
-    width: 100%;
-    margin-bottom: 0.5rem;
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.9);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    justify-content: center;
-  }
-
-  .hover-quick-info span {
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-    background: rgba(255, 255, 255, 0.15);
-    padding: 0.2rem 0.4rem;
-    border-radius: var(--radius-sm);
-  }
-
-  .hover-actions {
+  .lib-hover-btns {
     display: flex;
     gap: 0.4rem;
   }
 
-  .hover-btn {
-    width: 38px;
-    height: 38px;
+  .lib-hover-btn {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.2s;
     text-decoration: none;
-  }
-
-  .hover-btn.view {
-    background: var(--gradient-primary);
     color: white;
   }
 
-  .hover-btn.read {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-  }
-
-  .hover-btn.delete,
-  .hover-btn:not(.view):not(.read) {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    backdrop-filter: blur(4px);
-  }
-
-  .hover-btn:hover {
+  .lib-hover-btn:hover {
     transform: scale(1.1);
   }
 
-  .hover-btn.delete:hover {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
+  .lib-hover-btn.view {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
   }
 
-  .book-info {
-    padding: 1rem;
+  .lib-hover-btn.read {
+    background: linear-gradient(135deg, #10b981, #059669);
   }
 
-  .book-card .book-title {
-    font-size: 0.9rem;
+  .lib-hover-btn.prog {
+    background: rgba(139, 92, 246, 0.85);
+  }
+
+  /* Card Info */
+  .lib-info {
+    padding: 0.85rem 0.75rem 0.75rem;
+  }
+
+  .lib-info h3 {
+    font-size: 0.88rem;
     font-weight: 700;
     color: var(--text-main);
-    margin-bottom: 0.2rem;
+    margin: 0 0 0.15rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.35;
   }
 
-  .book-card .book-author {
-    font-size: 0.75rem;
+  .lib-info .author {
+    font-size: 0.73rem;
     color: var(--text-muted);
-    margin-bottom: 0.4rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    margin: 0 0 0.3rem;
   }
 
-  .book-meta-row {
+  .lib-info .rating {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-bottom: 0.35rem;
-  }
-
-  .book-meta-tag {
-    display: inline-flex;
     align-items: center;
     gap: 0.2rem;
-    font-size: 0.65rem;
-    padding: 0.15rem 0.4rem;
-    background: var(--bg-surface-2);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    font-size: 0.78rem;
+    color: #facc15;
   }
 
-  .book-meta-tag i {
-    font-size: 0.7rem;
-  }
-
-  .book-meta-tag.category {
-    background: rgba(99, 102, 241, 0.1);
-    color: var(--primary-500);
-  }
-
-  .book-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.8rem;
-    color: var(--warning);
-  }
-
-  .rating-value {
+  .lib-info .rating span {
     font-weight: 600;
   }
 
-  .rating-count {
+  .lib-info .rating .no-rate {
     color: var(--text-muted);
-    font-size: 0.7rem;
   }
 
-  .reading-progress-bar {
-    height: 5px;
-    background: var(--bg-surface-2);
-    border-radius: var(--radius-full);
+  .lib-info .prog-row {
+    margin-top: 0.35rem;
+  }
+
+  .lib-info .prog-track {
+    height: 4px;
+    background: var(--bg-surface-2, rgba(255, 255, 255, 0.08));
+    border-radius: 2px;
     overflow: hidden;
-    margin-top: 0.4rem;
   }
 
-  .reading-progress-fill {
+  .lib-info .prog-track-fill {
     height: 100%;
-    background: var(--gradient-primary);
-    border-radius: var(--radius-full);
-    transition: width 0.4s ease;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+    border-radius: 2px;
   }
 
-  .reading-progress-fill.complete {
-    background: linear-gradient(135deg, #10b981, #059669);
+  .lib-info .prog-track-fill.done {
+    background: linear-gradient(90deg, #10b981, #34d399);
   }
 
-  .reading-progress-text {
-    font-size: 0.65rem;
+  .lib-info .prog-text {
+    font-size: 0.62rem;
     color: var(--text-muted);
-    margin-top: 0.2rem;
-    display: flex;
-    justify-content: space-between;
+    margin-top: 0.15rem;
   }
 
-  /* Add Book Card */
-  .add-book-card {
+  /* Add Card */
+  .lib-add-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 260px;
-    background: transparent;
-    border: 2px dashed var(--border-subtle);
-    border-radius: var(--card-radius);
-    transition: all 0.25s ease;
+    min-height: 240px;
+    border: 2px dashed var(--border-subtle, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
     cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
     color: var(--text-muted);
   }
 
-  .add-book-card:hover {
-    border-color: var(--primary-400);
+  .lib-add-card:hover {
+    border-color: #6366f1;
     background: rgba(99, 102, 241, 0.04);
-    color: var(--primary-500);
-    transform: translateY(-4px);
+    color: #6366f1;
+    transform: translateY(-3px);
   }
 
-  .add-book-icon {
-    width: 50px;
-    height: 50px;
+  .lib-add-icon {
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: var(--bg-surface-2);
+    background: var(--bg-surface-2, rgba(255, 255, 255, 0.06));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 0.75rem;
-    transition: all 0.25s ease;
+    font-size: 1.3rem;
+    margin-bottom: 0.6rem;
+    transition: all 0.25s;
   }
 
-  .add-book-card:hover .add-book-icon {
-    background: var(--gradient-primary);
+  .lib-add-card:hover .lib-add-icon {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     color: white;
-    transform: scale(1.08);
-  }
-
-  .add-book-text {
-    font-weight: 600;
-    font-size: 0.9rem;
   }
 
   /* Empty State */
-  .empty-state {
+  .lib-empty {
     text-align: center;
-    padding: 4rem 2rem;
-    max-width: 500px;
+    padding: 5rem 2rem;
+    max-width: 450px;
     margin: 0 auto;
   }
 
-  .empty-icon {
+  .lib-empty-icon {
     width: 80px;
     height: 80px;
-    margin: 0 auto 1.5rem;
-    background: var(--bg-surface-2);
+    margin: 0 auto 1.25rem;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    color: var(--text-muted);
+    font-size: 2.5rem;
+    color: white;
   }
 
-  .empty-state h3 {
-    font-size: 1.25rem;
+  .lib-empty h2 {
+    font-size: 1.3rem;
     font-weight: 700;
-    color: var(--text-main);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
-  .empty-state p {
+  .lib-empty p {
     color: var(--text-muted);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
   }
 
   /* No Results */
-  .no-results {
+  .lib-no-results {
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem 1rem;
+    display: none;
   }
 
-  .no-results-icon {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 1rem;
-    background: var(--bg-surface-2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
+  .lib-no-results i {
+    font-size: 2rem;
     color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════
-   🎬 MODALS
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .progress-modal-overlay {
+  /* Progress Modal */
+  .lib-modal-bg {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(4px);
     z-index: 9999;
     display: flex;
@@ -905,1317 +525,380 @@
     padding: 1rem;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.25s ease;
+    transition: all 0.25s;
   }
 
-  .progress-modal-overlay.active {
+  .lib-modal-bg.active {
     opacity: 1;
     visibility: visible;
   }
 
-  .progress-modal {
-    background: var(--bg-surface-1);
-    border-radius: var(--card-radius);
+  .lib-modal {
+    background: var(--bg-surface-1, #1e293b);
+    border-radius: 20px;
     padding: 2rem;
     width: 100%;
-    max-width: 400px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    max-width: 380px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
     transform: scale(0.95);
-    transition: transform 0.25s ease;
+    transition: transform 0.25s;
+    text-align: center;
   }
 
-  .progress-modal-overlay.active .progress-modal {
+  .lib-modal-bg.active .lib-modal {
     transform: scale(1);
   }
 
-  .progress-modal-title {
-    font-size: 1.25rem;
+  .lib-modal h5 {
+    font-size: 1.1rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
-    text-align: center;
-    color: var(--text-main);
   }
 
-  .progress-slider-container {
-    margin-bottom: 1.5rem;
-  }
-
-  .progress-value-display {
-    text-align: center;
+  .lib-modal .prog-display {
     font-size: 2.5rem;
     font-weight: 800;
-    color: var(--primary-500);
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
     margin-bottom: 1rem;
   }
 
-  .progress-slider {
+  .lib-modal input[type="range"] {
     width: 100%;
     height: 8px;
     -webkit-appearance: none;
     appearance: none;
-    background: var(--bg-surface-2);
+    background: var(--bg-surface-2, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
     outline: none;
+    margin-bottom: 1.5rem;
   }
 
-  .progress-slider::-webkit-slider-thumb {
+  .lib-modal input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    appearance: none;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
   }
 
-  .progress-modal-actions {
+  .lib-modal .modal-actions {
     display: flex;
     gap: 0.75rem;
   }
 
-  .progress-modal-actions button {
+  .lib-modal .modal-actions button {
     flex: 1;
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-lg);
+    padding: 0.7rem;
+    border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
     border: none;
+    transition: transform 0.2s;
+    font-size: 0.9rem;
   }
 
-  .progress-modal-actions .btn-cancel {
-    background: var(--bg-surface-2);
-    color: var(--text-body);
-  }
-
-  .progress-modal-actions .btn-save {
-    background: var(--gradient-primary);
-    color: white;
-  }
-
-  .progress-modal-actions button:hover {
+  .lib-modal .modal-actions button:hover {
     transform: translateY(-2px);
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════
-   🛠️ UTILITIES
-   ═══════════════════════════════════════════════════════════════════════ */
-
-  .d-none {
-    display: none !important;
-  }
-
-  @media (min-width: 768px) {
-    .d-md-inline {
-      display: inline !important;
-    }
-  }
-
-  /* Book Info Section */
-  .book-info {
-    padding: 1.25rem;
-  }
-
-  .book-card .book-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-main);
-    margin-bottom: 0.35rem;
-    line-height: 1.4;
-    letter-spacing: -0.01em;
-  }
-
-  .book-card .book-author {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-
-  /* Meta Tags - Cleaner */
-  .book-meta-tag {
-    background: var(--bg-surface-2);
-    color: var(--text-muted);
-    border: 1px solid transparent;
-  }
-
-  .book-card:hover .book-meta-tag {
-    background: white;
-    border-color: var(--border-subtle);
+  .lib-modal .btn-cancel {
+    background: var(--bg-surface-2, rgba(255, 255, 255, 0.08));
     color: var(--text-body);
   }
 
-  [data-theme="dark"] .book-card:hover .book-meta-tag {
-    background: var(--bg-surface-3);
-  }
-
-  /* Add Book Card - Dashed */
-  .add-book-card {
-    border: 2px dashed var(--border-subtle);
-    background: transparent;
-    transition: all 0.3s ease;
-  }
-
-  .add-book-card:hover {
-    background: var(--bg-surface-1);
-    border-color: var(--primary-400);
-    transform: translateY(-5px);
-  }
-
-  .empty-state {
-    padding: 6rem 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .empty-icon {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto 1.5rem;
-    background: var(--gradient-primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
+  .lib-modal .btn-save {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     color: white;
   }
 
-  .empty-title {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .empty-text {
-    color: var(--text-muted);
-    max-width: 400px;
-    margin: 0 auto 1.5rem;
-  }
-
-  /* No Results */
-  .no-results {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 3rem;
-  }
-
-  .no-results-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1rem;
-    background: var(--bg-surface-2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: var(--text-muted);
-  }
-
-  .no-results h3 {
-    margin-bottom: 0.5rem;
-  }
-
-  .no-results p {
-    color: var(--text-muted);
-  }
-
-  /* Modal */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .modal-backdrop.active {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .modal-dialog {
-    width: 100%;
-    max-width: 600px;
-    max-height: 85vh;
-    background: var(--bg-surface-1);
-    border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
-    overflow: hidden;
-    transform: scale(0.9) translateY(20px);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .modal-backdrop.active .modal-dialog {
-    transform: scale(1) translateY(0);
-  }
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    background: var(--gradient-primary);
-    color: white;
-  }
-
-  .modal-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .modal-title-icon {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-  }
-
-  .modal-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0;
-    color: white;
-  }
-
-  .modal-close {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    transition: all 0.2s;
-  }
-
-  .modal-close:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-    overflow-y: auto;
-    max-height: calc(85vh - 80px);
-  }
-
-  /* 🆕 Progress Modal */
-  .progress-modal-content {
-    text-align: center;
-  }
-
-  .progress-slider-container {
-    padding: 2rem 1rem;
-  }
-
-  .progress-slider {
-    width: 100%;
-    height: 12px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: var(--bg-surface-2);
-    border-radius: var(--radius-full);
-    outline: none;
-  }
-
-  .progress-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--gradient-primary);
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  }
-
-  .progress-value-display {
-    font-size: 3rem;
-    font-weight: 800;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin: 1rem 0;
-  }
-
-  /* Animation Helpers */
-  .animate-on-scroll {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.6s ease-out;
-  }
-
-  .animate-on-scroll.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .fade-right {
-    transform: translateX(30px);
-  }
-
-  .fade-right.is-visible {
-    transform: translateX(0);
-  }
-
-  .fade-left {
-    transform: translateX(-30px);
-  }
-
-  .fade-left.is-visible {
-    transform: translateX(0);
-  }
-
-  .delay-1 {
-    transition-delay: 0.1s;
-  }
-
-  .delay-2 {
-    transition-delay: 0.2s;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .spin {
-    animation: spin 1s linear infinite;
-  }
-
-  /* Align-end utility */
-  .align-end {
-    align-items: flex-end;
-  }
-
-  .pb-5 {
-    padding-bottom: 3rem;
-  }
-
-  .d-none {
-    display: none !important;
-  }
-
-  @media (min-width: 768px) {
-    .d-md-inline {
-      display: inline !important;
-    }
-  }
-
-  /* Custom Scrollbar for pills */
-  .stats-row {
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-subtle) transparent;
-  }
-
-  .stats-row::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  .stats-row::-webkit-scrollbar-thumb {
-    background-color: var(--border-subtle);
-    border-radius: 4px;
-  }
-
-  .books-count-header {
-    font-size: 1rem;
-    color: var(--text-muted);
-    margin-bottom: 1rem;
-    padding: 0 0.5rem;
-  }
-
-  /* 🦄 DASHBOARD UNIFIED STYLE (NEW V3) */
-  .dashboard-wrapper {
-    margin-bottom: 2.5rem;
-  }
-
-  .dashboard-glass-panel {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-2xl);
-    padding: 1.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  }
-
-  [data-theme="light"] .dashboard-glass-panel {
-    background: rgba(255, 255, 255, 0.6);
-    border-color: rgba(0, 0, 0, 0.05);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-  }
-
-  /* Row 1: Stats */
-  .dashboard-stats-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-subtle);
-    margin-bottom: 1.5rem;
-  }
-
-  .dash-stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .dash-stat-value {
-    font-size: 1.5rem;
-    font-weight: 800;
-    line-height: 1;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .dash-stat-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .dash-divider {
-    width: 1px;
-    height: 30px;
-    background: var(--border-subtle);
-  }
-
-  /* Row 2: Filter Pills */
-  .dashboard-filters-row {
-    margin-bottom: 1.5rem;
-    overflow: hidden;
-  }
-
-  .filter-pills-scroll {
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .dash-pill {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
-    background: var(--bg-surface-2);
-    border-radius: var(--radius-full);
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-  }
-
-  .dash-pill:hover {
-    background: var(--bg-surface-3);
-    color: var(--text-body);
-    transform: translateY(-2px);
-  }
-
-  .dash-pill.active {
-    background: var(--primary-600);
-    color: white;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  }
-
-  /* Row 3: Controls */
-  .dashboard-controls-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .dash-search-box {
-    flex: 1;
-    max-width: 400px;
-    position: relative;
-  }
-
-  .dash-search-input {
-    width: 100%;
-    background: var(--bg-surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
-    color: var(--text-body);
-    font-size: 0.95rem;
-    transition: all 0.2s;
-  }
-
-  [dir="rtl"] .dash-search-input {
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
-  }
-
-  .dash-search-input:focus {
-    outline: none;
-    border-color: var(--primary-500);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-  }
-
-  .search-icon {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    pointer-events: none;
-  }
-
-  [dir="rtl"] .search-icon {
-    right: auto;
-    left: 1rem;
-  }
-
-  .search-clear {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0;
-    display: none;
-  }
-
-  [dir="rtl"] .search-clear {
-    left: auto;
-    right: 1rem;
-  }
-
-  .dash-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .dash-btn,
-  .dash-icon-btn {
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0 1rem;
-    background: var(--bg-surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    color: var(--text-body);
-    font-weight: 500;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .dash-icon-btn {
-    width: 42px;
-    padding: 0;
-  }
-
-  .dash-btn:hover,
-  .dash-icon-btn:hover {
-    border-color: var(--primary-400);
-    background: var(--bg-surface-2);
-  }
-
-  .dash-icon-btn.active {
-    background: var(--bg-surface-3);
-    border-color: var(--primary-500);
-    color: var(--primary-500);
-  }
-
-  .dropdown-trigger {
-    min-width: 100px;
-  }
-
-  /* Mobile Responsiveness */
+  /* Responsive */
   @media (max-width: 768px) {
-    .dashboard-stats-row {
+    .lib-stats {
+      gap: 1.25rem;
       flex-wrap: wrap;
-      gap: 1rem;
     }
 
-    .dash-divider {
-      display: none;
-    }
-
-    .dash-stat-item {
-      flex: 1 1 40%;
-    }
-
-    .dashboard-controls-row {
+    .lib-toolbar {
       flex-direction: column;
       align-items: stretch;
     }
 
-    .dash-search-box {
+    .lib-search {
       max-width: 100%;
     }
-
-    .dash-actions {
-      justify-content: space-between;
-    }
-  }
-
-  .books-count-header strong {
-    color: var(--primary-500);
-    font-weight: 800;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="favorites-hero">
-  <div class="container hero-content">
-    <div class="d-flex justify-between align-end flex-wrap gap-4">
-      <div>
-        <h1 class="hero-title animate-on-scroll fade-right">
-          <div class="hero-title-icon">
-            <i class="ph-fill ph-books"></i>
-          </div>
-          مكتبتي <span class="text-gradient">الشخصية</span>
-        </h1>
-        <p class="hero-subtitle animate-on-scroll fade-right delay-1">
-          تابع تقدمك، نظم قراءاتك، واكتشف المزيد من الكتب التي تناسب ذوقك.
-        </p>
+<div class="library-page">
+
+  {# ═══ Hero ═══ #}
+  <section class="lib-hero">
+    <div class="container">
+      <div class="lib-hero-inner">
+        <div class="lib-hero-icon">
+          <i class="ph-fill ph-books"></i>
+        </div>
+        <div>
+          <h1>مكتبتي</h1>
+          <p>تابع تقدمك ونظّم قراءاتك</p>
+        </div>
       </div>
-    </div>
 
-    <!-- 🟢 NEW UNIFIED DASHBOARD -->
-    <div class="dashboard-wrapper animate-on-scroll fade-up delay-1">
-      <div class="dashboard-glass-panel">
-        <!-- Top Row: Stats Overview -->
-        <div class="dashboard-stats-row">
-          <div class="dash-stat-item">
-            <span class="dash-stat-value">{{ reading_stats.total_books }}</span>
-            <span class="dash-stat-label">كتب</span>
-          </div>
-          <div class="dash-divider"></div>
-          <div class="dash-stat-item highlight">
-            <span class="dash-stat-value">{{ reading_stats.finished_count }}</span>
-            <span class="dash-stat-label">مكتمل</span>
-          </div>
-          <div class="dash-divider"></div>
-          <div class="dash-stat-item">
-            <span class="dash-stat-value">{{ reading_stats.in_progress }}</span>
-            <span class="dash-stat-label">جاري</span>
-          </div>
-          <div class="dash-divider"></div>
-          <div class="dash-stat-item">
-            <span class="dash-stat-value">{{ reading_stats.favorite_count }}</span>
-            <span class="dash-stat-label">مفضلة</span>
-          </div>
+      {# ─── Stats ─── #}
+      <div class="lib-stats">
+        <div class="lib-stat">
+          <div class="lib-stat-val">{{ reading_stats.total_books }}</div>
+          <div class="lib-stat-lbl">كتب</div>
         </div>
-
-        <!-- Middle Row: Filter Pills (Horizontal Scroll) -->
-        <div class="dashboard-filters-row">
-          <div class="filter-pills-scroll">
-            <div class="dash-pill active" onclick="filterBooks('all', this)">
-              <i class="ph-bold ph-squares-four"></i> الكل
-            </div>
-            <div class="dash-pill" onclick="filterBooks('reading', this)">
-              <i class="ph-bold ph-book-open"></i> أقرأه
-            </div>
-            <div class="dash-pill" onclick="filterBooks('finished', this)">
-              <i class="ph-bold ph-check-circle"></i> قرأتها
-            </div>
-            <div class="dash-pill" onclick="filterBooks('later', this)">
-              <i class="ph-bold ph-clock"></i> للاحقاً
-            </div>
-            <div class="dash-pill" onclick="filterBooks('favorite', this)">
-              <i class="ph-bold ph-heart"></i> المفضلة
-            </div>
-            <div class="dash-pill" onclick="filterBooks('on_hold', this)">
-              <i class="ph-bold ph-pause"></i> معلق
-            </div>
-            <div class="dash-pill" onclick="filterBooks('dropped', this)">
-              <i class="ph-bold ph-x-circle"></i> متروك
-            </div>
-          </div>
+        <div class="lib-stat">
+          <div class="lib-stat-val">{{ reading_stats.finished_count }}</div>
+          <div class="lib-stat-lbl">مكتمل</div>
         </div>
+        <div class="lib-stat">
+          <div class="lib-stat-val">{{ reading_stats.in_progress }}</div>
+          <div class="lib-stat-lbl">جاري</div>
+        </div>
+        <div class="lib-stat">
+          <div class="lib-stat-val">{{ reading_stats.favorite_count }}</div>
+          <div class="lib-stat-lbl">مفضلة</div>
+        </div>
+      </div>
 
-        <!-- Bottom Row: Search & Sort -->
-        <div class="dashboard-controls-row">
-          <div class="dash-search-box">
-            <i class="ph ph-magnifying-glass search-icon"></i>
-            <input type="text" id="searchInput" class="dash-search-input" placeholder="عنوان الكتاب أو المؤلف...">
-            <button class="search-clear" onclick="clearSearch()"><i class="ph-bold ph-x"></i></button>
-          </div>
-
-          <div class="dash-actions">
-            <div class="dropdown-wrapper">
-              <button class="dash-btn dropdown-trigger">
-                <i class="ph ph-sort-ascending"></i> ترتيب
-              </button>
-              <!-- Dropdown Content -->
-              <div class="dropdown-menu">
-                <label><input type="radio" name="sort" value="new" checked onchange="sortBooks('new')"> الأحدث</label>
-                <label><input type="radio" name="sort" value="alpha" onchange="sortBooks('alpha')"> الأبجدي</label>
-                <label><input type="radio" name="sort" value="progress" onchange="sortBooks('progress')"> التقدم</label>
-              </div>
-            </div>
-
-            <div class="view-toggles-group">
-              <button class="dash-icon-btn active" onclick="setViewMode('grid', this)"><i
-                  class="ph-bold ph-squares-four"></i></button>
-              <button class="dash-icon-btn" onclick="setViewMode('list', this)"><i class="ph-bold ph-list"></i></button>
-            </div>
-          </div>
+      {# ─── Filters ─── #}
+      <div class="lib-filters">
+        <div class="lib-pill active" onclick="filterBooks('all', this)">
+          <i class="ph-bold ph-squares-four"></i> الكل
+        </div>
+        <div class="lib-pill" onclick="filterBooks('reading', this)">
+          <i class="ph-bold ph-book-open"></i> أقرأه
+        </div>
+        <div class="lib-pill" onclick="filterBooks('finished', this)">
+          <i class="ph-bold ph-check-circle"></i> مكتمل
+        </div>
+        <div class="lib-pill" onclick="filterBooks('later', this)">
+          <i class="ph-bold ph-clock"></i> لاحقاً
+        </div>
+        <div class="lib-pill" onclick="filterBooks('favorite', this)">
+          <i class="ph-bold ph-heart"></i> مفضلة
         </div>
       </div>
     </div>
+  </section>
 
-
-
-
-    <!-- Main Content -->
-    <!-- Books Grid Wrapper -->
-    <div class="container pb-5">
-      <div class="books-count-header mb-3">
-        يتم عرض <strong id="visibleCount">{{ books|length }}</strong> كتاب
+  <div class="container">
+    {# ─── Toolbar ─── #}
+    <div class="lib-toolbar">
+      <div class="lib-search">
+        <i class="ph ph-magnifying-glass s-icon"></i>
+        <input type="text" id="searchInput" placeholder="ابحث عن كتاب أو مؤلف...">
       </div>
+      <span class="lib-count">يتم عرض <strong id="visibleCount">{{ books|length }}</strong> كتاب</span>
+    </div>
 
-      <!-- Books Grid -->
-      <div class="books-showcase" id="booksGrid">
-        {% for book in books %}
-        {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author|default('')) %}
+    {# ─── Books Grid ─── #}
+    {% if books %}
+    <div class="lib-grid" id="booksGrid">
+      {% for book in books %}
+      {% set ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author|default('')) %}
 
-        <div class="book-card book-item-el" data-status="{{ book.status }}" data-title="{{ book.title|lower }}"
-          data-author="{{ book.author|default('')|lower }}" data-category="{{ book.categories|default('')|lower }}"
-          data-pages="{{ book.page_count or 0 }}" data-progress="{{ book.reading_progress or 0 }}"
-          data-created="{{ book.status_created_at|default('') }}" data-last-read="{{ book.last_read_at|default('') }}"
-          onclick="window.location.href='{{ url_for('main.book_detail', book_id=book.id) }}'">
+      <div class="lib-card book-item" data-status="{{ book.status }}" data-title="{{ book.title|lower }}"
+        data-author="{{ book.author|default('')|lower }}"
+        onclick="window.location.href='{{ url_for('main.book_detail', book_id=book.id) }}'">
 
-          <!-- Status Badge -->
-          {% if book.status == 'favorite' %}
-          <div class="book-status-badge favorite">
-            <i class="ph-fill ph-heart"></i> مفضلة
-          </div>
-          {% elif book.status == 'finished' %}
-          <div class="book-status-badge finished">
-            <i class="ph-fill ph-check-circle"></i> مكتمل
-          </div>
-          {% elif book.status == 'later' %}
-          <div class="book-status-badge later">
-            <i class="ph-fill ph-clock"></i> لاحقاً
-          </div>
-          {% elif book.status == 'reading' %}
-          <div class="book-status-badge reading">
-            <i class="ph-fill ph-book-open"></i> أقرأه
-          </div>
-          {% elif book.status == 'on_hold' %}
-          <div class="book-status-badge on_hold">
-            <i class="ph-fill ph-pause"></i> معلق
-          </div>
-          {% elif book.status == 'dropped' %}
-          <div class="book-status-badge dropped">
-            <i class="ph-fill ph-x-circle"></i> متروك
+        {# Status Badge #}
+        {% if book.status == 'favorite' %}
+        <div class="lib-badge favorite"><i class="ph-fill ph-heart"></i> مفضلة</div>
+        {% elif book.status == 'finished' %}
+        <div class="lib-badge finished"><i class="ph-fill ph-check-circle"></i> مكتمل</div>
+        {% elif book.status == 'later' %}
+        <div class="lib-badge later"><i class="ph-fill ph-clock"></i> لاحقاً</div>
+        {% elif book.status == 'reading' %}
+        <div class="lib-badge reading"><i class="ph-fill ph-book-open"></i> أقرأه</div>
+        {% elif book.status == 'on_hold' %}
+        <div class="lib-badge on_hold"><i class="ph-fill ph-pause"></i> معلق</div>
+        {% elif book.status == 'dropped' %}
+        <div class="lib-badge dropped"><i class="ph-fill ph-x-circle"></i> متروك</div>
+        {% endif %}
+
+        <div class="lib-cover">
+          <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}" loading="lazy"
+            onerror="this.onerror=null; this.src='{{ ai_cover }}';">
+
+          {% if book.reading_progress and book.reading_progress > 0 %}
+          <div class="lib-progress-bar">
+            <div class="lib-progress-fill {{ 'done' if book.reading_progress >= 100 }}"
+              style="width:{{ book.reading_progress }}%"></div>
           </div>
           {% endif %}
 
-          <div class="book-cover-wrap">
-            <img src="{{ book.cover_url or ai_cover }}" alt="{{ book.title }}"
-              onerror="this.onerror=null; this.src='{{ ai_cover }}';">
-
-            <!-- Progress Bar on Cover -->
-            {% if book.reading_progress and book.reading_progress > 0 %}
-            <div class="cover-progress">
-              <div class="cover-progress-fill" style="width: {{ book.reading_progress }}%;"></div>
-            </div>
-            {% endif %}
-
-            <!-- Hover Overlay -->
-            <div class="book-hover-overlay">
-              <div class="hover-quick-info">
-                {% if book.page_count %}
-                <span><i class="ph ph-file-text"></i> {{ book.page_count }} صفحة</span>
-                {% endif %}
-                {% if book.language %}
-                <span><i class="ph ph-translate"></i> {{ book.language|upper }}</span>
-                {% endif %}
-                {% if book.reading_progress %}
-                <span><i class="ph ph-chart-line-up"></i> {{ book.reading_progress }}%</span>
-                {% endif %}
-              </div>
-
-              <div class="hover-actions">
-                <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="hover-btn view" title="عرض التفاصيل"
-                  onclick="event.stopPropagation()">
-                  <i class="ph-bold ph-eye"></i>
-                </a>
-                {% if book.google_id %}
-                <a href="{{ url_for('main.book_read', book_id=book.id) }}" class="hover-btn read" title="قراءة"
-                  onclick="event.stopPropagation()">
-                  <i class="ph-bold ph-book-open"></i>
-                </a>
-                {% endif %}
-                <button class="hover-btn" style="background: rgba(139, 92, 246, 0.9);"
-                  onclick="event.stopPropagation(); openProgressModal({{ book.id }}, {{ book.reading_progress or 0 }})"
-                  title="تحديث التقدم">
-                  <i class="ph-bold ph-chart-line-up"></i>
-                </button>
-              </div>
+          <div class="lib-overlay">
+            <div class="lib-hover-btns">
+              <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="lib-hover-btn view" title="عرض"
+                onclick="event.stopPropagation()">
+                <i class="ph-bold ph-eye"></i>
+              </a>
+              {% if book.google_id %}
+              <a href="{{ url_for('main.book_read', book_id=book.id) }}" class="lib-hover-btn read" title="قراءة"
+                onclick="event.stopPropagation()">
+                <i class="ph-bold ph-book-open"></i>
+              </a>
+              {% endif %}
+              <button class="lib-hover-btn prog" title="تحديث التقدم"
+                onclick="event.stopPropagation(); openProgressModal({{ book.id }}, {{ book.reading_progress or 0 }})">
+                <i class="ph-bold ph-chart-line-up"></i>
+              </button>
             </div>
           </div>
+        </div>
 
-          <div class="book-info">
-            <h3 class="book-title">{{ book.title }}</h3>
-            <p class="book-author">{{ book.author or 'مؤلف غير معروف' }}</p>
-
-            <!-- Meta Tags Row -->
-            <div class="book-meta-row">
-              {% if book.categories %}
-              <span class="book-meta-tag category">
-                <i class="ph ph-bookmark"></i>
-                {{ book.categories.split(',')[0][:15] }}
-              </span>
-              {% endif %}
-              {% if book.page_count %}
-              <span class="book-meta-tag">
-                <i class="ph ph-file-text"></i>
-                {{ book.page_count }}ص
-              </span>
-              {% endif %}
-            </div>
-
-            <!-- Rating if available locally -->
-            <div class="book-rating">
-              {% if book.rating %}
-              <i class="ph-fill ph-star"></i>
-              <span class="rating-value">{{ book.rating }}</span>
-              {% else %}
-              <i class="ph ph-star" style="color: var(--text-muted);"></i>
-              <span class="rating-count">--</span>
-              {% endif %}
-            </div>
-
-            <!-- Reading Progress Bar -->
-            {% if book.reading_progress and book.reading_progress > 0 %}
-            <div class="reading-progress-bar">
-              <div class="reading-progress-fill {{ 'complete' if book.reading_progress >= 100 else '' }}"
-                style="width: {{ book.reading_progress }}%;"></div>
-            </div>
-            <div class="reading-progress-text">
-              <span>{{ book.reading_progress }}% مكتمل</span>
-              {% if book.estimated_read_time %}
-              <span>~{{ (book.estimated_read_time * (100 - book.reading_progress) / 100)|int }} د متبقي</span>
-              {% endif %}
-            </div>
+        <div class="lib-info">
+          <h3>{{ book.title }}</h3>
+          <p class="author">{{ book.author or 'مؤلف غير معروف' }}</p>
+          <div class="rating">
+            {% if book.rating %}
+            <i class="ph-fill ph-star"></i>
+            <span>{{ book.rating }}</span>
+            {% else %}
+            <i class="ph ph-star no-rate"></i>
+            <span class="no-rate">--</span>
             {% endif %}
           </div>
-        </div>
-        {% endfor %}
-
-        <!-- Add Book Card -->
-        <a href="{{ url_for('public.list_books') }}" class="add-book-card animate-on-scroll fade-up"
-          style="animation-delay: 0.1s; text-decoration: none;">
-          <div class="add-book-icon">
-            <i class="ph-bold ph-plus"></i>
-          </div>
-          <span class="add-book-text">استكشاف المزيد من الكتب</span>
-        </a>
-
-        <!-- No Results Msg -->
-        <div class="no-results" style="display: none;" id="noResults">
-          <div class="no-results-icon">
-            <i class="ph ph-magnifying-glass"></i>
-          </div>
-          <h3>لا توجد نتائج</h3>
-          <p>لم نجد أي كتب تطابق بحثك حالياً.</p>
-          <button class="btn btn-secondary mt-3" onclick="clearSearch()">عرض كل الكتب</button>
-        </div>
-      </div>
-
-      <!-- Empty State (if no books at all) -->
-      {% if not books %}
-      <div class="empty-state animate-on-scroll fade-up">
-        <div class="empty-icon">
-          <i class="ph-fill ph-books"></i>
-        </div>
-        <h2 class="empty-title">مكتبتك فارغة حالياً</h2>
-        <p class="empty-text">ابدأ رحلتك في القراءة واستكشف آلاف الكتب المتاحة في مكتبتنا. أضف الكتب التي تعجبك وتابع
-          تقدمك.
-        </p>
-        <a href="{{ url_for('public.list_books') }}" class="btn btn-primary btn-lg">
-          <i class="ph-bold ph-compass"></i>
-          استكشف المكتبة
-        </a>
-      </div>
-      <script>document.getElementById('booksGrid').style.display = 'none';</script>
-      {% endif %}
-    </div>
-
-    <!-- Progress Update Modal -->
-    <div class="modal-backdrop" id="progressModal">
-      <div class="modal-dialog" style="max-width: 400px;">
-        <div class="modal-header">
-          <div class="modal-title-wrap">
-            <div class="modal-title-icon">
-              <i class="ph-bold ph-chart-line-up"></i>
+          {% if book.reading_progress and book.reading_progress > 0 %}
+          <div class="prog-row">
+            <div class="prog-track">
+              <div class="prog-track-fill {{ 'done' if book.reading_progress >= 100 }}"
+                style="width:{{ book.reading_progress }}%"></div>
             </div>
-            <h5 class="modal-title">تحديث تقدم القراءة</h5>
+            <div class="prog-text">{{ book.reading_progress }}% مكتمل</div>
           </div>
-          <button class="modal-close" onclick="closeProgressModal()">
-            <i class="ph-bold ph-x"></i>
-          </button>
+          {% endif %}
         </div>
-        <div class="modal-body progress-modal-content">
-          <div class="progress-value-display" id="progressDisplay">0%</div>
-          <div class="progress-slider-container">
-            <input type="range" class="progress-slider" id="progressSlider" min="0" max="100" value="0"
-              oninput="updateProgressDisplay(this.value)">
-          </div>
-          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-            حرك المؤشر لتحديد نسبة تقدمك في قراءة الكتاب
-          </p>
-          <button class="btn btn-primary btn-lg" style="width: 100%;" onclick="saveProgress()">
-            <i class="ph-bold ph-floppy-disk"></i>
-            حفظ التقدم
-          </button>
-        </div>
+      </div>
+      {% endfor %}
+
+      {# Add Card #}
+      <a href="{{ url_for('public.list_books') }}" class="lib-add-card">
+        <div class="lib-add-icon"><i class="ph-bold ph-plus"></i></div>
+        <span style="font-weight:600; font-size:0.85rem;">استكشف المزيد</span>
+      </a>
+
+      {# No Results #}
+      <div class="lib-no-results" id="noResults">
+        <i class="ph ph-magnifying-glass"></i>
+        <h3>لا توجد نتائج</h3>
+        <p style="color: var(--text-muted);">لم نجد كتباً تطابق بحثك</p>
       </div>
     </div>
 
-    <!-- Book Detail Modal -->
-    <div class="modal-backdrop" id="bookDetailModal">
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <div class="modal-title-wrap">
-            <div class="modal-title-icon">
-              <i class="ph-bold ph-book-open"></i>
-            </div>
-            <h5 class="modal-title">تفاصيل الكتاب</h5>
-          </div>
-          <button class="modal-close" onclick="closeModal()">
-            <i class="ph-bold ph-x"></i>
-          </button>
-        </div>
-        <div class="modal-body" id="modalContent">
-          <div class="text-center py-5">
-            <i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--primary-light);"></i>
-          </div>
-        </div>
+    {% else %}
+    {# Empty State #}
+    <div class="lib-empty">
+      <div class="lib-empty-icon"><i class="ph-fill ph-books"></i></div>
+      <h2>مكتبتك فارغة</h2>
+      <p>ابدأ رحلتك واستكشف آلاف الكتب المتاحة</p>
+      <a href="{{ url_for('public.list_books') }}" class="btn btn-primary btn-lg">
+        <i class="ph-bold ph-compass"></i> استكشف المكتبة
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ═══ Progress Modal ═══ #}
+  <div class="lib-modal-bg" id="progressModal">
+    <div class="lib-modal">
+      <h5>📊 تحديث تقدم القراءة</h5>
+      <div class="prog-display" id="progressDisplay">0%</div>
+      <input type="range" id="progressSlider" min="0" max="100" value="0"
+        oninput="document.getElementById('progressDisplay').textContent = this.value + '%'">
+      <p style="color: var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem;">حرك المؤشر لتحديد نسبة تقدمك</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeProgressModal()">إلغاء</button>
+        <button class="btn-save" onclick="saveProgress()"><i class="ph-bold ph-floppy-disk"></i> حفظ</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <script>
-      // Current book for progress update
-      let currentProgressBookId = null;
+<script>
+  (function () {
+    let currentProgressBookId = null;
 
-      // --- View Mode ---
-      function setViewMode(mode, btn) {
-        const grid = document.getElementById('booksGrid');
-        grid.classList.remove('view-grid-lg', 'view-list');
+    // ─── Filter ───
+    window.filterBooks = function (status, btn) {
+      document.querySelectorAll('.lib-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
 
-        if (mode === 'grid-lg') {
-          grid.classList.add('view-grid-lg');
-        } else if (mode === 'list') {
-          grid.classList.add('view-list');
-        }
+      const term = document.getElementById('searchInput').value.toLowerCase();
+      const books = document.querySelectorAll('.book-item');
+      let visible = 0;
 
-        // Update active button
-        document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      }
-
-      // --- Sorting ---
-      function sortBooks(sortType) {
-        const grid = document.getElementById('booksGrid');
-        const books = Array.from(grid.querySelectorAll('.book-item-el'));
-        const addCard = grid.querySelector('.add-book-card');
-        const noResults = grid.querySelector('.no-results');
-
-        books.sort((a, b) => {
-          switch (sortType) {
-            case 'alpha':
-              return a.dataset.title.localeCompare(b.dataset.title, 'ar');
-            case 'progress':
-              return parseInt(b.dataset.progress) - parseInt(a.dataset.progress);
-            case 'pages':
-              return parseInt(b.dataset.pages) - parseInt(a.dataset.pages);
-            case 'last_read':
-              const dateA = a.dataset.lastRead ? new Date(a.dataset.lastRead) : 0;
-              const dateB = b.dataset.lastRead ? new Date(b.dataset.lastRead) : 0;
-              return dateB - dateA;
-            default: // new
-              return 0; // keep original order (newest first from server)
-          }
-        });
-
-        // Re-append sorted books
-        books.forEach(book => grid.appendChild(book));
-        if (addCard) grid.appendChild(addCard);
-        if (noResults) grid.appendChild(noResults);
-      }
-
-      // --- Category Filter ---
-      function filterByCategory(category) {
-        const books = document.querySelectorAll('.book-item-el');
-        let visible = 0;
-
-        books.forEach(book => {
-          const bookCat = book.dataset.category || '';
-          if (!category || bookCat.includes(category.toLowerCase())) {
-            book.style.display = 'block';
-            visible++;
-          } else {
-            book.style.display = 'none';
-          }
-        });
-
-        updateCount(visible);
-        toggleNoResults(visible === 0);
-      }
-
-      // --- Progress Modal ---
-      function openProgressModal(bookId, currentProgress) {
-        currentProgressBookId = bookId;
-        document.getElementById('progressSlider').value = currentProgress;
-        document.getElementById('progressDisplay').textContent = currentProgress + '%';
-        document.getElementById('progressModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
-      }
-
-      function closeProgressModal() {
-        document.getElementById('progressModal').classList.remove('active');
-        document.body.style.overflow = '';
-        currentProgressBookId = null;
-      }
-
-      function updateProgressDisplay(value) {
-        document.getElementById('progressDisplay').textContent = value + '%';
-      }
-
-      async function saveProgress() {
-        if (!currentProgressBookId) return;
-
-        const progress = document.getElementById('progressSlider').value;
-
-        try {
-          const response = await fetch(`/books/${currentProgressBookId}/progress`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ progress: parseInt(progress) })
-          });
-
-          if (response.ok) {
-            closeProgressModal();
-            // Refresh page to show updated progress
-            location.reload();
-          } else {
-            alert('حدث خطأ أثناء حفظ التقدم');
-          }
-        } catch (e) {
-          console.error(e);
-          alert('حدث خطأ أثناء حفظ التقدم');
-        }
-      }
-
-      // Close progress modal on escape or click outside
-      document.getElementById('progressModal').addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal-backdrop')) {
-          closeProgressModal();
-        }
+      books.forEach(b => {
+        const matchStatus = (status === 'all' || b.dataset.status === status);
+        const matchSearch = !term || (b.dataset.title || '').includes(term) || (b.dataset.author || '').includes(term);
+        if (matchStatus && matchSearch) { b.style.display = ''; visible++; }
+        else { b.style.display = 'none'; }
       });
 
-      // --- Filtering Logic ---
-      function filterBooks(status, btnElement) {
-        // Update pills UI
-        document.querySelectorAll('.stat-pill').forEach(pill => {
-          pill.classList.remove('active');
-        });
-        btnElement.classList.add('active');
+      const addCard = document.querySelector('.lib-add-card');
+      if (addCard) addCard.style.display = (status === 'all' && !term) ? 'flex' : 'none';
 
-        const books = document.querySelectorAll('.book-item-el');
-        let visible = 0;
+      document.getElementById('visibleCount').textContent = visible;
+      const noRes = document.getElementById('noResults');
+      if (noRes) noRes.style.display = visible === 0 ? 'block' : 'none';
+    };
 
-        books.forEach(book => {
-          if (status === 'all' || book.dataset.status === status) {
-            // Check search filter as well
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            if (isMatchSearch(book, searchTerm)) {
-              book.style.display = 'block';
-              visible++;
-            } else {
-              book.style.display = 'none';
-            }
-          } else {
-            book.style.display = 'none';
-          }
-        });
-
-        // Always show the "add book" card if not searching or if search yields results? 
-        // Let's hide add-book card if specific status filter is active unless it's ALL
-        const addCard = document.querySelector('.add-book-card');
-        if (addCard) {
-          addCard.style.display = (status === 'all' && !document.getElementById('searchInput').value) ? 'flex' : 'none';
-        }
-
-        updateCount(visible);
-        toggleNoResults(visible === 0);
-      }
-
-      // --- Search Logic ---
-      const searchInput = document.getElementById('searchInput');
-      const clearBtn = document.querySelector('.search-clear');
-
+    // ─── Search ───
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
       searchInput.addEventListener('input', function () {
-        const term = this.value.toLowerCase();
-        clearBtn.classList.toggle('visible', term.length > 0);
+        const activePill = document.querySelector('.lib-pill.active');
+        if (activePill) activePill.click();
+      });
+    }
 
-        // Get current active status
-        const activePill = document.querySelector('.stat-pill.active');
-        let currentStatus = 'all';
-        if (activePill.classList.contains('favorite')) currentStatus = 'favorite';
-        else if (activePill.classList.contains('finished')) currentStatus = 'finished';
-        else if (activePill.classList.contains('later')) currentStatus = 'later';
+    // ─── Progress Modal ───
+    window.openProgressModal = function (bookId, current) {
+      currentProgressBookId = bookId;
+      document.getElementById('progressSlider').value = current;
+      document.getElementById('progressDisplay').textContent = current + '%';
+      document.getElementById('progressModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    };
 
-        const books = document.querySelectorAll('.book-item-el');
-        let visible = 0;
+    window.closeProgressModal = function () {
+      document.getElementById('progressModal').classList.remove('active');
+      document.body.style.overflow = '';
+      currentProgressBookId = null;
+    };
 
-        books.forEach(book => {
-          const matchesStatus = (currentStatus === 'all' || book.dataset.status === currentStatus);
-          const matchesSearch = isMatchSearch(book, term);
-
-          if (matchesStatus && matchesSearch) {
-            book.style.display = 'block';
-            visible++;
-          } else {
-            book.style.display = 'none';
-          }
+    window.saveProgress = async function () {
+      if (!currentProgressBookId) return;
+      const progress = document.getElementById('progressSlider').value;
+      try {
+        const res = await fetch(`/books/${currentProgressBookId}/progress`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ progress: parseInt(progress) })
         });
+        if (res.ok) { closeProgressModal(); location.reload(); }
+        else { alert('حدث خطأ أثناء حفظ التقدم'); }
+      } catch (e) { alert('حدث خطأ أثناء حفظ التقدم'); }
+    };
 
-        const addCard = document.querySelector('.add-book-card');
-        if (addCard) addCard.style.display = (term.length === 0 && currentStatus === 'all') ? 'flex' : 'none';
-
-        updateCount(visible);
-        toggleNoResults(visible === 0);
-      });
-
-      function isMatchSearch(book, term) {
-        if (!term) return true;
-        const title = book.dataset.title || '';
-        const author = book.dataset.author || '';
-        const category = book.dataset.category || '';
-        return title.includes(term) || author.includes(term) || category.includes(term);
-      }
-
-      function clearSearch() {
-        searchInput.value = '';
-        searchInput.dispatchEvent(new Event('input'));
-        searchInput.focus();
-      }
-
-      function updateCount(count) {
-        document.getElementById('visibleCount').textContent = count;
-      }
-
-      function toggleNoResults(show) {
-        const el = document.getElementById('noResults');
-        if (el) el.style.display = show ? 'grid' : 'none';
-      }
-
-      // --- Modal Logic ---
-      const modal = document.getElementById('bookDetailModal');
-
-      function showBookDetail(bookId) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-
-        // Fetch content via AJAX
-        fetch(`/book/${bookId}/modal`)
-          .then(response => {
-            if (response.ok) return response.text();
-            throw new Error('Network response was not ok');
-          })
-          .then(html => {
-            document.getElementById('modalContent').innerHTML = html;
-          })
-          .catch(error => {
-            document.getElementById('modalContent').innerHTML = `
-          <div class="text-center py-5">
-            <i class="ph ph-warning" style="font-size: 2rem; color: var(--danger);"></i>
-            <p class="mt-2 text-muted">حدث خطأ أثناء تحميل التفاصيل.</p>
-          </div>
-        `;
-          });
-      }
-
-      function closeModal() {
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-        setTimeout(() => {
-          document.getElementById('modalContent').innerHTML = `
-        <div class="text-center py-5">
-          <i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--primary-light);"></i>
-        </div>
-      `;
-        }, 300);
-      }
-
-      // Close on click outside
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          if (modal.classList.contains('active')) closeModal();
-          if (document.getElementById('progressModal').classList.contains('active')) closeProgressModal();
-        }
-      });
-
-      // Helper Animation
-      document.addEventListener('DOMContentLoaded', () => {
-        const elements = document.querySelectorAll('.animate-on-scroll');
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-visible');
-            }
-          });
-        }, { threshold: 0.1 });
-
-        elements.forEach(el => observer.observe(el));
-      });
-    </script>
-    {% endblock %}
+    // Close on backdrop click or Escape
+    document.getElementById('progressModal').addEventListener('click', e => {
+      if (e.target.classList.contains('lib-modal-bg')) closeProgressModal();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeProgressModal();
+    });
+  })();
+</script>
+{% endblock %}

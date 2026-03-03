@@ -11,22 +11,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
     <!-- Icons - Phosphor -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/professional.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/professional.css') }}?v=2.1">
 
     <!-- Animation Libraries CSS -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     {% block head %}{% endblock %}
+    <!-- Luxury Classic Dark Theme — MUST BE LAST -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/luxury-theme.css') }}?v=1.5">
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
 
     <!-- Fixed Navbar -->
     <nav class="navbar" id="mainNav">
@@ -68,16 +70,15 @@
                 {% endif %}
 
                 <!-- Theme Toggle (Navbar) -->
-                <button class="nav-link btn-ghost" onclick="toggleTheme()" aria-label="Toggle theme">
-                    <i class="ph ph-moon moon-icon"></i>
-                    <i class="ph ph-sun sun-icon"></i>
+                <button class="theme-toggle btn-icon" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <i class="ph-bold ph-sun"></i>
                 </button>
             </div>
 
             <!-- Logo (Right) -->
-            <a href="/" class="nav-logo">
-                <span class="text-gradient">ALHAM</span>
-                <i class="ph-fill ph-sparkle text-primary"></i>
+            <a href="/" class="nav-logo" style="display:flex; align-items:center; gap:0.5rem;">
+                <span style="font-weight: 800; font-size: 1.25rem;">ALHAM</span>
+                <i class="ph-fill ph-sparkle" style="color: var(--primary-main, #2563eb);"></i>
             </a>
         </div>
 
@@ -226,7 +227,8 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer section py-5" style="border-top: 1px solid var(--border-subtle);">
+    <footer class="footer section py-5"
+        style="border-top: 1px solid var(--border-subtle); background: transparent; backdrop-filter: blur(20px); z-index: 10; position: relative;">
         <div class="container">
             <div class="grid-4 gap-5">
                 <div class="footer-brand">
@@ -466,33 +468,32 @@
             });
         });
 
-        // ... (Keep existing Theme, Mobile Menu, Scroll logic) ...
-        // Theme Toggle Functionality
+        // ---------------------------------------------------------
+        // 🌓 ADVANCED THEME MANAGEMENT
+        // ---------------------------------------------------------
         function initTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            } else if (!prefersDark) {
-                document.documentElement.setAttribute('data-theme', 'light');
+            const savedTheme = localStorage.getItem('alham_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            const icon = document.querySelector('.theme-toggle i');
+            if (icon) {
+                icon.className = savedTheme === 'dark' ? 'ph-bold ph-moon' : 'ph-bold ph-sun';
             }
         }
 
         function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('alham_theme', newTheme);
 
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-
-            const btn = document.querySelector('.nav-link.btn-ghost');
-            if (btn) {
-                btn.style.transform = 'scale(1.2) rotate(360deg)';
+            const icon = document.querySelector('.theme-toggle i');
+            if (icon) {
+                // Add rotation animation
+                icon.style.transform = 'rotate(180deg)';
                 setTimeout(() => {
-                    btn.style.transform = '';
-                }, 300);
+                    icon.className = newTheme === 'dark' ? 'ph-fill ph-moon' : 'ph-bold ph-sun';
+                    icon.style.transform = 'rotate(0)';
+                }, 150);
             }
         }
 

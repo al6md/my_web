@@ -1,0 +1,271 @@
+/* 
+    PREMIUM DESIGN SYSTEM OVERRIDES 
+    Light, Clean, and Minimalist (Apple-style UI)
+*/
+
+:root {
+    /* Premium Light Variables */
+    --premium-glass: rgba(255, 255, 255, 0.75);
+    --premium-glass-hover: rgba(255, 255, 255, 0.85);
+    --premium-border: rgba(0, 0, 0, 0.04);
+    --premium-shadow-subtle: 0 2px 10px rgba(0, 0, 0, 0.02);
+    --premium-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+
+    /* Core Accent Colors for Light Theme */
+    --primary-main: #2563eb;
+    /* Clean Royal Blue */
+    --primary-light: #dbeafe;
+    --text-primary: #111827;
+    /* Deep Gray-Black for high legibility */
+    --text-secondary: #4b5563;
+    /* Medium Gray */
+}
+
+/* Global Light Base Override */
+body {
+    background: #fbfbfc !important;
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.02) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(20, 184, 166, 0.02) 0%, transparent 40%) !important;
+    color: var(--text-primary) !important;
+    font-weight: 400;
+}
+
+/* Override base.css dark theme forces if any */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.015em !important;
+}
+
+p,
+span,
+div {
+    color: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🧭 MINIMALIST FROSTED NAVBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+.navbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-bottom: 1px solid var(--premium-border) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+.navbar.scrolled {
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Nav Logo */
+.nav-logo,
+.nav-logo span {
+    color: var(--text-primary) !important;
+    text-shadow: none !important;
+    background: none !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+}
+
+.nav-logo i {
+    color: var(--primary-main) !important;
+    background: none !important;
+    -webkit-text-fill-color: var(--primary-main) !important;
+}
+
+/* User Menu & Links */
+.nav-links {
+    background: rgba(0, 0, 0, 0.02) !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    box-shadow: none !important;
+    padding: 0.25rem;
+    border-radius: 999px;
+}
+
+.nav-link {
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    border-radius: 999px !important;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--text-primary) !important;
+    background: white !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    transform: translateY(0) !important;
+}
+
+/* Navigation Icons */
+.btn-icon,
+.nav-link.btn-ghost {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    border: none !important;
+}
+
+.btn-icon:hover,
+.nav-link.btn-ghost:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🔎 CLEAN SEARCH MODAL & CHAT OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════════ */
+.modal-content,
+.chat-modal-content {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+    border-radius: 20px !important;
+    color: var(--text-primary) !important;
+}
+
+.search-form {
+    background: rgba(0, 0, 0, 0.02) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border-radius: 12px !important;
+    padding: 0.5rem 1rem !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01) !important;
+}
+
+.search-form input {
+    color: var(--text-primary) !important;
+}
+
+.search-form input::placeholder {
+    color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.search-form:focus-within {
+    background: white !important;
+    border-color: rgba(37, 99, 235, 0.3) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Overriding chat text colors inside modals */
+.chat-modal-content h5,
+.chat-modal-content small,
+.chat-header i {
+    color: var(--text-primary) !important;
+}
+
+.chat-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.chat-header .btn-icon {
+    background: rgba(0, 0, 0, 0.03) !important;
+    color: var(--text-secondary) !important;
+}
+
+.chat-header .btn-icon:hover {
+    background: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🌌 MINIMALIST FOOTER
+   ═══════════════════════════════════════════════════════════════════════════ */
+.footer {
+    background: #ffffff !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.02) !important;
+    color: var(--text-secondary) !important;
+}
+
+.footer h4,
+.footer h5,
+.footer .text-gradient {
+    color: var(--text-primary) !important;
+    background: none !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+.footer .text-muted {
+    color: #6b7280 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ✨ EXQUISITE SUBTLE CARD DESIGN
+   ═══════════════════════════════════════════════════════════════════════════ */
+.glass-book-card,
+.book-card {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    border-radius: 16px !important;
+    box-shadow: var(--premium-shadow-subtle) !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    color: var(--text-primary) !important;
+}
+
+.glass-book-card:hover,
+.book-card:hover {
+    transform: translateY(-4px) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: var(--premium-shadow-hover) !important;
+    background: #ffffff !important;
+}
+
+/* Card typography overrides */
+.glass-book-card h3,
+.glass-book-card h4,
+.glass-book-card h5,
+.glass-book-card h6,
+.book-card h3,
+.book-card h4,
+.book-card h5,
+.book-card h6 {
+    color: var(--text-primary) !important;
+}
+
+.glass-book-card p,
+.glass-book-card small,
+.glass-book-card span,
+.book-card p,
+.book-card small,
+.book-card span {
+    color: var(--text-secondary) !important;
+}
+
+/* Clean Button Overrides */
+.btn-primary {
+    background: var(--text-primary) !important;
+    /* Apple style black/dark button */
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+}
+
+.btn-primary:hover {
+    background: #000000 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+.btn-secondary {
+    background: white !important;
+    color: var(--text-primary) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.btn-secondary:hover {
+    background: #f9fafb !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+}

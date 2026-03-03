@@ -5,7 +5,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 class AIClient:
-    def __init__(self, base_url="http://localhost:5000/api"):
+    def __init__(self, base_url="http://localhost:5000/api/engine"):
         self.base_url = base_url
         self.session = requests.Session()
         self._local_scorer = None

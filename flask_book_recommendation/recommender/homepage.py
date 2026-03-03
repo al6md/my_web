@@ -138,7 +138,6 @@ def get_discovery_picks(limit=12):
     return books[:limit]
 
 
-@cache.memoize(timeout=300)
 def get_homepage_sections(user_id, recent_query=None):
     """
     ترجع قائمة أقسام لصفحة /explore مع توصيات متنوعة.

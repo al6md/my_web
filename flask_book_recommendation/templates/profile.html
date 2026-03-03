@@ -79,169 +79,137 @@
             </div>
         </div>
 
-        <!-- Main Content Grid -->
+        <!-- Main Content — Single Column -->
         <div class="profile-grid">
-            <!-- Left Column -->
-            <div class="profile-left-column">
-                <!-- Account Settings Card -->
-                <div class="profile-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="ph ph-user-circle"></i>
-                        </div>
-                        <h2>المعلومات الشخصية</h2>
+            <!-- Account Settings Card -->
+            <div class="profile-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="ph ph-user-circle"></i>
+                    </div>
+                    <h2>المعلومات الشخصية</h2>
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.profile') }}" class="profile-form"
+                    enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="form-group">
+                        <label for="name">
+                            <i class="ph ph-user"></i>
+                            الاسم الكامل
+                        </label>
+                        <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
                     </div>
 
-                    <form method="POST" action="{{ url_for('auth.profile') }}" class="profile-form"
-                        enctype="multipart/form-data">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="ph ph-at"></i>
+                            البريد الإلكتروني
+                        </label>
+                        <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="name">
-                                <i class="ph ph-user"></i>
-                                الاسم الكامل
-                            </label>
-                            <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
+                    <div class="form-divider">
+                        <span>تغيير كلمة المرور</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="current_password">
+                            <i class="ph ph-lock"></i>
+                            كلمة المرور الحالية
+                        </label>
+                        <input type="password" id="current_password" name="current_password"
+                            placeholder="اتركها فارغة إذا لم ترد التغيير">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_password">
+                            <i class="ph ph-lock-key"></i>
+                            كلمة المرور الجديدة
+                        </label>
+                        <input type="password" id="new_password" name="new_password"
+                            placeholder="أدخل كلمة المرور الجديدة">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-save">
+                        <i class="ph ph-check-circle"></i>
+                        حفظ التغييرات
+                    </button>
+                </form>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="profile-card actions-card">
+                <div class="card-header">
+                    <div class="card-icon actions-icon">
+                        <i class="ph ph-lightning"></i>
+                    </div>
+                    <h2>إجراءات سريعة</h2>
+                </div>
+
+                <div class="quick-actions">
+                    <a href="{{ url_for('main.books') }}" class="action-item">
+                        <div class="action-icon">
+                            <i class="ph ph-books"></i>
                         </div>
-
-                        <div class="form-group">
-                            <label for="email">
-                                <i class="ph ph-at"></i>
-                                البريد الإلكتروني
-                            </label>
-                            <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
+                        <div class="action-content">
+                            <span class="action-title">مكتبتي</span>
+                            <span class="action-desc">تصفح كتبك المحفوظة</span>
                         </div>
+                        <i class="ph ph-caret-left action-arrow"></i>
+                    </a>
 
-                        <div class="form-divider">
-                            <span>تغيير كلمة المرور</span>
+                    <a href="{{ url_for('explore.index') }}" class="action-item">
+                        <div class="action-icon explore">
+                            <i class="ph ph-compass"></i>
                         </div>
-
-                        <div class="form-group">
-                            <label for="current_password">
-                                <i class="ph ph-lock"></i>
-                                كلمة المرور الحالية
-                            </label>
-                            <input type="password" id="current_password" name="current_password"
-                                placeholder="اتركها فارغة إذا لم ترد التغيير">
+                        <div class="action-content">
+                            <span class="action-title">استكشف</span>
+                            <span class="action-desc">اكتشف كتب جديدة</span>
                         </div>
+                        <i class="ph ph-caret-left action-arrow"></i>
+                    </a>
 
-                        <div class="form-group">
-                            <label for="new_password">
-                                <i class="ph ph-lock-key"></i>
-                                كلمة المرور الجديدة
-                            </label>
-                            <input type="password" id="new_password" name="new_password"
-                                placeholder="أدخل كلمة المرور الجديدة">
+                    <a href="{{ url_for('public.list_books') }}" class="action-item">
+                        <div class="action-icon library">
+                            <i class="ph ph-bank"></i>
                         </div>
+                        <div class="action-content">
+                            <span class="action-title">المكتبة العامة</span>
+                            <span class="action-desc">تصفح المكتبة الكاملة</span>
+                        </div>
+                        <i class="ph ph-caret-left action-arrow"></i>
+                    </a>
 
-                        <button type="submit" class="btn btn-primary btn-save">
-                            <i class="ph ph-check-circle"></i>
-                            حفظ التغييرات
-                        </button>
-                    </form>
+                    <a href="{{ url_for('public.analytics') }}" class="action-item">
+                        <div class="action-icon analytics">
+                            <i class="ph ph-chart-line"></i>
+                        </div>
+                        <div class="action-content">
+                            <span class="action-title">رادار القراءة</span>
+                            <span class="action-desc">تحليل عاداتك في القراءة</span>
+                        </div>
+                        <i class="ph ph-caret-left action-arrow"></i>
+                    </a>
                 </div>
             </div>
 
-            <!-- Right Column -->
-            <div class="profile-right-column">
-                <!-- Interests Card -->
-                {% if interests %}
-                <div class="profile-card interests-card">
-                    <div class="card-header">
-                        <div class="card-icon interests-icon">
-                            <i class="ph-fill ph-heart"></i>
-                        </div>
-                        <h2>اهتماماتي</h2>
+            <!-- Danger Zone Card -->
+            <div class="profile-card danger-card">
+                <div class="card-header">
+                    <div class="card-icon danger-icon">
+                        <i class="ph ph-warning-circle"></i>
                     </div>
-
-                    <div class="interests-cloud">
-                        {% for interest in interests %}
-                        <span class="interest-pill" style="--delay: {{ loop.index * 0.05 }}s">
-                            <i class="ph ph-sparkle"></i>
-                            {{ interest.topic }}
-                        </span>
-                        {% endfor %}
-                    </div>
-
-                    <a href="{{ url_for('auth.onboarding') }}" class="btn btn-outline edit-interests-btn">
-                        <i class="ph ph-pencil-simple"></i>
-                        تعديل الاهتمامات
-                    </a>
-                </div>
-                {% endif %}
-
-                <!-- Quick Actions Card -->
-                <div class="profile-card actions-card">
-                    <div class="card-header">
-                        <div class="card-icon actions-icon">
-                            <i class="ph ph-lightning"></i>
-                        </div>
-                        <h2>إجراءات سريعة</h2>
-                    </div>
-
-                    <div class="quick-actions">
-                        <a href="{{ url_for('main.books') }}" class="action-item">
-                            <div class="action-icon">
-                                <i class="ph ph-books"></i>
-                            </div>
-                            <div class="action-content">
-                                <span class="action-title">مكتبتي</span>
-                                <span class="action-desc">تصفح كتبك المحفوظة</span>
-                            </div>
-                            <i class="ph ph-caret-left action-arrow"></i>
-                        </a>
-
-                        <a href="{{ url_for('explore.index') }}" class="action-item">
-                            <div class="action-icon explore">
-                                <i class="ph ph-compass"></i>
-                            </div>
-                            <div class="action-content">
-                                <span class="action-title">استكشف</span>
-                                <span class="action-desc">اكتشف كتب جديدة</span>
-                            </div>
-                            <i class="ph ph-caret-left action-arrow"></i>
-                        </a>
-
-                        <a href="{{ url_for('public.list_books') }}" class="action-item">
-                            <div class="action-icon library">
-                                <i class="ph ph-bank"></i>
-                            </div>
-                            <div class="action-content">
-                                <span class="action-title">المكتبة العامة</span>
-                                <span class="action-desc">تصفح المكتبة الكاملة</span>
-                            </div>
-                            <i class="ph ph-caret-left action-arrow"></i>
-                        </a>
-
-                        <a href="{{ url_for('public.analytics') }}" class="action-item">
-                            <div class="action-icon analytics">
-                                <i class="ph ph-chart-line"></i>
-                            </div>
-                            <div class="action-content">
-                                <span class="action-title">رادار القراءة</span>
-                                <span class="action-desc">تحليل عاداتك في القراءة</span>
-                            </div>
-                            <i class="ph ph-caret-left action-arrow"></i>
-                        </a>
-                    </div>
+                    <h2>منطقة الخطر</h2>
                 </div>
 
-                <!-- Danger Zone Card -->
-                <div class="profile-card danger-card">
-                    <div class="card-header">
-                        <div class="card-icon danger-icon">
-                            <i class="ph ph-warning-circle"></i>
-                        </div>
-                        <h2>منطقة الخطر</h2>
-                    </div>
+                <p class="danger-text">هذه الإجراءات لا يمكن التراجع عنها</p>
 
-                    <p class="danger-text">هذه الإجراءات لا يمكن التراجع عنها</p>
-
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
-                        <i class="ph ph-sign-out"></i>
-                        تسجيل الخروج
-                    </a>
-                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
+                    <i class="ph ph-sign-out"></i>
+                    تسجيل الخروج
+                </a>
             </div>
         </div>
     </div>

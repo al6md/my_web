@@ -122,7 +122,7 @@ class RecommendationEngine:
         
         # Online learning
         self.online_learner = OnlineLearner(
-            exploration_rate=self.config.online_learning.exploration_rate
+            exploration_rate=self.config.online_learning.epsilon
         )
         
         # Explainability

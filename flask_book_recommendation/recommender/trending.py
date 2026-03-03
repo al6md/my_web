@@ -97,7 +97,6 @@ def get_trending(limit=12):
     return result
 
 
-@cache.memoize(timeout=300)
 def get_trending_by_period(period='week', limit=12):
     """
     جلب الكتب الرائجة بناءً على فترة زمنية محددة.

@@ -42,15 +42,10 @@ def _get_ai_embedding_recommendations(
         try:
             from ..ai_client import ai_client
             if ai_client:
-                result = ai_client.recommend(
+                # Provide minimal inputs mapping to the new get_recommendations signature
+                result = ai_client.get_recommendations(
                     user_id=user_id,
-                    viewed_book_ids=viewed_book_ids,
-                    search_queries=search_queries,
-                    favorite_book_ids=favorite_book_ids,
-                    high_rated_book_ids=high_rated_book_ids,
-                    explicit_genres=explicit_genres,
-                    limit=limit,
-                    offset=offset
+                    k=limit
                 )
                 
                 if result and isinstance(result, list) and len(result) > 0:
@@ -344,13 +339,16 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
     with RecommendationPipelineLogger(user_id or 0) as pipeline_log:
         try:
             if not user_id:
+                pipeline_log.log_fallback("user_id is None/0 — user not logged in")
                 pipeline_log.set_final_count(0)
                 return get_trending(limit=limit)
 
-            # 1. Lazy Load Model & FAISS Cache
+            # ── Stage 1: TRANSFORMER (Embedding Retrieval) ──
+            transformer_start = time.perf_counter()
+            
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             
-            # Using current_app.dl_model to avoid reloading every request
+            # Lazy Load Model
             if not hasattr(current_app, 'dl_model'):
                 model_path = "instance/models/two_tower_model.pt"
                 model = TwoTowerModel()
@@ -363,10 +361,14 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 model.eval()
                 current_app.dl_model = model
             
+            # Lazy Load FAISS Index
             if not hasattr(current_app, 'faiss_index'):
                 import faiss
                 embeddings_data = BookEmbedding.query.filter(BookEmbedding.vector.isnot(None)).all()
                 if not embeddings_data:
+                    pipeline_log.log_stage("transformer", time_ms=(time.perf_counter()-transformer_start)*1000, results=0)
+                    pipeline_log.log_fallback("No book embeddings in database")
+                    pipeline_log.set_final_count(0)
                     return get_trending(limit=limit)
                 id_map = []
                 vec_list = []
@@ -376,7 +378,7 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                         vec_list.append(np.array(emb.vector, dtype=np.float32))
                         
                 dim = 384
-                index = faiss.IndexFlatIP(dim) # Inner Product -> Cosine if normalized
+                index = faiss.IndexFlatIP(dim)
                 vectors = np.array(vec_list)
                 faiss.normalize_L2(vectors)
                 index.add(vectors)
@@ -388,7 +390,12 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
             index = current_app.faiss_index
             id_map = current_app.faiss_id_map
             
-            # 2. Build User Vector
+            transformer_time = (time.perf_counter() - transformer_start) * 1000
+            pipeline_log.log_stage("transformer", time_ms=transformer_time, results=len(id_map))
+            
+            # ── Stage 2: BEHAVIORAL (User Interaction Gathering) ──
+            behavioral_start = time.perf_counter()
+            
             # Gather view history
             views = UserBookView.query.filter_by(user_id=user_id).order_by(UserBookView.last_viewed_at.desc()).limit(15).all()
             view_bids = [v.book_id for v in views if v.book_id]
@@ -408,13 +415,20 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
             # Combine all positive interaction book IDs
             interaction_ids = list(set(view_bids + rating_bids + status_bids))
             
+            behavioral_time = (time.perf_counter() - behavioral_start) * 1000
+            pipeline_log.log_stage("behavioral", time_ms=behavioral_time, results=len(interaction_ids))
+            
             if not interaction_ids:
+                pipeline_log.log_fallback(f"No interactions found for user {user_id} (views={len(view_bids)}, ratings={len(rating_bids)}, statuses={len(status_bids)})")
+                pipeline_log.set_final_count(0)
                 return get_trending(limit=limit)
                 
             embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(interaction_ids)).all()
             hists = [np.array(e.vector, dtype=np.float32) for e in embs if e.vector]
             
             if not hists:
+                pipeline_log.log_fallback(f"User {user_id} has {len(interaction_ids)} interactions but 0 matching embeddings")
+                pipeline_log.set_final_count(0)
                 return get_trending(limit=limit)
                 
             # Pad or truncate history to 10
@@ -428,6 +442,9 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
             if not np.any(int_vec):
                 int_vec = np.zeros(384, dtype=np.float32)
                 
+            # ── Stage 3: NEURAL (Two-Tower Model + FAISS Scoring) ──
+            neural_start = time.perf_counter()
+            
             # Compute User Tower Vector
             with torch.no_grad():
                 u_id_t = torch.tensor([user_id], dtype=torch.long).clamp(0, 9999).to(device)
@@ -436,21 +453,25 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 
                 user_emb_tensor = model.user_tower(u_id_t, hist_t, int_t) # (1, 128)
                 
-            # 3. FAISS Search
+            # FAISS Search
             import faiss
             query_vec = int_vec.reshape(1, -1).copy()
             faiss.normalize_L2(query_vec)
             
-            D, I = index.search(query_vec, k=300) # Get 300 to allow filtering
+            D, I = index.search(query_vec, k=300)
             candidate_ids = [id_map[i] for i in I[0] if i != -1]
             
-            # Filter 'finished' books and interacted books optionally
+            # Filter 'finished' books and interacted books
             interaction_set = set(interaction_ids)
             candidate_ids = [bid for bid in candidate_ids if bid not in finished_bids and bid not in interaction_set]
             
             # Prepare for TwoTower Scoring (Top 200)
             candidate_ids = candidate_ids[:200]
             if not candidate_ids:
+                neural_time = (time.perf_counter() - neural_start) * 1000
+                pipeline_log.log_stage("neural", time_ms=neural_time, results=0)
+                pipeline_log.log_fallback("No candidates after filtering finished/interacted books")
+                pipeline_log.set_final_count(0)
                 return get_trending(limit=limit)
                 
             cand_embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(candidate_ids)).all()
@@ -460,24 +481,29 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
             act_vecs = np.array(list(cand_dict.values()))
             
             if len(act_ids) == 0:
+                neural_time = (time.perf_counter() - neural_start) * 1000
+                pipeline_log.log_stage("neural", time_ms=neural_time, results=0)
+                pipeline_log.log_fallback("No candidate embeddings found")
+                pipeline_log.set_final_count(0)
                 return get_trending(limit=limit)
                 
             with torch.no_grad():
                 item_t = torch.tensor(act_vecs, dtype=torch.float32).to(device)
                 item_embs = model.item_tower(item_t) # (N, 128)
-                # Score
                 scores = (user_emb_tensor * item_embs).sum(dim=1).cpu().numpy()
+            
+            neural_time = (time.perf_counter() - neural_start) * 1000
+            pipeline_log.log_stage("neural", time_ms=neural_time, results=len(act_ids))
                 
             # 4. Sort
             scored_candidates = sorted(zip(act_ids, scores), key=lambda x: x[1], reverse=True)
             top_final = scored_candidates[:limit]
             
-            # 5. Build output and reason string
+            # 5. Build output
             recs = []
             for rank, (bid, score) in enumerate(top_final):
                 book = Book.query.get(bid)
                 if book:
-                    # Clip score to [-1, 1] then map to [0, 100]
                     confidence = int(max(0, min(1, (score + 1.0) / 2.0)) * 100)
                     meta = {
                         "algorithm_used": "TwoTower Neural + FAISS",

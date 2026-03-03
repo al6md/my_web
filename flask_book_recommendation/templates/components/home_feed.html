@@ -1,103 +1,161 @@
-{% from "components/macros.html" import render_book_card, render_carousel_section, render_ai_score, render_algo_badge,
-render_stars, render_confidence %}
+{% from "components/macros.html" import render_book_card, render_carousel_section, render_stars %}
 
 {# ═══════════════════════════════════════════════════════════════════════
-GROUP 1: 🧠 الذكاء الاصطناعي الفائق (Elite AI)
+GROUP 1: ✨ مُقترحات مميزة (Featured Picks)
 ═══════════════════════════════════════════════════════════════════════ #}
 
-{# [1] 🧠 RECOMMENDED FOR YOU — Full Neural Stack #}
+{# Luxury Group Header — Featured Picks #}
+<div class="lux-group-header" data-aos="fade-up">
+    <div class="lux-group-eyeline">
+        <div class="lux-group-line"></div>
+        <i class="ph-fill ph-sparkle" style="color:var(--lux-gold);font-size:0.7rem;"></i>
+        <div class="lux-group-line right"></div>
+    </div>
+    <h3 class="lux-group-title">مُقترحات مميزة</h3>
+    <p class="lux-group-desc">توصيات مختارة بعناية لتناسب ذوقك في القراءة</p>
+</div>
+
+{# [1] مُقترحة لك #}
 {% set rfy = neural_sections.get('recommended_for_you', []) if neural_sections is defined else [] %}
 {% if rfy and rfy|length > 0 %}
-{{ render_carousel_section(
-title='Recommended For You',
-icon='ph-fill ph-sparkle',
-books=rfy,
-id_prefix='rfy',
-badges=[{'text': 'Full Neural Stack', 'pulse': true}],
-color='purple'
-) }}
+<div data-aos="fade-up" data-aos-delay="50">
+    {{ render_carousel_section(
+    title='مُقترحة لك',
+    icon='ph-fill ph-sparkle',
+    books=rfy,
+    id_prefix='rfy',
+    badges=[],
+    color='gold'
+    ) }}
+</div>
 {% endif %}
 
-{# [2] 🧬 DEEP LEARNING PICKS — Two-Tower Model #}
+{# [2] اختيارات مميزة #}
 {% if deep_learning_books is defined and deep_learning_books and deep_learning_books|length > 0 %}
-{{ render_carousel_section(
-title='Deep Learning Picks',
-icon='ph-fill ph-robot',
-books=deep_learning_books,
-id_prefix='deep_learning',
-badges=[{'text': 'Two-Tower Model', 'pulse': true}],
-color='purple'
-) }}
+<div data-aos="fade-up" data-aos-delay="100">
+    {{ render_carousel_section(
+    title='اختيارات مميزة',
+    icon='ph-fill ph-star',
+    books=deep_learning_books,
+    id_prefix='deep_learning',
+    badges=[],
+    color='gold'
+    ) }}
+</div>
 {% endif %}
 
-{# [3] 🕸️ GRAPH-BASED DISCOVERY — Graph Recommender Output #}
+{# [3] اكتشافات جديدة #}
 {% set gbd = neural_sections.get('graph_discovery', []) if neural_sections is defined else [] %}
 {% if gbd and gbd|length > 0 %}
-{{ render_carousel_section(
-title='Graph-Based Discovery',
-icon='ph-fill ph-graph',
-books=gbd,
-id_prefix='graph_discovery',
-badges=[{'text': 'Graph Neural Network', 'pulse': false}],
-color='teal'
-) }}
+<div data-aos="fade-up" data-aos-delay="150">
+    {{ render_carousel_section(
+    title='اكتشافات جديدة',
+    icon='ph-fill ph-compass',
+    books=gbd,
+    id_prefix='graph_discovery',
+    badges=[],
+    color='gold'
+    ) }}
+</div>
 {% endif %}
 
+{# ═══ Luxury Divider ═══ #}
+<div class="lux-divider" data-aos="fade-up">
+    <div class="lux-divider-line"></div>
+    <i class="ph-fill ph-diamond" style="color:var(--lux-gold-dim);font-size:0.6rem;"></i>
+    <div class="lux-divider-line"></div>
+</div>
+
 {# ═══════════════════════════════════════════════════════════════════════
-GROUP 2: 🎯 اكتشاف مخصص (Personal Discovery)
+GROUP 2: 🎯 مختارة خصيصاً لك (Personalized)
 ═══════════════════════════════════════════════════════════════════════ #}
 
-{# [4] 📚 BECAUSE YOU READ ... — Content + Transformer #}
+{# Luxury Group Header — Personalized #}
+<div class="lux-group-header" data-aos="fade-up">
+    <div class="lux-group-eyeline">
+        <div class="lux-group-line"></div>
+        <i class="ph-fill ph-heart" style="color:var(--lux-gold);font-size:0.7rem;"></i>
+        <div class="lux-group-line right"></div>
+    </div>
+    <h3 class="lux-group-title">مختارة خصيصاً لك</h3>
+    <p class="lux-group-desc">كتب مختارة بعناية بناءً على اهتماماتك وتفضيلاتك الشخصية</p>
+</div>
+
+{# [4] لأنك قرأت ... #}
 {% set byr = neural_sections.get('because_you_read', []) if neural_sections is defined else [] %}
 {% if byr and byr|length > 0 %}
-{{ render_carousel_section(
-title='Because You Read ...',
-icon='ph-fill ph-book-open-text',
-books=byr,
-id_prefix='because_you_read',
-badges=[{'text': 'Content + Transformer', 'pulse': false}],
-color='pink'
-) }}
+<div data-aos="fade-up" data-aos-delay="50">
+    {{ render_carousel_section(
+    title='لأنك قرأت ...',
+    icon='ph-fill ph-book-open-text',
+    books=byr,
+    id_prefix='because_you_read',
+    badges=[],
+    color='gold'
+    ) }}
+</div>
 {% endif %}
 
-{# [5] 😃 MOOD AI — Semantic Emotion Matching #}
+{# [5] حسب مزاجك #}
 {% if mood_ai_books is defined and mood_ai_books and mood_ai_books|length > 0 %}
-{{ render_carousel_section(
-title=mood_info['emoji'] ~ ' تشعر بـ ' ~ mood_info['title'] ~ '؟',
-icon='ph-fill ph-mask-happy',
-books=mood_ai_books,
-id_prefix='mood_ai',
-badges=[{'text': 'Mood AI Matching', 'pulse': true}],
-color='pink'
-) }}
+<div data-aos="fade-up" data-aos-delay="100">
+    {{ render_carousel_section(
+    title=mood_info['emoji'] ~ ' تشعر بـ ' ~ mood_info['title'] ~ '؟',
+    icon='ph-fill ph-mask-happy',
+    books=mood_ai_books,
+    id_prefix='mood_ai',
+    badges=[],
+    color='gold'
+    ) }}
+</div>
 {% endif %}
 
-
+{# ═══ Luxury Divider ═══ #}
+<div class="lux-divider" data-aos="fade-up">
+    <div class="lux-divider-line"></div>
+    <i class="ph-fill ph-diamond" style="color:var(--lux-gold-dim);font-size:0.6rem;"></i>
+    <div class="lux-divider-line"></div>
+</div>
 
 {# ═══════════════════════════════════════════════════════════════════════
-GROUP 3: 📊 المجتمع والتريند (Social & Popularity)
+GROUP 3: 📊 الأكثر رواجاً (Trending & Popular)
 ═══════════════════════════════════════════════════════════════════════ #}
 
-{# [7] 👥 SIMILAR MINDS — Matrix Factorization CF #}
+{# Luxury Group Header — Trending & Popular #}
+<div class="lux-group-header" data-aos="fade-up">
+    <div class="lux-group-eyeline">
+        <div class="lux-group-line"></div>
+        <i class="ph-fill ph-chart-line-up" style="color:var(--lux-gold);font-size:0.7rem;"></i>
+        <div class="lux-group-line right"></div>
+    </div>
+    <h3 class="lux-group-title">الأكثر رواجاً</h3>
+    <p class="lux-group-desc">اكتشف ما يقرأه الآخرون وأبرز الكتب رواجاً الآن</p>
+</div>
+
+{# [7] قرّاء يشبهونك #}
 {% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
-{{ render_carousel_section(
-title='قرّاء يشبهونك',
-icon='ph-fill ph-users',
-books=similar_minds,
-id_prefix='similar_minds',
-badges=[{'text': 'Collaborative Filtering', 'pulse': false}],
-color='purple'
-) }}
+<div data-aos="fade-up" data-aos-delay="50">
+    {{ render_carousel_section(
+    title='قرّاء يشبهونك',
+    icon='ph-fill ph-users',
+    books=similar_minds,
+    id_prefix='similar_minds',
+    badges=[],
+    color='gold'
+    ) }}
+</div>
 {% endif %}
 
-{# [8] 🔥 HOT RIGHT NOW — Top Rated + Most Viewed Merged #}
+{# [8] الأبرز حالياً #}
 {% if hot_right_now is defined and hot_right_now and hot_right_now|length > 0 %}
-{{ render_carousel_section(
-title='الأبرز حالياً | Hot Right Now',
-icon='ph-fill ph-fire',
-books=hot_right_now,
-id_prefix='hot_right_now',
-badges=[{'text': 'Trending + Top Rated', 'pulse': true}],
-color='accent'
-) }}
+<div data-aos="fade-up" data-aos-delay="100">
+    {{ render_carousel_section(
+    title='الأبرز حالياً',
+    icon='ph-fill ph-fire',
+    books=hot_right_now,
+    id_prefix='hot_right_now',
+    badges=[],
+    color='gold'
+    ) }}
+</div>
 {% endif %}

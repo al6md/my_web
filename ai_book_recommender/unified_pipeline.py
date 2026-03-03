@@ -696,7 +696,7 @@ class UnifiedRecommendationPipeline:
                 )
 
                 # Get context tensors
-                hour_t, day_t, session_feats = self.context_ranker.get_current_context(
+                ctx = self.context_ranker.get_current_context(
                     device=self.device,
                     session_duration=float(context.get("session_duration", 0)),
                     session_clicks=int(context.get("session_clicks", 0)),
@@ -704,6 +704,9 @@ class UnifiedRecommendationPipeline:
                     is_returning=bool(context.get("is_returning", False)),
                     activity_level=float(context.get("activity_level", 0.5)),
                 )
+                hour_t = ctx["hour"]
+                day_t = ctx["day"]
+                session_feats = ctx["session_features"]
 
                 # Run context-aware ranking
                 context_scores = self.context_ranker(

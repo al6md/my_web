@@ -206,7 +206,6 @@ def get_author_books(author_name, exclude_book_id=None, limit=8):
     return books_dicts[:limit]
 
 
-@cache.memoize(timeout=60)
 def get_top_rated(limit=10):
     """
     Get top rated books based on user reviews (BookReview).
@@ -260,7 +259,6 @@ def get_top_rated(limit=10):
         return []
 
 
-@cache.memoize(timeout=300)
 def get_because_you_read(user_id, limit=12):
     """
     توصيات بناءً على كتاب قرأه المستخدم مؤخراً.
@@ -301,7 +299,6 @@ def get_because_you_read(user_id, limit=12):
         return {'source_book': None, 'recommendations': []}
 
 
-@cache.memoize(timeout=600)
 def get_similar_users_favorites(user_id, limit=12):
     """
     جلب الكتب المفضلة لدى مستخدمين لهم ذوق مشابه.

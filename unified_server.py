@@ -6,11 +6,17 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 # Import Flask App
 from flask_book_recommendation.app import create_app
 
+# Import AI Recommender App
+from ai_book_recommender.api import app as engine_app
+
 # Create Flask App
 flask_app = create_app()
 
 # Create Root App
 root_app = FastAPI()
+
+# Mount AI Engine API
+root_app.mount("/api/engine", engine_app)
 
 # Mount Flask at Root
 root_app.mount("/", WSGIMiddleware(flask_app))
