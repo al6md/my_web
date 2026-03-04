@@ -25,6 +25,7 @@ GROUP 1: ✨ مُقترحات مميزة (Featured Picks)
     books=rfy,
     id_prefix='rfy',
     badges=[],
+    view_all_url=url_for('main.browse', category='unified'),
     color='gold'
     ) }}
 </div>
@@ -39,123 +40,474 @@ GROUP 1: ✨ مُقترحات مميزة (Featured Picks)
     books=deep_learning_books,
     id_prefix='deep_learning',
     badges=[],
+    view_all_url=url_for('main.browse', category='unified'),
     color='gold'
     ) }}
 </div>
 {% endif %}
 
-{# [3] اكتشافات جديدة #}
-{% set gbd = neural_sections.get('graph_discovery', []) if neural_sections is defined else [] %}
-{% if gbd and gbd|length > 0 %}
+{# [3] الاصناف (Categories Grid) #}
 <div data-aos="fade-up" data-aos-delay="150">
-    {{ render_carousel_section(
-    title='اكتشافات جديدة',
-    icon='ph-fill ph-compass',
-    books=gbd,
-    id_prefix='graph_discovery',
-    badges=[],
-    color='gold'
-    ) }}
-</div>
-{% endif %}
-
-{# ═══ Luxury Divider ═══ #}
-<div class="lux-divider" data-aos="fade-up">
-    <div class="lux-divider-line"></div>
-    <i class="ph-fill ph-diamond" style="color:var(--lux-gold-dim);font-size:0.6rem;"></i>
-    <div class="lux-divider-line"></div>
-</div>
-
-{# ═══════════════════════════════════════════════════════════════════════
-GROUP 2: 🎯 مختارة خصيصاً لك (Personalized)
-═══════════════════════════════════════════════════════════════════════ #}
-
-{# Luxury Group Header — Personalized #}
-<div class="lux-group-header" data-aos="fade-up">
-    <div class="lux-group-eyeline">
-        <div class="lux-group-line"></div>
-        <i class="ph-fill ph-heart" style="color:var(--lux-gold);font-size:0.7rem;"></i>
-        <div class="lux-group-line right"></div>
+    <!-- <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="lux-group-title mb-0">الاصناف</h3>
+    </div> -->
+    <div class="lux-section-header mb-3">
+        <div class="lux-section-title-row">
+            <i class="ph-fill ph-squares-four" style="color:var(--lux-gold);font-size:1.1rem;"></i>
+            <h2
+                style="font-family:var(--lux-font-display, serif);font-weight:600;font-size:1.5rem;color:var(--lux-cream, #f5ead4);letter-spacing:0.02em;margin:0;">
+                الاصناف
+            </h2>
+        </div>
     </div>
-    <h3 class="lux-group-title">مختارة خصيصاً لك</h3>
-    <p class="lux-group-desc">كتب مختارة بعناية بناءً على اهتماماتك وتفضيلاتك الشخصية</p>
-</div>
 
-{# [4] لأنك قرأت ... #}
-{% set byr = neural_sections.get('because_you_read', []) if neural_sections is defined else [] %}
-{% if byr and byr|length > 0 %}
-<div data-aos="fade-up" data-aos-delay="50">
-    {{ render_carousel_section(
-    title='لأنك قرأت ...',
-    icon='ph-fill ph-book-open-text',
-    books=byr,
-    id_prefix='because_you_read',
-    badges=[],
-    color='gold'
-    ) }}
-</div>
-{% endif %}
+    <style>
+        /* Base modifications for slider */
+        .cat-slider-track {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            padding: 1rem 0 2rem;
+            direction: rtl;
+            /* Important for Arabic */
+        }
 
-{# [5] حسب مزاجك #}
-{% if mood_ai_books is defined and mood_ai_books and mood_ai_books|length > 0 %}
-<div data-aos="fade-up" data-aos-delay="100">
-    {{ render_carousel_section(
-    title=mood_info['emoji'] ~ ' تشعر بـ ' ~ mood_info['title'] ~ '؟',
-    icon='ph-fill ph-mask-happy',
-    books=mood_ai_books,
-    id_prefix='mood_ai',
-    badges=[],
-    color='gold'
-    ) }}
-</div>
-{% endif %}
+        /* Hide Scrollbar */
+        .cat-slider-track::-webkit-scrollbar {
+            display: none;
+        }
 
-{# ═══ Luxury Divider ═══ #}
-<div class="lux-divider" data-aos="fade-up">
-    <div class="lux-divider-line"></div>
-    <i class="ph-fill ph-diamond" style="color:var(--lux-gold-dim);font-size:0.6rem;"></i>
-    <div class="lux-divider-line"></div>
-</div>
+        .cat-slider-track {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
-{# ═══════════════════════════════════════════════════════════════════════
-GROUP 3: 📊 الأكثر رواجاً (Trending & Popular)
-═══════════════════════════════════════════════════════════════════════ #}
+        .cat-luxury-card {
+            position: relative;
+            height: 140px;
+            /* Fixed width for flex container */
+            flex: 0 0 280px;
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            color: white;
+            padding: 0 2rem;
+            scroll-snap-align: start;
+        }
 
-{# Luxury Group Header — Trending & Popular #}
-<div class="lux-group-header" data-aos="fade-up">
-    <div class="lux-group-eyeline">
-        <div class="lux-group-line"></div>
-        <i class="ph-fill ph-chart-line-up" style="color:var(--lux-gold);font-size:0.7rem;"></i>
-        <div class="lux-group-line right"></div>
+        .cat-luxury-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+            color: var(--lux-gold-light);
+        }
+
+        /* The title is pushed to the right, sitting above the gradient */
+        .cat-luxury-title {
+            position: relative;
+            z-index: 2;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            font-family: var(--lux-font-body);
+        }
+
+        /* 
+           Backgrounds:
+           Gradient starts with solid color on the right (0% to 50%) 
+           and fades to transparent on the left, revealing the image underneath.
+        */
+        .bg-fantasy {
+            background: linear-gradient(270deg, #5e515e 0%, #5e515e 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600') center left/cover;
+        }
+
+        .bg-thriller {
+            background: linear-gradient(270deg, #7ad5d1 0%, #7ad5d1 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1509316785289-025f5b846b35?q=80&w=600') center left/cover;
+        }
+
+        .bg-adventure {
+            background: linear-gradient(270deg, #4b3e34 0%, #4b3e34 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1506477331477-33d5d8b3dc85?q=80&w=600') center left/cover;
+        }
+
+        .bg-magic {
+            background: linear-gradient(270deg, #289da9 0%, #289da9 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1517520448135-42d4a5c0e118?q=80&w=600') center left/cover;
+        }
+
+        .bg-war {
+            background: linear-gradient(270deg, #423939 0%, #423939 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1542283083-d5e165315f5c?q=80&w=600') center left/cover;
+        }
+
+        .bg-mystery {
+            background: linear-gradient(270deg, #4a3350 0%, #4a3350 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=600') center left/cover;
+        }
+
+        .bg-science {
+            background: linear-gradient(270deg, #33415c 0%, #33415c 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=600') center left/cover;
+        }
+
+        .bg-tech {
+            background: linear-gradient(270deg, #1e293b 0%, #1e293b 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600') center left/cover;
+        }
+
+        .bg-history {
+            background: linear-gradient(270deg, #5c4033 0%, #5c4033 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&w=600') center left/cover;
+        }
+
+        .bg-psychology {
+            background: linear-gradient(270deg, #553c50 0%, #553c50 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1559757175-5700dde6dcc6?q=80&w=600') center left/cover;
+        }
+
+        .bg-biography {
+            background: linear-gradient(270deg, #4a4a4a 0%, #4a4a4a 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1455390582262-044cdead2708?q=80&w=600') center left/cover;
+        }
+
+        .bg-romance {
+            background: linear-gradient(270deg, #8c4251 0%, #8c4251 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1518104593124-ac2eeb9a4ffe?q=80&w=600') center left/cover;
+        }
+
+        .bg-selfhelp {
+            background: linear-gradient(270deg, #3d5843 0%, #3d5843 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1499209974431-9dddcece7f88?q=80&w=600') center left/cover;
+        }
+
+        .bg-business {
+            background: linear-gradient(270deg, #2b3a4a 0%, #2b3a4a 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600') center left/cover;
+        }
+
+        .bg-art {
+            background: linear-gradient(270deg, #875c36 0%, #875c36 40%, transparent 100%),
+                url('https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?q=80&w=600') center left/cover;
+        }
+    </style>
+
+    <div class="carousel-container-ng" style="direction: rtl;">
+        <button class="carousel-btn-ng next" style="right: -20px; z-index: 20;"
+            onclick="document.getElementById('cat-slider').scrollBy({left: -320, behavior: 'smooth'})">
+            <i class="ph ph-caret-right"></i>
+        </button>
+        <button class="carousel-btn-ng prev" style="left: -20px; z-index: 20;"
+            onclick="document.getElementById('cat-slider').scrollBy({left: 320, behavior: 'smooth'})">
+            <i class="ph ph-caret-left"></i>
+        </button>
+
+        <div class="cat-slider-track" id="cat-slider">
+            <!-- الخيالي -->
+            <a href="{{ url_for('public.list_books', cat='Fiction') }}" class="cat-luxury-card bg-fantasy">
+                <h3 class="cat-luxury-title">خيالي</h3>
+            </a>
+
+            <!-- التشويق -->
+            <a href="{{ url_for('public.list_books', cat='Mystery') }}" class="cat-luxury-card bg-thriller">
+                <h3 class="cat-luxury-title">تشويق</h3>
+            </a>
+
+            <!-- المغامرة -->
+            <a href="{{ url_for('public.list_books', cat='Adventure') }}" class="cat-luxury-card bg-adventure">
+                <h3 class="cat-luxury-title">مغامرة</h3>
+            </a>
+
+            <!-- سحر -->
+            <a href="{{ url_for('public.list_books', cat='Magic') }}" class="cat-luxury-card bg-magic">
+                <h3 class="cat-luxury-title">سحر</h3>
+            </a>
+
+            <!-- حرب -->
+            <a href="{{ url_for('public.list_books', cat='War') }}" class="cat-luxury-card bg-war">
+                <h3 class="cat-luxury-title">حرب</h3>
+            </a>
+
+            <!-- غموض -->
+            <a href="{{ url_for('public.list_books', cat='Thriller') }}" class="cat-luxury-card bg-mystery">
+                <h3 class="cat-luxury-title">غموض</h3>
+            </a>
+
+            <!-- علوم -->
+            <a href="{{ url_for('public.list_books', cat='Science') }}" class="cat-luxury-card bg-science">
+                <h3 class="cat-luxury-title">علوم</h3>
+            </a>
+
+            <!-- تكنولوجيا -->
+            <a href="{{ url_for('public.list_books', cat='Technology') }}" class="cat-luxury-card bg-tech">
+                <h3 class="cat-luxury-title">تكنولوجيا</h3>
+            </a>
+
+            <!-- تاريخ -->
+            <a href="{{ url_for('public.list_books', cat='History') }}" class="cat-luxury-card bg-history">
+                <h3 class="cat-luxury-title">تاريخ</h3>
+            </a>
+
+            <!-- علم النفس -->
+            <a href="{{ url_for('public.list_books', cat='Psychology') }}" class="cat-luxury-card bg-psychology">
+                <h3 class="cat-luxury-title">علم النفس</h3>
+            </a>
+
+            <!-- سيرة ذاتية -->
+            <a href="{{ url_for('public.list_books', cat='Biography') }}" class="cat-luxury-card bg-biography">
+                <h3 class="cat-luxury-title">سيرة ذاتية</h3>
+            </a>
+
+            <!-- رومانسية -->
+            <a href="{{ url_for('public.list_books', cat='Romance') }}" class="cat-luxury-card bg-romance">
+                <h3 class="cat-luxury-title">رومانسية</h3>
+            </a>
+
+            <!-- تطوير الذات -->
+            <a href="{{ url_for('public.list_books', cat='Self Help') }}" class="cat-luxury-card bg-selfhelp">
+                <h3 class="cat-luxury-title">تطوير الذات</h3>
+            </a>
+
+            <!-- أعمال -->
+            <a href="{{ url_for('public.list_books', cat='Business') }}" class="cat-luxury-card bg-business">
+                <h3 class="cat-luxury-title">أعمال</h3>
+            </a>
+
+            <!-- فنون -->
+            <a href="{{ url_for('public.list_books', cat='Art') }}" class="cat-luxury-card bg-art">
+                <h3 class="cat-luxury-title">فنون</h3>
+            </a>
+        </div>
     </div>
-    <h3 class="lux-group-title">الأكثر رواجاً</h3>
-    <p class="lux-group-desc">اكتشف ما يقرأه الآخرون وأبرز الكتب رواجاً الآن</p>
-</div>
 
-{# [7] قرّاء يشبهونك #}
-{% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
-<div data-aos="fade-up" data-aos-delay="50">
-    {{ render_carousel_section(
-    title='قرّاء يشبهونك',
-    icon='ph-fill ph-users',
-    books=similar_minds,
-    id_prefix='similar_minds',
-    badges=[],
-    color='gold'
-    ) }}
-</div>
-{% endif %}
+    {# ═══════════════════════════════════════════════════════════════════════
+    FEATURED LISTS — قوائم مميزة (Goodreads-style)
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if featured_lists is defined and featured_lists and featured_lists|length > 0 %}
+    <div data-aos="fade-up" data-aos-delay="200" style="margin-top: 2rem;">
+        <style>
+            .fl-slider-track {
+                display: flex;
+                gap: 1.25rem;
+                overflow-x: auto;
+                scroll-behavior: smooth;
+                scroll-snap-type: x mandatory;
+                padding: 1rem 0.5rem 2rem;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
 
-{# [8] الأبرز حالياً #}
-{% if hot_right_now is defined and hot_right_now and hot_right_now|length > 0 %}
-<div data-aos="fade-up" data-aos-delay="100">
-    {{ render_carousel_section(
-    title='الأبرز حالياً',
-    icon='ph-fill ph-fire',
-    books=hot_right_now,
-    id_prefix='hot_right_now',
-    badges=[],
-    color='gold'
-    ) }}
-</div>
-{% endif %}
+            .fl-slider-track::-webkit-scrollbar {
+                display: none;
+            }
+
+            .fl-card {
+                flex: 0 0 300px;
+                scroll-snap-align: start;
+                text-decoration: none;
+                color: white;
+                border-radius: 18px;
+                overflow: hidden;
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                backdrop-filter: blur(12px);
+                transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .fl-card:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+                border-color: rgba(255, 255, 255, 0.15);
+            }
+
+            /* Stacked covers area — Goodreads style */
+            .fl-covers {
+                position: relative;
+                height: 200px;
+                padding: 1.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                border-radius: 18px 18px 0 0;
+            }
+
+            .fl-cover-img {
+                position: absolute;
+                width: 100px;
+                height: 150px;
+                object-fit: cover;
+                border-radius: 6px;
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+                transition: transform 0.4s ease;
+            }
+
+            /* Fan layout for 4 covers */
+            .fl-cover-img:nth-child(1) {
+                left: 15px;
+                bottom: 20px;
+                z-index: 4;
+                transform: rotate(-6deg);
+            }
+
+            .fl-cover-img:nth-child(2) {
+                left: 70px;
+                bottom: 25px;
+                z-index: 3;
+                transform: rotate(-2deg);
+            }
+
+            .fl-cover-img:nth-child(3) {
+                left: 125px;
+                bottom: 22px;
+                z-index: 2;
+                transform: rotate(3deg);
+            }
+
+            .fl-cover-img:nth-child(4) {
+                left: 180px;
+                bottom: 18px;
+                z-index: 1;
+                transform: rotate(7deg);
+                opacity: 0.85;
+            }
+
+            .fl-card:hover .fl-cover-img:nth-child(1) {
+                transform: rotate(-3deg) translateY(-6px) scale(1.03);
+            }
+
+            .fl-card:hover .fl-cover-img:nth-child(2) {
+                transform: rotate(0deg) translateY(-8px) scale(1.03);
+            }
+
+            .fl-card:hover .fl-cover-img:nth-child(3) {
+                transform: rotate(1deg) translateY(-5px) scale(1.03);
+            }
+
+            .fl-info {
+                padding: 1rem 1.25rem 1.25rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .fl-title {
+                font-family: var(--lux-font-body, 'Cairo', sans-serif);
+                font-size: 1.05rem;
+                font-weight: 700;
+                color: var(--lux-cream, #f5ead4);
+                margin: 0;
+                line-height: 1.4;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .fl-count {
+                font-size: 0.8rem;
+                color: rgba(255, 255, 255, 0.45);
+                font-weight: 500;
+            }
+        </style>
+
+        <div class="lux-section-header mb-3">
+            <div class="lux-section-title-row">
+                <i class="ph-fill ph-list-star" style="color:var(--lux-gold);font-size:1.1rem;"></i>
+                <h2
+                    style="font-family:var(--lux-font-display, serif);font-weight:600;font-size:1.5rem;color:var(--lux-cream, #f5ead4);letter-spacing:0.02em;margin:0;">
+                    قوائم مميزة
+                </h2>
+            </div>
+        </div>
+
+        <div class="carousel-container-ng" style="direction: rtl;">
+            <button class="carousel-btn-ng next" style="right: -20px; z-index: 20;"
+                onclick="document.getElementById('fl-slider').scrollBy({left: -340, behavior: 'smooth'})">
+                <i class="ph ph-caret-right"></i>
+            </button>
+            <button class="carousel-btn-ng prev" style="left: -20px; z-index: 20;"
+                onclick="document.getElementById('fl-slider').scrollBy({left: 340, behavior: 'smooth'})">
+                <i class="ph ph-caret-left"></i>
+            </button>
+
+            <div class="fl-slider-track" id="fl-slider">
+                {% for flist in featured_lists %}
+                <a href="{{ flist.url }}" class="fl-card">
+                    <div class="fl-covers" style="background: {{ flist.color }};">
+                        {% for cover in flist.covers %}
+                        <img src="{{ cover }}" alt="" class="fl-cover-img" loading="lazy"
+                            onerror="this.style.display='none'">
+                        {% endfor %}
+                    </div>
+                    <div class="fl-info">
+                        <h4 class="fl-title">{{ flist.title }}</h4>
+                        <span class="fl-count">{{ flist.count }} كتاب</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ═══ Luxury Divider ═══ #}
+    <div class="lux-divider" data-aos="fade-up">
+        <div class="lux-divider-line"></div>
+        <i class="ph-fill ph-diamond" style="color:var(--lux-gold-dim);font-size:0.6rem;"></i>
+        <div class="lux-divider-line"></div>
+    </div>
+
+
+    {# ═══════════════════════════════════════════════════════════════════════
+    GROUP 3: 📊 الأكثر رواجاً (Trending & Popular)
+    ═══════════════════════════════════════════════════════════════════════ #}
+
+    {# Luxury Group Header — Trending & Popular #}
+    <div class="lux-group-header" data-aos="fade-up">
+        <div class="lux-group-eyeline">
+            <div class="lux-group-line"></div>
+            <i class="ph-fill ph-chart-line-up" style="color:var(--lux-gold);font-size:0.7rem;"></i>
+            <div class="lux-group-line right"></div>
+        </div>
+        <h3 class="lux-group-title">الأكثر رواجاً</h3>
+        <p class="lux-group-desc">اكتشف ما يقرأه الآخرون وأبرز الكتب رواجاً الآن</p>
+    </div>
+
+    {# [7] قرّاء يشبهونك #}
+    {% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
+    <div data-aos="fade-up" data-aos-delay="50">
+        {{ render_carousel_section(
+        title='قرّاء يشبهونك',
+        icon='ph-fill ph-users',
+        books=similar_minds,
+        id_prefix='similar_minds',
+        badges=[],
+        view_all_url=url_for('main.browse', category='unified'),
+        color='gold'
+        ) }}
+    </div>
+    {% endif %}
+
+    {# [8] الأبرز حالياً #}
+    {% if hot_right_now is defined and hot_right_now and hot_right_now|length > 0 %}
+    <div data-aos="fade-up" data-aos-delay="100">
+        {{ render_carousel_section(
+        title='الأبرز حالياً',
+        icon='ph-fill ph-fire',
+        books=hot_right_now,
+        id_prefix='hot_right_now',
+        badges=[],
+        view_all_url=url_for('main.browse', category='most_viewed'),
+        color='gold'
+        ) }}
+    </div>
+    {% endif %}

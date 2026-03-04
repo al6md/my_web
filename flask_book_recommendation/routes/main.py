@@ -175,15 +175,15 @@ def home_feed():
     with ThreadPoolExecutor(max_workers=8) as ex:
         futs = {
             # Basic AI
-            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=12, randomize=True): "deep_learning",
+            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=30, randomize=True): "deep_learning",
             
             # Interactive / Community
-            ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=12): "mood_ai",
-            ex.submit(_run_safe, app_obj, get_cf_similar, user_id=user_id, top_n=12): "similar_minds",
+            ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=30): "mood_ai",
+            ex.submit(_run_safe, app_obj, get_cf_similar, user_id=user_id, top_n=30): "similar_minds",
             
             # Stats for "Hot Right Now"
-            ex.submit(_run_safe, app_obj, get_top_rated, limit=15): "top_rated",
-            ex.submit(_run_safe, app_obj, get_most_viewed_books_custom, limit=15): "most_viewed",
+            ex.submit(_run_safe, app_obj, get_top_rated, limit=30): "top_rated",
+            ex.submit(_run_safe, app_obj, get_most_viewed_books_custom, limit=30): "most_viewed",
         }
         try:
             for f in as_completed(futs, timeout=10.0):
@@ -213,7 +213,10 @@ def home_feed():
         if bid not in seen:
             seen.add(bid)
             hot_now_unique.append(b)
-    cat_results["hot_right_now"] = hot_now_unique[:20]
+    cat_results["hot_right_now"] = hot_now_unique[:40]
+
+    # ── Build Featured Lists ──
+    featured_lists = _build_featured_lists()
 
     # ── Render template ──
     html = render_template(
@@ -227,6 +230,7 @@ def home_feed():
         mood_info=mood_info,
         similar_minds=cat_results.get("similar_minds", []),
         hot_right_now=cat_results.get("hot_right_now", []),
+        featured_lists=featured_lists,
     )
     resp = jsonify({"success": True, "html": html})
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -257,6 +261,101 @@ def _get_user_top_interest(user_id):
         except Exception:
             pass
     return top_interest
+
+
+def _build_featured_lists():
+    """
+    Build curated 'Featured Lists' for the homepage (Goodreads-style cards).
+    Fetches books from Open Library public API and returns card data
+    with stacked covers, book count, color, and URL.
+    """
+    from flask import current_app
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import requests
+
+    lists = []
+    colors = ['#b8a9e8', '#c8e6c9', '#ffe0b2', '#b3e5fc', '#f8bbd0', '#d1c4e9', '#c5cae9', '#dcedc8']
+
+    category_configs = [
+        {'title': 'كتب خيالية',   'subject': 'fiction',   'cat': 'Fiction'},
+        {'title': 'كتب تاريخية',  'subject': 'history',   'cat': 'History'},
+        {'title': 'كتب علمية',    'subject': 'science',   'cat': 'Science'},
+        {'title': 'كتب أعمال',    'subject': 'business',  'cat': 'Business'},
+        {'title': 'كتب فنون',     'subject': 'art',       'cat': 'Art'},
+        {'title': 'كتب رومانسية', 'subject': 'romance',   'cat': 'Romance'},
+        {'title': 'كتب غموض',     'subject': 'mystery',   'cat': 'Mystery'},
+        {'title': 'كتب مغامرات',  'subject': 'adventure', 'cat': 'Adventure'},
+    ]
+
+    def _fetch_category(cfg, idx):
+        """Fetch a single category from Google Books API."""
+        try:
+            # Query Google Books API for the subject
+            r = requests.get(
+                "https://www.googleapis.com/books/v1/volumes",
+                params={
+                    "q": f"subject:{cfg['subject']}",
+                    "maxResults": 15,
+                    "orderBy": "relevance",
+                    "printType": "books"
+                },
+                timeout=8
+            )
+            if not r.ok:
+                return None
+
+            data = r.json()
+            items = data.get("items", [])
+            total = data.get("totalItems", len(items))
+
+            # Extract cover images - filter for those that have thumbnails
+            covers = []
+            for item in items:
+                v_info = item.get("volumeInfo", {})
+                image_links = v_info.get("imageLinks", {})
+                thumb = image_links.get("thumbnail") or image_links.get("smallThumbnail")
+                
+                if thumb:
+                    # Clean URL (optional, Google sometimes uses &edge=curl which adds border)
+                    covers.append(thumb.replace("http://", "https://"))
+                
+                if len(covers) >= 4:
+                    break
+
+            if len(covers) >= 1:
+                return {
+                    'title': cfg['title'],
+                    'covers': covers,
+                    'count': total,
+                    'url': f"/public/books?cat={cfg['cat']}",
+                    'color': colors[idx % len(colors)],
+                    '_idx': idx
+                }
+        except Exception as e:
+            current_app.logger.error(f"[FeaturedLists GoogleBooks] Error fetching {cfg['subject']}: {e}")
+        return None
+
+    # Fetch all categories in parallel
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {}
+        for idx, cfg in enumerate(category_configs):
+            fut = executor.submit(_fetch_category, cfg, idx)
+            futures[fut] = idx
+
+        try:
+            for f in as_completed(futures, timeout=10):
+                result = f.result()
+                if result:
+                    lists.append(result)
+        except Exception as e:
+            current_app.logger.error(f"[FeaturedLists] Timeout: {e}")
+
+    lists.sort(key=lambda x: x.get('_idx', 0))
+    for item in lists:
+        item.pop('_idx', None)
+
+    current_app.logger.info(f"[FeaturedLists] Built {len(lists)} lists from Open Library")
+    return lists
 
 
 def _generate_home_data(user_id):

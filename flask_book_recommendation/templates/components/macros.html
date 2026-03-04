@@ -8,7 +8,14 @@ Futuristic Jinja2 Macros with Glassmorphism & AI Aesthetics
 Usage: {{ render_ai_score(85) }}
 ───────────────────────────────────────────────────────────────────────────── #}
 {% macro render_ai_score(score, size='sm') %}
+{# Safety fix for OverflowError with infinity strings #}
+{% set safe_score = score|string %}
+{% if safe_score|lower == 'inf' or safe_score|lower == '+inf' or safe_score|lower == '-inf' %}
+{% set score_val = 99.0 %}
+{% else %}
 {% set score_val = score|default(0)|float %}
+{% endif %}
+
 {# Safety fix for OverflowError with infinity #}
 {% if score_val > 1000 %}
 {% set score_val = 99.0 %}
@@ -332,6 +339,13 @@ Usage: {{ render_ai_score(85) }}
                     {% for book in books %}
                     {{ render_book_card(book, card_class='') }}
                     {% endfor %}
+                    {% if view_all_url and view_all_url != '#' %}
+                    <a href="{{ view_all_url }}" class="carousel-show-more-card"
+                        style="flex:0 0 180px;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.75rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:18px;text-decoration:none;color:var(--lux-gold, #d4a853);transition:all 0.3s ease;backdrop-filter:blur(10px);">
+                        <i class="ph ph-arrow-circle-left" style="font-size:2.5rem;opacity:0.7;"></i>
+                        <span style="font-size:0.9rem;font-weight:600;letter-spacing:0.05em;">عرض المزيد</span>
+                    </a>
+                    {% endif %}
                 </div>
                 <button class="carousel-btn-ng next"
                     onclick="document.getElementById('track-{{ id_prefix }}').scrollBy({left: 350, behavior: 'smooth'})">
