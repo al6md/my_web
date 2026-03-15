@@ -72,6 +72,20 @@ def log_user_view(user_id, book):
             user_embedding_manager.update_user_embedding(user_id, book_id=b_id, google_id=g_id)
         except Exception as e_emb:
             logger.error(f"Embedding update error: {e_emb}")
+            
+        # --- 🆕 Online Learning Feedback Update ---
+        try:
+            from ..ai_book_recommender.engine import get_engine
+            b_id_val = str(g_id or b_id or "")
+            if b_id_val:
+                get_engine().record_feedback(
+                    user_id=user_id,
+                    item_id=b_id_val,
+                    feedback_type="view",
+                    value=1.0
+                )
+        except Exception as e_ol:
+            logger.error(f"Online learning feedback error (view): {e_ol}")
         # ------------------------------------------
 
     except Exception as e:

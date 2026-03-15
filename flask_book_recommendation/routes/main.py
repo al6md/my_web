@@ -91,57 +91,7 @@ def home_feed():
     top_interest = _get_user_top_interest(user_id)
 
     # ═══════════════════════════════════════════════════════════════════
-    # NEURAL SECTIONS — each calls a different strategy variant
-    # ═══════════════════════════════════════════════════════════════════
-
-    neural_sections = {}
-
-    try:
-        neural_sections["recommended_for_you"] = engine.recommend_full_stack(
-            user_id=user_id, top_k=30, context=ctx
-        )
-    except Exception as e:
-        current_app.logger.error(f"[Neural] recommended_for_you failed: {e}")
-        neural_sections["recommended_for_you"] = []
-
-    try:
-        neural_sections["trending_for_you"] = engine.recommend_trending(
-            user_id=user_id, top_k=20, context=ctx
-        )
-    except Exception as e:
-        current_app.logger.error(f"[Neural] trending_for_you failed: {e}")
-        neural_sections["trending_for_you"] = []
-
-    try:
-        neural_sections["because_you_read"] = engine.recommend_because_you_read(
-            user_id=user_id, top_k=20, context=ctx
-        )
-    except Exception as e:
-        current_app.logger.error(f"[Neural] because_you_read failed: {e}")
-        neural_sections["because_you_read"] = []
-
-    try:
-        neural_sections["top_neural_picks"] = engine.recommend_top_neural(
-            user_id=user_id, top_k=20, context=ctx
-        )
-    except Exception as e:
-        current_app.logger.error(f"[Neural] top_neural_picks failed: {e}")
-        neural_sections["top_neural_picks"] = []
-
-    try:
-        neural_sections["graph_discovery"] = engine.recommend_graph_discovery(
-            user_id=user_id, top_k=20, context=ctx
-        )
-    except Exception as e:
-        current_app.logger.error(f"[Neural] graph_discovery failed: {e}")
-        neural_sections["graph_discovery"] = []
-
-    # ═══════════════════════════════════════════════════════════════════
-    # COMMUNITY SECTIONS (Top Rated, Most Viewed, Trending Libraries)
-    # ═══════════════════════════════════════════════════════════════════
-
-    # ═══════════════════════════════════════════════════════════════════
-    # COMMUNITY & DISCONNECTED AI SECTIONS
+    # UNIFIED ASYNC EXECUTION FOR ALL RECOMMENDATION SECTIONS
     # ═══════════════════════════════════════════════════════════════════
 
     from ..recommender import (
@@ -172,29 +122,55 @@ def home_feed():
 
     app_obj = current_app._get_current_object()
     cat_results = {}
-    with ThreadPoolExecutor(max_workers=8) as ex:
+    neural_sections = {}
+
+    # ── FIX: Pre-warm the cache sequentially to prevent a cache stampede ──
+    # If all neural variants fire simultaneously, they all miss the cache
+    # and overwhelm the recommendation engine executor.
+    try:
+        engine.recommend_full_stack(user_id=user_id, top_k=60, context=ctx)
+    except Exception as e:
+        current_app.logger.warning(f"Cache pre-warm failed: {e}")
+
+    with ThreadPoolExecutor(max_workers=12) as ex:
         futs = {
             # Basic AI
-            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=30, randomize=True): "deep_learning",
+            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=30, randomize=True): ("cat", "deep_learning"),
             
             # Interactive / Community
-            ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=30): "mood_ai",
-            ex.submit(_run_safe, app_obj, get_cf_similar, user_id=user_id, top_n=30): "similar_minds",
+            ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=30): ("cat", "mood_ai"),
+            ex.submit(_run_safe, app_obj, get_cf_similar, user_id=user_id, top_n=30): ("cat", "similar_minds"),
             
             # Stats for "Hot Right Now"
-            ex.submit(_run_safe, app_obj, get_top_rated, limit=30): "top_rated",
-            ex.submit(_run_safe, app_obj, get_most_viewed_books_custom, limit=30): "most_viewed",
+            ex.submit(_run_safe, app_obj, get_top_rated, limit=30): ("cat", "top_rated"),
+            ex.submit(_run_safe, app_obj, get_most_viewed_books_custom, limit=30): ("cat", "most_viewed"),
+            
+            # Neural Engine (Now parallelized to prevent hanging)
+            ex.submit(_run_safe, app_obj, engine.recommend_full_stack, user_id=user_id, top_k=40, context=ctx): ("neural", "recommended_for_you"),
+            ex.submit(_run_safe, app_obj, engine.recommend_trending, user_id=user_id, top_k=40, context=ctx): ("neural", "trending_for_you"),
+            ex.submit(_run_safe, app_obj, engine.recommend_because_you_read, user_id=user_id, top_k=40, context=ctx): ("neural", "because_you_read"),
+            ex.submit(_run_safe, app_obj, engine.recommend_top_neural, user_id=user_id, top_k=40, context=ctx): ("neural", "top_neural_picks"),
+            ex.submit(_run_safe, app_obj, engine.recommend_graph_discovery, user_id=user_id, top_k=40, context=ctx): ("neural", "graph_discovery"),
         }
         try:
-            for f in as_completed(futs, timeout=10.0):
-                name = futs[f]
+            for f in as_completed(futs, timeout=12.0):
+                type_, name = futs[f]
                 try:
-                    cat_results[name] = f.result() or []
-                except Exception:
-                    cat_results[name] = []
-        except Exception:
+                    res = f.result() or []
+                    if type_ == "cat":
+                        cat_results[name] = res
+                    else:
+                        neural_sections[name] = res
+                except Exception as e:
+                    current_app.logger.error(f"[Async] {name} failed: {e}")
+                    if type_ == "cat":
+                        cat_results[name] = []
+                    else:
+                        neural_sections[name] = []
+        except Exception as e:
+            current_app.logger.error(f"[Async] Timeout or Executor Error: {e}")
             pass
-            
+                        
     # Combine Top Rated and Most Viewed into "Hot Right Now"
     hot_now = []
     tr = cat_results.get("top_rated", [])
@@ -266,96 +242,150 @@ def _get_user_top_interest(user_id):
 def _build_featured_lists():
     """
     Build curated 'Featured Lists' for the homepage (Goodreads-style cards).
-    Fetches books from Open Library public API and returns card data
-    with stacked covers, book count, color, and URL.
+    Fetches books from Google Books API in parallel for high-quality covers.
     """
     from flask import current_app
+    from ..extensions import cache
+    from ..utils import fetch_google_books
     from concurrent.futures import ThreadPoolExecutor, as_completed
-    import requests
+    import requests as _requests
+    
+    # Using a fresh cache key
+    cache_key = 'home_featured_lists_google_v3'
+    try:
+        cached_lists = cache.get(cache_key)
+        if cached_lists:
+            return cached_lists
+    except Exception:
+        pass
 
     lists = []
-    colors = ['#b8a9e8', '#c8e6c9', '#ffe0b2', '#b3e5fc', '#f8bbd0', '#d1c4e9', '#c5cae9', '#dcedc8']
+    colors = ['#b8a9e8', '#c8e6c9', '#ffe0b2', '#b3e5fc', '#f8bbd0', '#d1c4e9', '#c5cae9', '#dcedc8', '#a5d6a7', '#ffcc80', '#90caf9']
 
     category_configs = [
-        {'title': 'كتب خيالية',   'subject': 'fiction',   'cat': 'Fiction'},
-        {'title': 'كتب تاريخية',  'subject': 'history',   'cat': 'History'},
-        {'title': 'كتب علمية',    'subject': 'science',   'cat': 'Science'},
-        {'title': 'كتب أعمال',    'subject': 'business',  'cat': 'Business'},
-        {'title': 'كتب فنون',     'subject': 'art',       'cat': 'Art'},
-        {'title': 'كتب رومانسية', 'subject': 'romance',   'cat': 'Romance'},
-        {'title': 'كتب غموض',     'subject': 'mystery',   'cat': 'Mystery'},
-        {'title': 'كتب مغامرات',  'subject': 'adventure', 'cat': 'Adventure'},
+        {'title': 'سلسلة هاري بوتر', 'subject': 'Harry Potter', 'cat': 'Harry Potter'},
+        {'title': 'كتب خيالية',    'subject': 'fiction',      'cat': 'Fiction'},
+        {'title': 'كتب تاريخية',   'subject': 'history',      'cat': 'History'},
+        {'title': 'كتب علمية',     'subject': 'science',      'cat': 'Science'},
+        {'title': 'تطوير الذات',  'subject': 'self-help',    'cat': 'Self Help'},
+        {'title': 'كتب أعمال',     'subject': 'business',     'cat': 'Business'},
+        {'title': 'كتب فلسفة',     'subject': 'philosophy',   'cat': 'Philosophy'},
+        {'title': 'كتب فنون',      'subject': 'art',          'cat': 'Art'},
+        {'title': 'كتب رومانسية',  'subject': 'romance',      'cat': 'Romance'},
+        {'title': 'كتب غموض',      'subject': 'mystery',      'cat': 'Mystery'},
+        {'title': 'كتب تكنولوجيا', 'subject': 'technology',   'cat': 'Technology'},
     ]
 
-    def _fetch_category(cfg, idx):
-        """Fetch a single category from Google Books API."""
-        try:
-            # Query Google Books API for the subject
-            r = requests.get(
-                "https://www.googleapis.com/books/v1/volumes",
-                params={
-                    "q": f"subject:{cfg['subject']}",
-                    "maxResults": 15,
-                    "orderBy": "relevance",
-                    "printType": "books"
-                },
-                timeout=8
-            )
-            if not r.ok:
-                return None
+    app_obj = current_app._get_current_object()
+    GOOGLE_API_URL = "https://www.googleapis.com/books/v1/volumes"
+    GOOGLE_API_KEY = app_obj.config.get('GOOGLE_BOOKS_API_KEY') or __import__('os').environ.get('GOOGLE_BOOKS_API_KEY')
 
-            data = r.json()
-            items = data.get("items", [])
-            total = data.get("totalItems", len(items))
-
-            # Extract cover images - filter for those that have thumbnails
+    def _fetch_category(idx, cfg):
+        with app_obj.app_context():
+            from ..models import Book
+            from ..extensions import db
+            search_query = f"subject:{cfg['subject']}" if cfg['subject'] != 'Harry Potter' else 'Harry Potter'
             covers = []
-            for item in items:
-                v_info = item.get("volumeInfo", {})
-                image_links = v_info.get("imageLinks", {})
-                thumb = image_links.get("thumbnail") or image_links.get("smallThumbnail")
-                
-                if thumb:
-                    # Clean URL (optional, Google sometimes uses &edge=curl which adds border)
-                    covers.append(thumb.replace("http://", "https://"))
-                
-                if len(covers) >= 4:
-                    break
+            total_items = 0
+
+            # ── Google Books API (direct call to extract covers properly) ──
+            try:
+                params = {
+                    "q": search_query,
+                    "maxResults": 20,
+                    "orderBy": "relevance",
+                    "printType": "books",
+                }
+                if GOOGLE_API_KEY:
+                    params["key"] = GOOGLE_API_KEY
+
+                r = _requests.get(GOOGLE_API_URL, params=params, timeout=8)
+                if r.ok:
+                    data = r.json()
+                    items = data.get("items", [])
+                    total_items = data.get("totalItems", 0)
+                    for item in items:
+                        vi = item.get("volumeInfo", {}) or {}
+                        imgs = vi.get("imageLinks", {}) or {}
+                        # Try multiple image sizes
+                        cover = (
+                            imgs.get("thumbnail")
+                            or imgs.get("smallThumbnail")
+                            or imgs.get("medium")
+                            or imgs.get("large")
+                        )
+                        if cover:
+                            # Upgrade to https and zoom=1
+                            if cover.startswith("http://"):
+                                cover = "https://" + cover[7:]
+                            cover = cover.replace("zoom=5", "zoom=1")
+                            covers.append(cover)
+                        if len(covers) >= 4:
+                            break
+            except Exception as e:
+                current_app.logger.warning(f"[FeaturedLists] Google API error for {cfg['subject']}: {e}")
+
+            # ── Fallback: local DB if Google didn't give enough covers ──
+            if len(covers) < 4:
+                try:
+                    db_query = f"%{cfg['subject']}%"
+                    db_books = Book.query.filter(
+                        db.or_(
+                            Book.categories.ilike(db_query),
+                            Book.title.ilike(db_query)
+                        ),
+                        Book.cover_url.isnot(None),
+                        Book.cover_url != ""
+                    ).limit(20).all()
+                    for b in db_books:
+                        if b.cover_url and b.cover_url.startswith('http') and b.cover_url not in covers:
+                            covers.append(b.cover_url)
+                        if len(covers) >= 4:
+                            break
+                except Exception:
+                    pass
 
             if len(covers) >= 1:
                 return {
+                    'index': idx,
                     'title': cfg['title'],
                     'covers': covers,
-                    'count': total,
+                    'count': total_items if total_items > 0 else 20,
                     'url': f"/public/books?cat={cfg['cat']}",
-                    'color': colors[idx % len(colors)],
-                    '_idx': idx
+                    'color': colors[idx % len(colors)]
                 }
-        except Exception as e:
-            current_app.logger.error(f"[FeaturedLists GoogleBooks] Error fetching {cfg['subject']}: {e}")
-        return None
+            return None
 
-    # Fetch all categories in parallel
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        futures = {}
-        for idx, cfg in enumerate(category_configs):
-            fut = executor.submit(_fetch_category, cfg, idx)
-            futures[fut] = idx
+    try:
+        results = []
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            futs = [ex.submit(_fetch_category, i, cfg) for i, cfg in enumerate(category_configs)]
+            for f in as_completed(futs, timeout=15):
+                res = f.result()
+                if res:
+                    results.append(res)
+        
+        # Sort back to original order
+        results.sort(key=lambda x: x['index'])
+        for r in results:
+            del r['index']
+            lists.append(r)
+            
+        # Save to cache
+        if len(lists) > 0:
+            try:
+                cache.set(cache_key, lists, timeout=86400)
+            except Exception:
+                pass
+                
+    except Exception as e:
+        current_app.logger.error(f"[FeaturedLists API] Error: {e}")
 
-        try:
-            for f in as_completed(futures, timeout=10):
-                result = f.result()
-                if result:
-                    lists.append(result)
-        except Exception as e:
-            current_app.logger.error(f"[FeaturedLists] Timeout: {e}")
-
-    lists.sort(key=lambda x: x.get('_idx', 0))
-    for item in lists:
-        item.pop('_idx', None)
-
-    current_app.logger.info(f"[FeaturedLists] Built {len(lists)} lists from Open Library")
+    current_app.logger.info(f"[FeaturedLists] Built {len(lists)} lists from Google API")
     return lists
+
+
+
 
 
 def _generate_home_data(user_id):
@@ -958,6 +988,21 @@ def set_book_status(book_id, status):
         db.session.add(s)
         flash(f"تمت الإضافة إلى قائمة {status}", "success")
         
+    # --- 🆕 Online Learning Feedback Update ---
+    try:
+        from ..ai_book_recommender.engine import get_engine
+        b_id_val = str(book.google_id or book.id)
+        get_engine().record_feedback(
+            user_id=current_user.id,
+            item_id=b_id_val,
+            feedback_type=status,
+            value=1.0
+        )
+    except Exception as e_ol:
+        import logging
+        logging.getLogger(__name__).error(f"Online learning feedback error (status): {e_ol}")
+    # ------------------------------------------
+        
     db.session.commit()
     # return redirect(url_for("main.books"))
     return redirect(request.referrer or url_for("main.books"))
@@ -1024,6 +1069,22 @@ def rate_book(book_id: int):
     else:
         r.rating = value
         msg = "تم تحديث التقييم."
+        
+    # --- 🆕 Online Learning Feedback Update ---
+    try:
+        from ..ai_book_recommender.engine import get_engine
+        b_id_val = str(book.google_id or book.id)
+        get_engine().record_feedback(
+            user_id=current_user.id,
+            item_id=b_id_val,
+            feedback_type="rate",
+            value=value
+        )
+    except Exception as e_ol:
+        import logging
+        logging.getLogger(__name__).error(f"Online learning feedback error (rate): {e_ol}")
+    # ------------------------------------------
+        
     db.session.commit()
     flash(msg, "success")
     return redirect(url_for("main.book_detail", book_id=book.id))

@@ -132,7 +132,7 @@ class UnifiedRecommendationPipeline:
 
         self.flask_app = None
         self.cache = RedisCacheLayer(use_redis=True)
-        self._executor = ThreadPoolExecutor(max_workers=8)
+        self._executor = ThreadPoolExecutor(max_workers=12)
 
         # Device detection
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -326,12 +326,18 @@ class UnifiedRecommendationPipeline:
         logger.info(f"🕐 [Step 7] Context ranking in {timings['context']:.3f}s")
 
         # ═══════════════════════════════════════════════════════════════
-        # STEP 8: Sort by Predicted Probability Descending
+        # STEP 8: Apply Online Learning Adjustments & Sort
         # ═══════════════════════════════════════════════════════════════
         t0 = time.time()
+        for c in candidates:
+            # Apply real-time learned preference adjustment
+            adjustment = self.online_learner.feedback_processor.get_item_score_adjustment(c["book_id"])
+            if adjustment != 0:
+                c["final_score"] = float(np.clip(c["final_score"] + (adjustment * 0.15), 0, 1))
+                
         candidates.sort(key=lambda x: x.get("final_score", 0), reverse=True)
         candidates = candidates[:top_k]
-        timings["sort"] = time.time() - t0
+        timings["sort_and_learn"] = time.time() - t0
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 9: Online Learning User Embedding Update
@@ -388,32 +394,32 @@ class UnifiedRecommendationPipeline:
             futures = {}
             futures["Collaborative Filtering"] = self._executor.submit(
                 _safe_source, "Collaborative Filtering",
-                _run_in_context, get_cf_similar, user_id, top_n=40, randomize=True
+                _run_in_context, get_cf_similar, user_id, top_n=100, randomize=True
             )
             futures["Content-Based"] = self._executor.submit(
                 _safe_source, "Content-Based",
-                _run_in_context, get_content_similar, user_id, top_n=40, randomize=True
+                _run_in_context, get_content_similar, user_id, top_n=100, randomize=True
             )
             futures["Two-Tower"] = self._executor.submit(
                 _safe_source, "Two-Tower",
-                _run_in_context, get_deep_learning_recommendations, user_id, limit=40, randomize=True
+                _run_in_context, get_deep_learning_recommendations, user_id, limit=100, randomize=True
             )
             futures["Behavioral"] = self._executor.submit(
                 _safe_source, "Behavioral",
-                _run_in_context, get_behavior_based_recommendations, user_id, limit=40, randomize=True
+                _run_in_context, get_behavior_based_recommendations, user_id, limit=100, randomize=True
             )
             futures["View-Based"] = self._executor.submit(
                 _safe_source, "View-Based",
-                _run_in_context, get_view_based_recommendations, user_id, top_n=40, randomize=True
+                _run_in_context, get_view_based_recommendations, user_id, top_n=100, randomize=True
             )
             futures["Trending"] = self._executor.submit(
                 _safe_source, "Trending",
-                _run_in_context, get_trending, limit=30
+                _run_in_context, get_trending, limit=80
             )
 
             for key, future in futures.items():
                 try:
-                    source_name, items = future.result(timeout=12)
+                    source_name, items = future.result(timeout=18)
                     for item in items:
                         self._merge_candidate(candidates_map, item, source_name)
                 except Exception as e:
@@ -425,7 +431,7 @@ class UnifiedRecommendationPipeline:
                 if self.flask_app:
                     with self.flask_app.app_context():
                         from flask_book_recommendation.recommender import get_trending
-                        trending = get_trending(limit=50)
+                        trending = get_trending(limit=100)
                         for item in (trending or []):
                             self._merge_candidate(candidates_map, item, "Trending")
             except Exception as e:
@@ -471,54 +477,76 @@ class UnifiedRecommendationPipeline:
 
     def _step2_two_tower_scoring(self, candidates: List[Dict], user_id: Optional[int]) -> List[Dict]:
         """Step 2: Score all candidates with Two-Tower model embeddings."""
+        # Note: In a real production system, we would use the self.two_tower model.
+        # Here we blend existing scores with a "quality" signal to move away from random.
         for c in candidates:
-            # Use existing two_tower score if available, otherwise generate synthetic score
             if "two_tower" not in c["scores"]:
-                # Generate a score based on the embedding similarity or a neural computation
+                # If we have real embeddings in the future, we'd use dot product here
                 base_score = np.mean([v for v in c["scores"].values()]) if c["scores"] else 0.5
-                # Add two-tower specific scoring with slight perturbation
-                tt_score = float(np.clip(base_score + np.random.normal(0, 0.05), 0, 1))
+                tt_score = float(np.clip(base_score + 0.1, 0, 1)) # Slight optimistic boost
                 c["scores"]["two_tower"] = tt_score
         return candidates
 
     def _step3_transformer_encoding(self, candidates: List[Dict]) -> List[Dict]:
         """Step 3: Encode candidate texts through Transformer for contextual embeddings."""
         try:
-            titles = [c.get("title", "") for c in candidates]
-            if not titles:
+            # Fetch real embeddings from DB if available
+            import pickle
+            from flask import current_app
+            
+            # Use a map for efficiency
+            emb_map = {}
+            if self.flask_app:
+                with self.flask_app.app_context():
+                    # We'll try to get vectors for these specific book_ids
+                    bids = [c["book_id"] for c in candidates if c.get("book_id")]
+                    if bids:
+                        try:
+                            # Direct DB query for embeddings
+                            from flask_book_recommendation.extensions import db
+                            from flask_book_recommendation.models import BookEmbedding
+                            rows = BookEmbedding.query.filter(BookEmbedding.book_id.in_(bids)).all()
+                            for r in rows:
+                                if r.vector:
+                                    emb_map[str(r.book_id)] = pickle.loads(r.vector)
+                        except Exception as e:
+                            logger.error(f"Error fetching DB embeddings in Step 3: {e}")
+
+            # Process candidates
+            embeddings_list = []
+            valid_indices = []
+
+            for i, c in enumerate(candidates):
+                bid = str(c.get("book_id", ""))
+                if bid in emb_map:
+                    embeddings_list.append(emb_map[bid])
+                    valid_indices.append(i)
+                else:
+                    # Fallback to deterministic hash if no real embedding exists
+                    hash_val = int(hashlib.md5(c.get("title", "").encode("utf-8", errors="ignore")).hexdigest(), 16)
+                    rng = np.random.RandomState(hash_val % (2**31))
+                    embeddings_list.append(rng.randn(384).astype(np.float32) * 0.1)
+                    valid_indices.append(i)
+
+            if not embeddings_list:
                 return candidates
 
-            # Create synthetic embeddings from titles using transformer
             with torch.no_grad():
-                # Generate input tensor from title hashes (deterministic per title)
-                batch_size = len(titles)
-                seq_len = 1
-                input_dim = 384
-
-                # Create pseudo-embeddings based on title content
-                embeddings = []
-                for title in titles:
-                    # Create a deterministic embedding from the title
-                    hash_val = int(hashlib.md5(title.encode("utf-8", errors="ignore")).hexdigest(), 16)
-                    rng = np.random.RandomState(hash_val % (2**31))
-                    emb = rng.randn(seq_len, input_dim).astype(np.float32) * 0.1
-                    embeddings.append(emb)
-
                 input_tensor = torch.tensor(
-                    np.array(embeddings), dtype=torch.float32
-                ).to(self.device)
+                    np.array(embeddings_list), dtype=torch.float32
+                ).unsqueeze(1).to(self.device) # (batch, 1, input_dim)
 
                 # Pass through transformer encoder
-                encoded = self.transformer(input_tensor)  # (batch, output_dim)
+                encoded = self.transformer(input_tensor)
                 encoded_np = encoded.cpu().numpy()
 
-                for i, c in enumerate(candidates):
-                    # Compute transformer score as magnitude of encoding
+                for j, i in enumerate(valid_indices):
+                    c = candidates[i]
                     transformer_score = float(np.clip(
-                        np.linalg.norm(encoded_np[i]) / 5.0, 0, 1
+                        np.linalg.norm(encoded_np[j]) / 2.0, 0, 1 # Normalized magnitude
                     ))
                     c["scores"]["transformer"] = transformer_score
-                    c["_transformer_emb"] = encoded_np[i]
+                    c["_transformer_emb"] = encoded_np[j]
 
         except Exception as e:
             logger.error(f"❌ [Step 3] Transformer encoding failed: {e}")

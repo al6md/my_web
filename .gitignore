@@ -19,3 +19,14 @@ output.txt
 output_recs*.txt
 temp_plan.txt
 logs/
+*.txt
+*.log
+image.png
+*.png
+old_*.html
+old_*.txt
+old_*.py
+test_*.py
+tmp/
+ai_models/
+final_audit_check.py

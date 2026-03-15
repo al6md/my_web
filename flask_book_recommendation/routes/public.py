@@ -367,6 +367,28 @@ def list_books():
             except Exception as e:
                 print(f"Parallel fetch partially timed out or failed: {e}")
 
+    # --- 🆕 Search Result Feedback (Phase: Search Learning) ---
+    if current_user.is_authenticated and q and not q.startswith("special:"):
+        try:
+            from ai_book_recommender.engine import get_engine
+            engine = get_engine()
+            # Combine all results to record feedback
+            all_search_results = clean_items + gut_items + ia_items + ol_items + it_items
+            for book in all_search_results[:20]: # Only top 20 to avoid overwhelm
+                # We use google_id if available, otherwise fallback to item id
+                bid = book.get("google_id") or book.get("id")
+                if bid:
+                    engine.record_feedback(
+                        user_id=current_user.id,
+                        item_id=str(bid),
+                        feedback_type="search",
+                        value=1.0  # Normalized positive signal for appearing in search
+                    )
+            print(f"Recorded search feedback for {len(all_search_results[:20])} books for user {current_user.id}")
+        except Exception as e:
+            print(f"Error recording search feedback: {e}")
+    # ---------------------------------------------------------
+
     # 4. Reranking (إذا كان المستخدم مسجلاً)
     if current_user.is_authenticated and not q.startswith("special:"):
         clean_items = rerank_search_results(current_user.id, clean_items)

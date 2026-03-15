@@ -317,7 +317,7 @@ class RecommendationEngine:
         combined = self.ensemble.combine(
             scores=scores,
             item_ids=item_ids,
-            user_history=user_features.history_book_ids
+            user_history=None  # Previously user_features.history_book_ids but the attribute doesn't exist
         )
         
         # Update candidates with combined scores

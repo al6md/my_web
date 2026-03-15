@@ -68,7 +68,7 @@ def get_mood_based_recommendations(mood_key, limit=12):
     random.shuffle(queries)
     
     personalization_reason = None
-    if current_user.is_authenticated:
+    if current_user and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
         try:
             last_search = SearchHistory.query.filter_by(user_id=current_user.id)\
                 .order_by(SearchHistory.created_at.desc()).first()

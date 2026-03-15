@@ -193,6 +193,7 @@ def _get_ai_embedding_recommendations(
         ranked_indices = np.argsort(sims)[::-1]
         
         recs = []
+        seen_ids = set()
         start_idx = offset
         if start_idx >= len(ranked_indices):
             return []
@@ -207,12 +208,17 @@ def _get_ai_embedding_recommendations(
             
         for idx in indices_to_iter:
             score = sims[idx]
-            if score < 0.35:
+            if score < 0.15:
                 continue
             
             book = Book.query.get(candidate_ids[idx])
             if not book:
                 continue
+                
+            book_id_key = book.google_id or f"local_{book.id}"
+            if book_id_key in seen_ids:
+                continue
+            seen_ids.add(book_id_key)
             
             meta = {
                 "score": f"{score:.2f}",
@@ -373,7 +379,7 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 id_map = []
                 vec_list = []
                 for emb in embeddings_data:
-                    if emb.vector:
+                    if emb.vector is not None:
                         id_map.append(emb.book_id)
                         vec_list.append(np.array(emb.vector, dtype=np.float32))
                         
@@ -424,7 +430,7 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 return get_trending(limit=limit)
                 
             embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(interaction_ids)).all()
-            hists = [np.array(e.vector, dtype=np.float32) for e in embs if e.vector]
+            hists = [np.array(e.vector, dtype=np.float32) for e in embs if e.vector is not None]
             
             if not hists:
                 pipeline_log.log_fallback(f"User {user_id} has {len(interaction_ids)} interactions but 0 matching embeddings")
@@ -458,15 +464,15 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
             query_vec = int_vec.reshape(1, -1).copy()
             faiss.normalize_L2(query_vec)
             
-            D, I = index.search(query_vec, k=300)
+            D, I = index.search(query_vec, k=600)
             candidate_ids = [id_map[i] for i in I[0] if i != -1]
             
             # Filter 'finished' books and interacted books
             interaction_set = set(interaction_ids)
             candidate_ids = [bid for bid in candidate_ids if bid not in finished_bids and bid not in interaction_set]
             
-            # Prepare for TwoTower Scoring (Top 200)
-            candidate_ids = candidate_ids[:200]
+            # Prepare for TwoTower Scoring (Top 500)
+            candidate_ids = candidate_ids[:500]
             if not candidate_ids:
                 neural_time = (time.perf_counter() - neural_start) * 1000
                 pipeline_log.log_stage("neural", time_ms=neural_time, results=0)
@@ -475,7 +481,7 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 return get_trending(limit=limit)
                 
             cand_embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(candidate_ids)).all()
-            cand_dict = {e.book_id: np.array(e.vector, dtype=np.float32) for e in cand_embs if e.vector}
+            cand_dict = {e.book_id: np.array(e.vector, dtype=np.float32) for e in cand_embs if e.vector is not None}
             
             act_ids = list(cand_dict.keys())
             act_vecs = np.array(list(cand_dict.values()))
@@ -497,13 +503,19 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 
             # 4. Sort
             scored_candidates = sorted(zip(act_ids, scores), key=lambda x: x[1], reverse=True)
-            top_final = scored_candidates[:limit]
+            top_final = scored_candidates  # iterate over ALL candidates, break when we have enough
             
             # 5. Build output
             recs = []
+            seen_ids = set()
             for rank, (bid, score) in enumerate(top_final):
                 book = Book.query.get(bid)
                 if book:
+                    book_id_key = book.google_id or f"local_{book.id}"
+                    if book_id_key in seen_ids:
+                        continue
+                    seen_ids.add(book_id_key)
+                    
                     confidence = int(max(0, min(1, (score + 1.0) / 2.0)) * 100)
                     meta = {
                         "algorithm_used": "TwoTower Neural + FAISS",
@@ -520,6 +532,9 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                     )
                     if d:
                         recs.append(d)
+                        
+                    if len(recs) >= limit:
+                        break
                     
             pipeline_log.set_final_count(len(recs))
             return recs
@@ -570,9 +585,9 @@ def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=Fal
         
         app = current_app._get_current_object()
         
-        ai_pool_limit = 80
-        cf_pool_limit = 40
-        explore_pool_limit = 40
+        ai_pool_limit = 150
+        cf_pool_limit = 80
+        explore_pool_limit = 80
         
         all_recs = []
         with ThreadPoolExecutor(max_workers=4) as executor:
@@ -632,7 +647,7 @@ def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=Fal
 
             for key, future in futures.items():
                 try:
-                    res = future.result(timeout=30)
+                    res = future.result(timeout=12)
                     if res: all_recs.extend(res)
                 except Exception as e:
                     logger.error(f"[Behavior-Hybrid] Future {key} failed: {e}")
@@ -667,7 +682,7 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0, randomize=Fa
     try:
         salt = int(time.time() * 1000) % 100 if randomize else 0
         
-        candidates = _fetch_behavior_hybrid_candidates(user_id, limit=limit*3, offset=offset, randomize=randomize, salt=salt)
+        candidates = _fetch_behavior_hybrid_candidates(user_id, limit=limit*5, offset=offset, randomize=randomize, salt=salt)
         
         if not candidates:
             return get_trending(limit=limit)
@@ -746,7 +761,7 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0, randomize=Fa
                     c['score'] = old_score + float(sim)*0.3  # blending
 
         # 4. Sort and apply MMR
-        candidates.sort(key=lambda x: x.get('score', 0.0), reverse=True)
+        candidates.sort(key=lambda x: float(x.get('score', 0.0)), reverse=True)
         
         diverse_candidates = apply_diversity(candidates, vector_map, 0.7)
         

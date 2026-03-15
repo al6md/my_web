@@ -23,13 +23,15 @@ print(f"DEBUG: GEMINI_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 def fetch_google_books(query, max_results=12, start_index=0, order_by="relevance"):
     params = {
         "q": query, "maxResults": max_results,
-        "startIndex": start_index, "orderBy": order_by, "printType": "books"
+        "startIndex": start_index, "orderBy": order_by, "printType": "books",
+        "key": os.environ.get("GOOGLE_BOOKS_API_KEY")
     }
     try:
         r = requests.get(API_URL, params=params, timeout=2.5) # Fast timeout to prevent blocking FreshInject pool
         if r.ok:
             data = r.json()
             return data.get("items", []), data.get("totalItems", 0)
+
     except Exception as e:
         print(f"Google Books Error: {e}")
     

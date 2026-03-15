@@ -106,9 +106,21 @@ class FeedbackProcessor:
         
         elif event.feedback_type == "skip":
             return -1.0
+            
+        elif event.feedback_type == "view":
+            return 0.5
+            
+        elif event.feedback_type == "recommend":
+            return 0.05
         
-        elif event.feedback_type == "save":
+        elif event.feedback_type == "search":
+            return 0.2  # Higher than recommend, as it reflects explicit intent
+        
+        elif event.feedback_type in ["save", "favorite", "later"]:
             return 1.5
+            
+        elif event.feedback_type == "finished":
+            return 2.0
         
         elif event.feedback_type == "purchase":
             return 2.0
@@ -252,17 +264,22 @@ class OnlineLearner:
             self._arms[item_id] = (0, 0.0)
         
         trials, successes = self._arms[item_id]
+        
+        # We don't want a background "recommend" or "search" event to count as a full user trial failure
+        if feedback_type in ["recommend", "search"]:
+            return
+            
         trials += 1
         
         # Convert feedback to reward
         reward = 0.0
-        if feedback_type == "click":
+        if feedback_type == "click" or feedback_type == "view":
             reward = 1.0
         elif feedback_type == "rate" and value >= 4.0:
             reward = 1.0
         elif feedback_type == "dwell" and value >= 30:
             reward = 0.5
-        elif feedback_type in ["save", "purchase"]:
+        elif feedback_type in ["save", "purchase", "favorite", "finished", "later"]:
             reward = 1.0
         
         successes += reward
