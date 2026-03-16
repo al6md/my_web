@@ -235,7 +235,7 @@ class UnifiedRecommendationPipeline:
     def recommend_full_stack(
         self,
         user_id: Optional[int] = None,
-        top_k: int = 30,
+        top_k: int = 100,
         context: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
@@ -491,7 +491,6 @@ class UnifiedRecommendationPipeline:
         """Step 3: Encode candidate texts through Transformer for contextual embeddings."""
         try:
             # Fetch real embeddings from DB if available
-            import pickle
             from flask import current_app
             
             # Use a map for efficiency
@@ -507,8 +506,10 @@ class UnifiedRecommendationPipeline:
                             from flask_book_recommendation.models import BookEmbedding
                             rows = BookEmbedding.query.filter(BookEmbedding.book_id.in_(bids)).all()
                             for r in rows:
-                                if r.vector:
-                                    emb_map[str(r.book_id)] = pickle.loads(r.vector)
+                                if r.vector is not None:
+                                    # PickleType auto-deserializes; use directly
+                                    vec = np.asarray(r.vector, dtype=np.float32)
+                                    emb_map[str(r.book_id)] = vec
                         except Exception as e:
                             logger.error(f"Error fetching DB embeddings in Step 3: {e}")
 
@@ -790,7 +791,7 @@ class UnifiedRecommendationPipeline:
     # ─────────────────────────────────────────────────────────────────────
 
     def recommend_trending(
-        self, user_id: Optional[int] = None, top_k: int = 20, context: Optional[Dict] = None
+        self, user_id: Optional[int] = None, top_k: int = 100, context: Optional[Dict] = None
     ) -> List[Dict]:
         """Neural + popularity weighted. Boosts trending/popular items."""
         results = self.recommend_full_stack(user_id=user_id, top_k=top_k * 2, context=context)
@@ -808,7 +809,7 @@ class UnifiedRecommendationPipeline:
         return results[:top_k]
 
     def recommend_because_you_read(
-        self, user_id: Optional[int] = None, top_k: int = 20, context: Optional[Dict] = None
+        self, user_id: Optional[int] = None, top_k: int = 100, context: Optional[Dict] = None
     ) -> List[Dict]:
         """Content + Transformer focused recommendations."""
         results = self.recommend_full_stack(user_id=user_id, top_k=top_k * 2, context=context)
@@ -828,7 +829,7 @@ class UnifiedRecommendationPipeline:
         return results[:top_k]
 
     def recommend_top_neural(
-        self, user_id: Optional[int] = None, top_k: int = 20, context: Optional[Dict] = None
+        self, user_id: Optional[int] = None, top_k: int = 100, context: Optional[Dict] = None
     ) -> List[Dict]:
         """Highest final_score items — pure neural quality."""
         results = self.recommend_full_stack(user_id=user_id, top_k=top_k, context=context)
@@ -836,7 +837,7 @@ class UnifiedRecommendationPipeline:
         return results[:top_k]
 
     def recommend_graph_discovery(
-        self, user_id: Optional[int] = None, top_k: int = 20, context: Optional[Dict] = None
+        self, user_id: Optional[int] = None, top_k: int = 100, context: Optional[Dict] = None
     ) -> List[Dict]:
         """Graph recommender focused — discovery through connections."""
         results = self.recommend_full_stack(user_id=user_id, top_k=top_k * 2, context=context)

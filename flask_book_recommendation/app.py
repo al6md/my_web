@@ -26,6 +26,7 @@ from .routes.api import api_bp
 from .routes.onboarding import onboarding_bp
 from .routes.admin import admin_bp
 from .routes.debug_api import debug_bp
+from .routes.realtime_api import realtime_bp
 
 
 
@@ -96,6 +97,10 @@ def create_app():
     # Debug/Verification API for recommendations
     csrf.exempt(debug_bp)
     app.register_blueprint(debug_bp)
+
+    # Real-time interaction tracking & dynamic feed
+    csrf.exempt(realtime_bp)
+    app.register_blueprint(realtime_bp)
 
     # الصفحة الرئيسية → Explore
     # @app.route("/")

@@ -1,6 +1,6 @@
 # flask_book_recommendation/recommendation_logger.py
 """
-📊 Recommendation Pipeline Logger
+[REC] Recommendation Pipeline Logger
 =================================
 Comprehensive logging system for tracking AI recommendation execution.
 Logs each stage of the pipeline with timing, results, and diagnostic info.
@@ -109,32 +109,32 @@ class PipelineExecutionLog:
     def log_summary(self) -> str:
         """Generate formatted log summary."""
         lines = [
-            f"═══════════════════════════════════════════════════════════",
-            f"📊 RECOMMENDATION REQUEST: {self.request_id}",
+            f"===========================================================",
+            f"[REC] RECOMMENDATION REQUEST: {self.request_id}",
             f"   User ID: {self.user_id} | Time: {self.timestamp}",
-            f"───────────────────────────────────────────────────────────",
+            f"-----------------------------------------------------------",
         ]
         
         # Transformer
-        status = "✓" if self.transformer_invoked else "✗"
+        status = "Y" if self.transformer_invoked else "N"
         lines.append(
-            f"   ├─ [TRANSFORMER]  Invoked: {status} | "
+            f"   |-- [TRANSFORMER]  Invoked: {status} | "
             f"Time: {self.transformer_time_ms:.0f}ms | "
             f"Results: {self.transformer_results}"
         )
         
         # Neural
-        status = "✓" if self.neural_invoked else "✗"
+        status = "Y" if self.neural_invoked else "N"
         lines.append(
-            f"   ├─ [NEURAL]       Invoked: {status} | "
+            f"   |-- [NEURAL]       Invoked: {status} | "
             f"Time: {self.neural_time_ms:.0f}ms | "
             f"Results: {self.neural_results}"
         )
         
         # Behavioral
-        status = "✓" if self.behavioral_invoked else "✗"
+        status = "Y" if self.behavioral_invoked else "N"
         lines.append(
-            f"   ├─ [BEHAVIORAL]   Invoked: {status} | "
+            f"   |-- [BEHAVIORAL]   Invoked: {status} | "
             f"Time: {self.behavioral_time_ms:.0f}ms | "
             f"Results: {self.behavioral_results}"
         )
@@ -143,26 +143,26 @@ class PipelineExecutionLog:
         if self.hybrid_merge_performed:
             weights_str = ", ".join(f"{k}={v:.2f}" for k, v in self.weights.items())
             lines.append(
-                f"   ├─ [HYBRID]       Merge: ✓ | "
+                f"   |-- [HYBRID]       Merge: Y | "
                 f"Time: {self.hybrid_time_ms:.0f}ms | "
                 f"Weights: [{weights_str}]"
             )
         
         # Fallback warning
         if self.used_fallback:
-            lines.append(f"   ⚠️  FALLBACK USED: {self.fallback_reason}")
+            lines.append(f"   [WARN] FALLBACK USED: {self.fallback_reason}")
         
         # Errors
         for err in self.errors:
-            lines.append(f"   ❌ ERROR: {err}")
+            lines.append(f"   [ERROR] ERROR: {err}")
         
         # Summary
-        lines.append(f"───────────────────────────────────────────────────────────")
+        lines.append(f"-----------------------------------------------------------")
         lines.append(
-            f"   └─ [TOTAL] {self.total_time_ms:.0f}ms | "
+            f"   |__ [TOTAL] {self.total_time_ms:.0f}ms | "
             f"Final Results: {self.final_results} books"
         )
-        lines.append(f"═══════════════════════════════════════════════════════════")
+        lines.append(f"===========================================================")
         
         return "\n".join(lines)
 
@@ -187,7 +187,7 @@ class RecommendationPipelineLogger:
     def __enter__(self):
         RecommendationPipelineLogger._current_log = self.log
         self._start_time = time.perf_counter()
-        rec_logger.info(f"🚀 Starting recommendation for user {self.log.user_id}")
+        rec_logger.info(f"[REC] Starting recommendation for user {self.log.user_id}")
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -231,12 +231,12 @@ class RecommendationPipelineLogger:
         """Log that fallback was used."""
         self.log.used_fallback = True
         self.log.fallback_reason = reason
-        rec_logger.warning(f"⚠️ Fallback triggered: {reason}")
+        rec_logger.warning(f"[WARN] Fallback triggered: {reason}")
     
     def log_error(self, error: str):
         """Log an error."""
         self.log.errors.append(error)
-        rec_logger.error(f"❌ {error}")
+        rec_logger.error(f"[ERROR] {error}")
     
     def set_final_count(self, count: int):
         """Set final result count."""
@@ -302,7 +302,7 @@ def validate_similarity_score(score: float, context: str = ""):
         raise RecommendationValidationError(f"Similarity score is None {context}")
     if score < 0:
         rec_logger.warning(f"Similarity score is negative: {score} {context}")
-    rec_logger.debug(f"✓ Similarity score validated: {score:.4f} {context}")
+    rec_logger.debug(f"Similarity score validated: {score:.4f} {context}")
 
 
 def validate_user_features(features: dict, context: str = ""):

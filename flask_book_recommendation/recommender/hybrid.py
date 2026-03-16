@@ -78,7 +78,9 @@ def get_hybrid_recommendations(user_id, book, limit=12):
             if hasattr(book, 'id') and book.id:
                 emb_entry = BookEmbedding.query.filter_by(book_id=book.id).first()
                 if emb_entry and emb_entry.vector:
-                    current_embedding = np.array(emb_entry.vector, dtype=np.float32).reshape(1, -1)
+                    # Defensive unpickling
+                    vec_data = __import__("pickle").loads(emb_entry.vector) if isinstance(emb_entry.vector, bytes) else emb_entry.vector
+                    current_embedding = np.array(vec_data, dtype=np.float32).reshape(1, -1)
             
             if current_embedding is not None:
                 all_embeds = BookEmbedding.query.all()
@@ -87,7 +89,9 @@ def get_hybrid_recommendations(user_id, book, limit=12):
                 for row in all_embeds:
                     if hasattr(book, 'id') and row.book_id == book.id: continue
                     if row.vector:
-                        vectors.append(np.array(row.vector, dtype=np.float32))
+                        # Defensive unpickling
+                        vec_data = __import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector
+                        vectors.append(np.array(vec_data, dtype=np.float32))
                         b_ids.append(row.book_id)
                 
                 if vectors:

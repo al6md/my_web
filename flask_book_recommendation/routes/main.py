@@ -128,29 +128,29 @@ def home_feed():
     # If all neural variants fire simultaneously, they all miss the cache
     # and overwhelm the recommendation engine executor.
     try:
-        engine.recommend_full_stack(user_id=user_id, top_k=60, context=ctx)
+        engine.recommend_full_stack(user_id=user_id, top_k=100, context=ctx)
     except Exception as e:
         current_app.logger.warning(f"Cache pre-warm failed: {e}")
 
     with ThreadPoolExecutor(max_workers=12) as ex:
         futs = {
             # Basic AI
-            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=30, randomize=True): ("cat", "deep_learning"),
+            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=100, randomize=True): ("cat", "deep_learning"),
             
             # Interactive / Community
-            ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=30): ("cat", "mood_ai"),
-            ex.submit(_run_safe, app_obj, get_cf_similar, user_id=user_id, top_n=30): ("cat", "similar_minds"),
+            ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=100): ("cat", "mood_ai"),
+            ex.submit(_run_safe, app_obj, get_cf_similar, user_id=user_id, top_n=100): ("cat", "similar_minds"),
             
             # Stats for "Hot Right Now"
-            ex.submit(_run_safe, app_obj, get_top_rated, limit=30): ("cat", "top_rated"),
-            ex.submit(_run_safe, app_obj, get_most_viewed_books_custom, limit=30): ("cat", "most_viewed"),
+            ex.submit(_run_safe, app_obj, get_top_rated, limit=100): ("cat", "top_rated"),
+            ex.submit(_run_safe, app_obj, get_most_viewed_books_custom, limit=100): ("cat", "most_viewed"),
             
             # Neural Engine (Now parallelized to prevent hanging)
-            ex.submit(_run_safe, app_obj, engine.recommend_full_stack, user_id=user_id, top_k=40, context=ctx): ("neural", "recommended_for_you"),
-            ex.submit(_run_safe, app_obj, engine.recommend_trending, user_id=user_id, top_k=40, context=ctx): ("neural", "trending_for_you"),
-            ex.submit(_run_safe, app_obj, engine.recommend_because_you_read, user_id=user_id, top_k=40, context=ctx): ("neural", "because_you_read"),
-            ex.submit(_run_safe, app_obj, engine.recommend_top_neural, user_id=user_id, top_k=40, context=ctx): ("neural", "top_neural_picks"),
-            ex.submit(_run_safe, app_obj, engine.recommend_graph_discovery, user_id=user_id, top_k=40, context=ctx): ("neural", "graph_discovery"),
+            ex.submit(_run_safe, app_obj, engine.recommend_full_stack, user_id=user_id, top_k=100, context=ctx): ("neural", "recommended_for_you"),
+            ex.submit(_run_safe, app_obj, engine.recommend_trending, user_id=user_id, top_k=100, context=ctx): ("neural", "trending_for_you"),
+            ex.submit(_run_safe, app_obj, engine.recommend_because_you_read, user_id=user_id, top_k=100, context=ctx): ("neural", "because_you_read"),
+            ex.submit(_run_safe, app_obj, engine.recommend_top_neural, user_id=user_id, top_k=100, context=ctx): ("neural", "top_neural_picks"),
+            ex.submit(_run_safe, app_obj, engine.recommend_graph_discovery, user_id=user_id, top_k=100, context=ctx): ("neural", "graph_discovery"),
         }
         try:
             for f in as_completed(futs, timeout=12.0):
@@ -189,7 +189,7 @@ def home_feed():
         if bid not in seen:
             seen.add(bid)
             hot_now_unique.append(b)
-    cat_results["hot_right_now"] = hot_now_unique[:40]
+    cat_results["hot_right_now"] = hot_now_unique[:100]
 
     # ── Build Featured Lists ──
     featured_lists = _build_featured_lists()
@@ -454,7 +454,7 @@ def browse():
     Explore page for specific categories (See All).
     """
     category = request.args.get('category', 'unified')
-    limit = 60 # Show more books for browse page
+    limit = 100 # Show more books for browse page
     
     # Imports inside function to avoid circular dependency
     from ..recommender import (
@@ -510,10 +510,10 @@ def browse():
                 
                 app_obj = current_app._get_current_object()
                 with ThreadPoolExecutor(max_workers=4) as executor:
-                    f1 = executor.submit(run_safe, app_obj, get_behavior_based_recommendations, user_id, limit=30, randomize=True)
-                    f2 = executor.submit(run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=30, randomize=True)
-                    f3 = executor.submit(run_safe, app_obj, get_cf_similar, user_id, top_n=30, randomize=True)
-                    f4 = executor.submit(run_safe, app_obj, get_topic_based, user_id, limit=30, randomize=True) # Added Interest Match
+                    f1 = executor.submit(run_safe, app_obj, get_behavior_based_recommendations, user_id, limit=100, randomize=True)
+                    f2 = executor.submit(run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=100, randomize=True)
+                    f3 = executor.submit(run_safe, app_obj, get_cf_similar, user_id, top_n=100, randomize=True)
+                    f4 = executor.submit(run_safe, app_obj, get_topic_based, user_id, limit=100, randomize=True) # Added Interest Match
                     
                     res1 = f1.result(timeout=15) or []
                     res2 = f2.result(timeout=15) or []

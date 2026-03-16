@@ -93,7 +93,7 @@ def _get_ai_embedding_recommendations(
             view_embeds = BookEmbedding.query.filter(BookEmbedding.book_id.in_(viewed_book_ids)).all()
             for row in view_embeds:
                 if row.vector is not None:
-                    v = np.array(row.vector, dtype=np.float32)
+                    v = np.array(__import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector, dtype=np.float32)
                     if v.ndim == 1:
                         all_vectors.append(v)
 
@@ -101,7 +101,7 @@ def _get_ai_embedding_recommendations(
             fav_embeds = BookEmbedding.query.filter(BookEmbedding.book_id.in_(favorite_book_ids)).all()
             for row in fav_embeds:
                 if row.vector is not None:
-                    v = np.array(row.vector, dtype=np.float32)
+                    v = np.array(__import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector, dtype=np.float32)
                     if v.ndim == 1:
                         all_vectors.append(v)
                         all_vectors.append(v)
@@ -112,7 +112,7 @@ def _get_ai_embedding_recommendations(
             rated_embeds = BookEmbedding.query.filter(BookEmbedding.book_id.in_(ids_only)).all()
             for row in rated_embeds:
                 if row.vector is not None:
-                    v = np.array(row.vector, dtype=np.float32)
+                    v = np.array(__import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector, dtype=np.float32)
                     if v.ndim == 1:
                         weight = 2
                         if isinstance(high_rated_book_ids, dict):
@@ -323,7 +323,7 @@ def apply_diversity(books, book_embeddings_map, lambda_=0.7):
     
     return selected
 
-def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
+def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
     """
     Get recommendations using the Two-Tower Deep Learning model 
     with FAISS candidate retrieval and BookStatus filtering.
@@ -381,7 +381,8 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 for emb in embeddings_data:
                     if emb.vector is not None:
                         id_map.append(emb.book_id)
-                        vec_list.append(np.array(emb.vector, dtype=np.float32))
+                        vec = __import__("pickle").loads(emb.vector) if isinstance(emb.vector, bytes) else emb.vector
+                        vec_list.append(np.array(vec, dtype=np.float32))
                         
                 dim = 384
                 index = faiss.IndexFlatIP(dim)
@@ -430,7 +431,7 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 return get_trending(limit=limit)
                 
             embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(interaction_ids)).all()
-            hists = [np.array(e.vector, dtype=np.float32) for e in embs if e.vector is not None]
+            hists = [np.array(__import__("pickle").loads(e.vector) if isinstance(e.vector, bytes) else e.vector, dtype=np.float32) for e in embs if e.vector is not None]
             
             if not hists:
                 pipeline_log.log_fallback(f"User {user_id} has {len(interaction_ids)} interactions but 0 matching embeddings")
@@ -481,7 +482,7 @@ def get_deep_learning_recommendations(user_id, limit=20, randomize=False):
                 return get_trending(limit=limit)
                 
             cand_embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(candidate_ids)).all()
-            cand_dict = {e.book_id: np.array(e.vector, dtype=np.float32) for e in cand_embs if e.vector is not None}
+            cand_dict = {e.book_id: np.array(__import__("pickle").loads(e.vector) if isinstance(e.vector, bytes) else e.vector, dtype=np.float32) for e in cand_embs if e.vector is not None}
             
             act_ids = list(cand_dict.keys())
             act_vecs = np.array(list(cand_dict.values()))
@@ -720,7 +721,7 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0, randomize=Fa
             embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(dbid_list)).all()
             for e in embs:
                 if e.vector is not None:
-                    vector_map[e.book_id] = np.array(e.vector, dtype=np.float32)
+                    vector_map[e.book_id] = np.array(__import__("pickle").loads(e.vector) if isinstance(e.vector, bytes) else e.vector, dtype=np.float32)
 
         # 3. Boost candidates via SessionEncoder
         history_vectors = []

@@ -21,8 +21,9 @@ def get_db_data():
         print("Fetching embeddings...")
         embeddings = {}
         for row in BookEmbedding.query.filter(BookEmbedding.vector.isnot(None)).all():
-            if row.vector:
-                embeddings[row.book_id] = np.array(row.vector, dtype=np.float32)
+            vec_data = __import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector
+            if vec_data is not None:
+                embeddings[row.book_id] = np.array(vec_data, dtype=np.float32)
                 
         # Mapping from google_id to book_id
         google_to_local = {b.google_id: b.id for b in Book.query.with_entities(Book.google_id, Book.id).all() if b.google_id}
@@ -36,7 +37,8 @@ def get_db_data():
             bid = google_to_local.get(r.google_id)
             if not bid: continue
             weight = float(r.rating) # weight=rating value
-            user_interactions.setdefault(r.user_id, {})[bid] = max(user_interactions[r.user_id].get(bid, 0), weight)
+            user_dict = user_interactions.setdefault(r.user_id, {})
+            user_dict[bid] = max(user_dict.get(bid, 0), weight)
             
         # 2. BookStatus
         for s in BookStatus.query.all():
@@ -45,14 +47,16 @@ def get_db_data():
             elif s.status == 'favorite': w = 4.0
             elif s.status == 'later': w = 1.5
             else: w = 1.0
-            user_interactions.setdefault(s.user_id, {})[bid] = max(user_interactions[s.user_id].get(bid, 0), w)
+            user_dict = user_interactions.setdefault(s.user_id, {})
+            user_dict[bid] = max(user_dict.get(bid, 0), w)
             
         # 3. UserBookView
         for v in UserBookView.query.all():
             bid = v.book_id or google_to_local.get(v.google_id)
             if not bid: continue
             w = 2.0 if (v.view_count and v.view_count > 3) else 1.0
-            user_interactions.setdefault(v.user_id, {})[bid] = max(user_interactions[v.user_id].get(bid, 0), w)
+            user_dict = user_interactions.setdefault(v.user_id, {})
+            user_dict[bid] = max(user_dict.get(bid, 0), w)
             
         return user_interactions, embeddings
 

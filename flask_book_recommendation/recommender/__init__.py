@@ -86,6 +86,11 @@ from .mood import (
     get_mood_based_recommendations,
 )
 
+# ── session adaptive ────────────────────────────────────────────────
+from .session_adaptive import (
+    get_session_adaptive_recommendations,
+)
+
 # ── hybrid ──────────────────────────────────────────────────────────
 from .hybrid import (
     get_hybrid_recommendations,

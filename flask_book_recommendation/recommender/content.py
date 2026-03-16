@@ -66,6 +66,8 @@ def get_content_similar(user_id, top_n=30, history_limit=20, randomize=False):
         vec = row.vector
         if vec is None:
             continue
+        # Unpickle explicitly if it's bytes
+        vec = __import__("pickle").loads(vec) if isinstance(vec, bytes) else vec
         v = np.array(vec, dtype=np.float32)
         if v.ndim == 1:
             seed_vectors.append(v)
@@ -81,6 +83,7 @@ def get_content_similar(user_id, top_n=30, history_limit=20, randomize=False):
         vec = row.vector
         if vec is None:
             continue
+        vec = __import__("pickle").loads(vec) if isinstance(vec, bytes) else vec
         v = np.array(vec, dtype=np.float32)
         if v.ndim == 1:
             book_ids.append(row.book_id)
@@ -172,7 +175,8 @@ def get_view_based_recommendations(user_id, top_n=12, history_limit=10, randomiz
         seed_vectors = []
         for row in seed_embeds:
             if row.vector is not None:
-                v = np.array(row.vector, dtype=np.float32)
+                vec = __import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector
+                v = np.array(vec, dtype=np.float32)
                 if v.ndim == 1:
                     seed_vectors.append(v)
                     
@@ -190,7 +194,8 @@ def get_view_based_recommendations(user_id, top_n=12, history_limit=10, randomiz
                 continue
                 
             if row.vector is not None:
-                v = np.array(row.vector, dtype=np.float32)
+                vec = __import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector
+                v = np.array(vec, dtype=np.float32)
                 if v.ndim == 1:
                     candidate_ids.append(row.book_id)
                     candidate_vectors.append(v)

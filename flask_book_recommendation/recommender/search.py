@@ -47,7 +47,9 @@ def semantic_search(query: str, limit: int = 12, exclude_book_ids: list = None):
         if row.vector is None:
             continue
         
-        v = np.array(row.vector, dtype=np.float32)
+        # Defensive unpickling for raw bytes
+        vec_data = __import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector
+        v = np.array(vec_data, dtype=np.float32)
         if v.ndim == 1 and v.shape[0] == query_vec.shape[1]:
             book_ids.append(row.book_id)
             vectors.append(v)

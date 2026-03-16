@@ -1,4 +1,6 @@
 import os
+import sys
+import subprocess
 from apscheduler.schedulers.background import BackgroundScheduler
 from pathlib import Path
 from flask_book_recommendation.extensions import db
@@ -9,7 +11,7 @@ def update_all_embeddings(app):
     Background job to update user embeddings based on latest interests and interactions.
     """
     with app.app_context():
-        print("🕒 [Scheduler] Starting 24h user embedding update job...")
+        app.logger.info("[Scheduler] Starting 24h user embedding update job...")
         try:
             from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
             
@@ -33,12 +35,34 @@ def update_all_embeddings(app):
                         # Re-calculate the base vector
                         user_embedding_manager.initialize_from_interests(user_id, interests)
                     except Exception as e:
-                        print(f"Failed to update embedding for user {user_id}: {e}")
+                        app.logger.error(f"Failed to update embedding for user {user_id}: {e}")
                         
-            print("✅ [Scheduler] Finished updating user embeddings.")
+            app.logger.info("[Scheduler] Finished updating user embeddings.")
             
         except Exception as e:
-            print(f"❌ [Scheduler] Error during embedding update: {e}")
+            app.logger.error(f"[Scheduler] Error during embedding update: {e}")
+
+def run_automated_training(app):
+    """
+    Background job to run the model retraining scripts automatically.
+    """
+    with app.app_context():
+        app.logger.info("[Scheduler] Starting automated model training job...")
+        try:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            
+            app.logger.info("[Scheduler] Running retrain_all_models.py...")
+            subprocess.run([sys.executable, "scripts/retrain_all_models.py"], cwd=project_root, check=True)
+            
+            app.logger.info("[Scheduler] Running train_from_database.py...")
+            subprocess.run([sys.executable, "scripts/train_from_database.py"], cwd=project_root, check=True)
+            
+            app.logger.info("[Scheduler] Automated model training finished successfully.")
+        except subprocess.CalledProcessError as e:
+            app.logger.error(f"[Scheduler] Error during automated training script execution: {e}")
+        except Exception as e:
+            app.logger.error(f"[Scheduler] Unexpected error during automated training: {e}")
+
 
 def start_scheduler(app):
     """
@@ -61,5 +85,16 @@ def start_scheduler(app):
         replace_existing=True
     )
     
+    # Run model training every 1 hour (or any desired interval)
+    scheduler.add_job(
+        func=run_automated_training,
+        trigger="interval",
+        hours=1,
+        args=[app],
+        id="automated_training_job",
+        name="Automated model retraining",
+        replace_existing=True
+    )
+    
     scheduler.start()
-    print("⏰ [Scheduler] APScheduler started successfully.")
+    app.logger.info("[Scheduler] APScheduler started successfully.")

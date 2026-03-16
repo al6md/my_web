@@ -50,7 +50,7 @@ def _get_embeddings_matrix(ttl=3600):
         
         for row in all_rows:
             if row.vector is not None:
-                v = np.array(row.vector, dtype=np.float32)
+                v = np.array(__import__("pickle").loads(row.vector) if isinstance(row.vector, bytes) else row.vector, dtype=np.float32)
                 if v.ndim == 1:
                     # Initialize target_dim from the first valid vector
                     if target_dim is None:
