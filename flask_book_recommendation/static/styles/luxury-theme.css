@@ -48,13 +48,19 @@
     --lux-border-bright: 1px solid rgba(201, 168, 76, 0.4);
 
     /* Font */
-    --lux-font-display: 'Cormorant Garamond', 'Cairo', Georgia, serif;
-    --lux-font-body: 'Inter', 'Cairo', sans-serif;
+    --lux-font-display: 'IBM Plex Sans Arabic', 'Cormorant Garamond', 'Cairo', Georgia, serif;
+    --lux-font-body: 'Cairo', 'Inter', sans-serif;
 
     /* Transitions */
     --lux-t-fast: 0.15s ease;
     --lux-t-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     --lux-t-spring: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Ultra Premium Gradients */
+    --lux-mesh-1: radial-gradient(at 0% 0%, hsla(43,74%,54%,0.15) 0px, transparent 50%);
+    --lux-mesh-2: radial-gradient(at 100% 0%, hsla(280,30%,20%,0.1) 0px, transparent 50%);
+    --lux-mesh-3: radial-gradient(at 100% 100%, hsla(200,80%,30%,0.08) 0px, transparent 50%);
+    --lux-mesh-4: radial-gradient(at 0% 100%, hsla(30,100%,50%,0.1) 0px, transparent 50%);
 }
 
 /* Light Mode Token Overrides */
@@ -95,17 +101,19 @@ body {
     background: var(--lux-void) !important;
 }
 
-/* Cinematic warm vignette overlay on body */
+/* Cinematic warm vignette overlay on body & Mesh Gradients */
 body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background:
+    background: 
+        var(--lux-mesh-1), var(--lux-mesh-2), var(--lux-mesh-3), var(--lux-mesh-4),
         radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201, 168, 76, 0.04) 0%, transparent 60%),
         radial-gradient(ellipse 60% 40% at 20% 100%, rgba(184, 115, 51, 0.03) 0%, transparent 50%),
         radial-gradient(ellipse 50% 50% at 80% 50%, rgba(107, 83, 15, 0.03) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
+    transition: background 1s ease;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -196,21 +204,9 @@ body::before {
 /* ═══════════════════════════════════════════════════════
    🏛️ LUXURY HERO SECTION
    ═══════════════════════════════════════════════════════ */
+/* Reset for custom page-level hero designs */
 .hero-universe {
-    background:
-        linear-gradient(to bottom, rgba(7, 5, 3, 0.97) 0%, rgba(14, 11, 8, 0.95) 100%),
-        url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2000&auto=format&fit=crop');
-    background-size: cover !important;
-    background-position: center center !important;
-    background-attachment: fixed !important;
-    min-height: 85vh !important;
-    position: relative !important;
-}
-
-[data-theme="light"] .hero-universe {
-    background:
-        linear-gradient(to bottom, rgba(250, 247, 240, 0.96) 0%, rgba(240, 233, 218, 0.94) 100%),
-        url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2000&auto=format&fit=crop') !important;
+    background: var(--lux-bg);
 }
 
 /* Cinematic light cone from above */
@@ -225,7 +221,33 @@ body::before {
     pointer-events: none !important;
 }
 
+/* Main Container Expansion */
+.container {
+    max-width: 1700px !important; /* Expanded for wide-screen luxury */
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+@media (max-width: 1800px) {
+    .container {
+        max-width: 1500px !important;
+    }
+}
+
+@media (max-width: 1400px) {
+    .container {
+        max-width: 1280px !important;
+    }
+}
+
+.lux-section {
+    position: relative !important;
+    padding: 5rem 0 !important;
+    overflow: hidden !important;
+}
+
 /* Hero Content */
+/*
 .hero-content-wrap {
     position: relative !important;
     z-index: 10 !important;
@@ -233,6 +255,7 @@ body::before {
     padding: 2rem !important;
     max-width: 860px !important;
 }
+*/
 
 /* Eye-line Divider */
 .hero-eyeline {
@@ -264,6 +287,7 @@ body::before {
 }
 
 /* Main Hero Title */
+/*
 .hero-main-title {
     font-family: var(--lux-font-display) !important;
     font-size: clamp(2.8rem, 7vw, 5.5rem) !important;
@@ -280,6 +304,7 @@ body::before {
     color: var(--lux-text-primary) !important;
     text-shadow: none !important;
 }
+*/
 
 /* Gold accent word in title */
 .hero-main-title .hero-gold-word {
@@ -307,6 +332,7 @@ body::before {
 }
 
 /* Tagline */
+/*
 .hero-tagline {
     color: var(--lux-text-secondary) !important;
     font-size: 1rem !important;
@@ -316,8 +342,10 @@ body::before {
     animation: lux-fade-up 1s ease 0.5s both !important;
     letter-spacing: 0.02em !important;
 }
+*/
 
 /* Hero Search Bar */
+/*
 .hero-search-capsule {
     display: flex !important;
     align-items: center !important;
@@ -342,6 +370,7 @@ body::before {
     background: rgba(255, 252, 245, 0.85) !important;
     border: 1px solid rgba(160, 120, 40, 0.25) !important;
 }
+*/
 
 .hero-search-capsule i {
     color: var(--lux-gold) !important;
@@ -402,11 +431,13 @@ body::before {
     left: 100% !important;
 }
 
+/*
 .hero-search-btn:hover,
 .btn-primary:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 8px 30px rgba(184, 115, 51, 0.5) !important;
 }
+*/
 
 /* Secondary Button */
 .btn-secondary,
@@ -429,164 +460,335 @@ body::before {
 }
 
 /* ═══════════════════════════════════════════════════════
-   🎴 LUXURY BOOK CARDS
+   🎬 NETFLIX-STYLE BOOK CARDS
    ═══════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════
-   🏛️ PREMIUM LUXURY MUSEUM BOOK CARDS (Ultra Beautiful)
-   ═══════════════════════════════════════════════════════ */
-.museum-book-card {
-    background: linear-gradient(145deg, rgba(35, 28, 18, 0.4), rgba(15, 12, 8, 0.7)) !important;
-    border: 1px solid rgba(201, 168, 76, 0.25) !important;
-    border-radius: 16px !important;
-    padding: 1.5rem 1rem 1.25rem !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-    width: 200px !important;
-    height: 380px !important;
-    min-height: 380px !important;
-    position: relative !important;
-    overflow: visible !important; /* Changed from hidden so the hover scale works */
-    flex: 0 0 200px !important; /* Fixed width for flex container to prevent squishing */
+.netflix-card {
+    position: relative;
+    display: block;
+    width: 220px;
+    height: 330px;
+    flex: 0 0 220px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0a0f16;
+    border: 2px solid rgba(201, 168, 76, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+    text-decoration: none !important;
+    color: inherit;
+    cursor: pointer;
+    margin: 10px;
 }
 
-/* Dynamic Glare Effect */
-.museum-book-card::before {
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important; left: -100% !important;
-    width: 50% !important; height: 100% !important;
-    background: linear-gradient(to right, transparent, rgba(201, 168, 76, 0.15), transparent) !important;
-    transform: skewX(-25deg) !important;
-    transition: left 0.7s ease !important;
-    z-index: 1 !important;
-    pointer-events: none !important;
+.netflix-card:hover {
+    transform: translateY(-12px) scale(1.04);
+    border-color: rgba(201, 168, 76, 0.7);
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.8),
+        0 0 30px rgba(201, 168, 76, 0.2),
+        0 0 60px rgba(201, 168, 76, 0.08);
+}
+
+/* Cover Image */
+.netflix-card-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+}
+
+.netflix-card:hover .netflix-card-cover {
+    transform: scale(1.08);
+    filter: brightness(0.6);
+}
+
+/* Ambient Glow behind card (visible on hover) */
+.netflix-card-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: radial-gradient(ellipse at center, rgba(201, 168, 76, 0.15), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.netflix-card:hover .netflix-card-glow {
+    opacity: 1;
+}
+
+/* Overlay - Slides up on hover */
+.netflix-card-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.netflix-card-info {
+    width: 100%;
+    padding: 1.25rem 1rem;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(0, 0, 0, 0.85) 35%,
+        rgba(0, 0, 0, 0.4) 70%,
+        transparent 100%
+    );
+    transform: translateY(55%);
+    transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: auto;
+}
+
+.netflix-card:hover .netflix-card-info {
+    transform: translateY(0);
+}
+
+/* Title */
+.netflix-card-title {
+    font-family: var(--lux-font-display, 'Cairo', serif) !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    margin: 0 0 0.3rem 0 !important;
+    line-height: 1.3 !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-align: right !important;
+}
+
+/* Author */
+.netflix-card-author {
+    font-size: 0.8rem !important;
+    color: var(--lux-gold, #c9a84c) !important;
+    font-weight: 600 !important;
+    margin: 0 0 0.5rem 0 !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    opacity: 0;
+    transition: opacity 0.3s ease 0.1s;
+}
+
+.netflix-card:hover .netflix-card-author {
+    opacity: 1;
+}
+
+/* Rating */
+.netflix-card-rating {
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease 0.15s;
+}
+
+.netflix-card:hover .netflix-card-rating {
+    opacity: 1;
+}
+
+/* CTA Button */
+.netflix-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #0d0b10;
+    background: linear-gradient(135deg, var(--lux-gold, #c9a84c), var(--lux-copper, #b87333));
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(8px);
+    box-shadow: 0 4px 12px rgba(184, 115, 51, 0.3);
+}
+
+.netflix-card:hover .netflix-card-btn {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
+}
+
+.netflix-card-btn:hover {
+    box-shadow: 0 6px 20px rgba(201, 168, 76, 0.5);
+}
+
+/* Animated Border Glow */
+.netflix-card-border-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    pointer-events: none;
+    z-index: 4;
+    transition: border-color 0.4s ease;
+}
+
+.netflix-card:hover .netflix-card-border-glow {
+    border-color: rgba(201, 168, 76, 0.5);
+    box-shadow: inset 0 0 20px rgba(201, 168, 76, 0.1);
+}
+
+/* Magnetic Wrap for JS Interaction */
+.magnetic-wrap {
+    display: inline-block;
+    transition: transform 0.1s ease;
+    will-change: transform;
+}
+
+/* Animated Smart Tags */
+.pulse-tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 50px;
+    background: rgba(201, 168, 76, 0.15);
+    border: 1px solid rgba(201, 168, 76, 0.4);
+    color: var(--lux-gold-light);
+    font-size: 0.75rem;
+    font-weight: 600;
+    animation: lux-pulse-soft 2s infinite;
+}
+
+@keyframes lux-pulse-soft {
+    0% {
+        box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(201, 168, 76, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(201, 168, 76, 0);
+    }
 }
 
 /* Light Mode Overrides */
-[data-theme="light"] .museum-book-card {
-    background: linear-gradient(145deg, rgba(255, 250, 240, 0.8), rgba(240, 235, 222, 0.95)) !important;
-    border-color: rgba(184, 140, 60, 0.3) !important;
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+[data-theme="light"] .netflix-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-.museum-book-card:hover {
-    border-color: rgba(201, 168, 76, 0.6) !important;
-    box-shadow: 
-        0 15px 45px rgba(0, 0, 0, 0.8), 
-        0 0 30px rgba(201, 168, 76, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-    transform: translateY(-8px) scale(1.02) !important;
+[data-theme="light"] .netflix-card:hover {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25), 0 0 30px rgba(201, 168, 76, 0.15);
 }
 
-.museum-book-card:hover::before {
-    left: 200% !important;
+[data-theme="light"] .netflix-card-title {
+    color: #fff !important; /* stays white since over gradient */
 }
 
-[data-theme="light"] .museum-book-card:hover {
-    box-shadow: 
-        0 15px 45px rgba(0, 0, 0, 0.15), 
-        0 0 30px rgba(184, 140, 60, 0.2) !important;
-}
-
-/* The actual book sitting inside the card */
-.museum-book-cover-wrap {
-    position: relative !important;
-    width: 140px !important;
-    height: 210px !important;
-    margin: 0 auto 1.5rem !important;
-    border-radius: 6px !important;
-    box-shadow: 
-        0 15px 35px rgba(0, 0, 0, 0.8), 
-        -2px 0 10px rgba(0,0,0,0.5) inset !important;
-    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1) !important;
-    background: #0d0b08 !important;
-    overflow: hidden !important;
-    z-index: 2 !important;
-}
-
-/* Book Spine Visual */
-.museum-book-cover-wrap::after {
-    content: '' !important;
-    position: absolute !important;
-    left: 0; top: 0; bottom: 0;
-    width: 5px !important;
-    background: linear-gradient(to right, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%) !important;
-    z-index: 3 !important;
-    pointer-events: none !important;
-}
-
-.museum-book-card:hover .museum-book-cover-wrap {
-    transform: perspective(800px) rotateY(-8deg) scale(1.05) translateY(-5px) !important;
-    box-shadow: 
-        20px 20px 40px rgba(0, 0, 0, 0.9), 
-        0 0 0 1px var(--lux-gold), 
-        0 0 30px rgba(201, 168, 76, 0.5) !important;
-}
-
-.museum-book-cover-wrap img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    border-radius: 4px !important;
-    transition: filter 0.5s ease !important;
-}
-
-.museum-book-card:hover .museum-book-cover-wrap img {
-    filter: brightness(1.1) contrast(1.05) !important;
-}
-
-/* Premium No-Cover Placeholder */
-.card-no-cover {
-    position: absolute !important;
-    inset: 0 !important;
+.carousel-track-ng {
     display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: linear-gradient(135deg, #1c1813 0%, #0d0b08 100%) !important;
-    border: 1px solid rgba(201, 168, 76, 0.1) !important;
+    gap: 0.5rem !important;
+    overflow-x: auto !important;
+    scroll-behavior: smooth !important;
+    padding: 2rem 1rem !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent) !important;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent) !important;
 }
 
-.no-cover-pattern {
-    color: rgba(201, 168, 76, 0.3) !important;
-    font-size: 3rem !important;
+/* Star colors override */
+.netflix-card .star-icon.filled {
+    color: var(--lux-gold) !important;
+    filter: drop-shadow(0 0 3px rgba(201, 168, 76, 0.6)) !important;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .netflix-card {
+        width: 160px;
+        height: 240px;
+        flex: 0 0 160px;
+        border-radius: 12px;
+    }
+
+    .netflix-card-title {
+        font-size: 0.9rem !important;
+    }
+
+    .netflix-card-author {
+        font-size: 0.7rem !important;
+    }
+
+    .netflix-card-info {
+        padding: 1rem 0.75rem;
+    }
+
+    .netflix-card-btn {
+        font-size: 0.65rem;
+        padding: 0.35rem 0.75rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .netflix-card {
+        width: 140px;
+        height: 210px;
+        flex: 0 0 140px;
+    }
+}
+
+.card-accent-strip {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, transparent, var(--lux-gold), transparent) !important;
+    opacity: 0.8 !important;
+    transition: opacity 0.3s ease !important;
 }
 
 /* Card overlay for actions */
-.museum-book-cover-wrap .card-overlay-glass {
+.card-overlay-glass {
     position: absolute !important;
     inset: 0 !important;
-    background: linear-gradient(to top, rgba(15, 12, 8, 0.95) 0%, rgba(15, 12, 8, 0.5) 50%, transparent 100%) !important;
+    background: rgba(0, 0, 0, 0.7) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     opacity: 0 !important;
     transition: opacity 0.4s ease !important;
     z-index: 4 !important;
+    backdrop-filter: blur(4px) !important;
 }
 
 .museum-book-cover-wrap:hover .card-overlay-glass {
     opacity: 1 !important;
-    backdrop-filter: blur(2px) !important;
 }
 
-.overlay-actions {
-    display: flex !important;
-    gap: 0.75rem !important;
-    transform: translateY(15px) !important;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+.action-btn-glass.primary {
+    background: #fff !important;
+    color: #000 !important;
+    border-radius: 50px !important;
+    padding: 0.75rem 1.5rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
+    transition: transform 0.3s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
 }
 
-.museum-book-cover-wrap:hover .overlay-actions {
-    transform: translateY(0) !important;
+.action-btn-glass.primary:hover {
+    transform: scale(1.05) !important;
+    background: var(--lux-gold) !important;
+    color: #0d0b10 !important;
+    box-shadow: 0 10px 25px rgba(201, 168, 76, 0.3) !important;
 }
 
 /* Text Information */
@@ -599,90 +801,40 @@ body::before {
 
 .museum-book-title {
     font-family: var(--lux-font-display) !important;
-    color: var(--lux-cream) !important;
+    color: #e8e3d9 !important; /* Soft parchment white */
     font-size: 1.1rem !important;
     font-weight: 700 !important;
-    letter-spacing: 0.02em !important;
-    line-height: 1.35 !important;
-    margin: 0 0 0.5rem 0 !important;
+    line-height: 1.3 !important;
+    margin: 0 0 0.4rem 0 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8) !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
-    transition: color 0.3s ease !important;
-}
-
-.museum-book-card:hover .museum-book-title {
-    color: var(--lux-gold-glow) !important;
-}
-
-[data-theme="light"] .museum-book-title {
-    color: var(--lux-text-primary) !important;
-    text-shadow: none !important;
 }
 
 .museum-book-author {
-    color: var(--lux-gold) !important;
-    font-size: 0.8rem !important;
+    color: #c9a84c !important; /* Matte Gold */
+    opacity: 0.9;
+    font-family: var(--lux-font-body) !important;
+    font-size: 0.85rem !important;
     font-weight: 500 !important;
-    letter-spacing: 0.05em !important;
-    margin: 0 !important;
+    margin-bottom: 0.6rem !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    opacity: 0.9 !important;
+    letter-spacing: 0.02em !important;
 }
 
-[data-theme="light"] .museum-book-author {
-    color: var(--lux-gold-dim) !important;
-}
-
-.museum-book-link {
-    display: block !important;
-    text-decoration: none !important;
-    width: 100% !important;
-}
-
-/* Action button inside overlay */
-.action-btn-glass {
-    background: rgba(20, 16, 12, 0.8) !important;
-    border: 1px solid rgba(201, 168, 76, 0.5) !important;
-    color: var(--lux-gold-glow) !important;
-    border-radius: 50px !important;
-    padding: 0.6rem 1.2rem !important;
-    font-size: 0.85rem !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.05em !important;
-    transition: all 0.3s ease !important;
+.card-rating-pill {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 0.4rem !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
-}
-
-.action-btn-glass:hover {
-    background: linear-gradient(135deg, var(--lux-gold) 0%, var(--lux-copper) 100%) !important;
-    border-color: transparent !important;
-    color: #0d0b10 !important;
-    box-shadow: 0 6px 20px rgba(201, 168, 76, 0.4) !important;
-    transform: scale(1.05) !important;
-}
-
-/* Stars Rating */
-.card-rating-row {
-    margin-top: 0.75rem !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 0.2rem !important;
-    background: rgba(0, 0, 0, 0.3) !important;
-    padding: 0.3rem 0.8rem !important;
-    border-radius: 20px !important;
-    border: 1px solid rgba(201, 168, 76, 0.1) !important;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    padding: 0.2rem 0.6rem !important;
+    border-radius: 10px !important;
+    margin-top: 0.2rem !important;
 }
 
 .star-icon.filled {
@@ -794,6 +946,41 @@ body::before {
 
 .footer .text-muted {
     color: var(--lux-text-muted) !important;
+}
+
+/* Footer Links */
+.footer-link {
+    color: var(--lux-text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.footer-link:hover {
+    color: var(--lux-gold-light);
+}
+
+/* Footer Social Buttons */
+.footer-social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--lux-text-secondary);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+}
+
+.footer-social-btn:hover {
+    background: rgba(201, 168, 76, 0.1);
+    color: var(--lux-gold);
+    border-color: rgba(201, 168, 76, 0.4);
+    transform: translateY(-2px);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1058,6 +1245,7 @@ select:focus {
 .group-title {
     background: none !important;
     -webkit-background-clip: initial !important;
+    background-clip: initial !important;
     -webkit-text-fill-color: var(--lux-cream) !important;
     font-family: var(--lux-font-display) !important;
 }
@@ -1127,18 +1315,7 @@ select:focus {
     color: var(--lux-gold) !important;
 }
 
-/* Luxury Book Image */
-.museum-book-img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), filter 0.6s ease !important;
-}
 
-.museum-book-card:hover .museum-book-img {
-    transform: scale(1.08) !important;
-    filter: brightness(1.15) contrast(1.1) !important;
-}
 
 /* ═══════════════════════════════════════════════════════
    🌌 LUXURY MODERN LAYOUT SPACING
@@ -1162,4 +1339,197 @@ select:focus {
 
 .carousel-section-ng.lux-section {
     margin-bottom: 3.5rem !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   🔍 LEGENDARY SEARCH HUB REDESIGN
+   ═══════════════════════════════════════════════════════ */
+.legendary-search-hub {
+    backdrop-filter: blur(40px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+    background: rgba(6, 5, 4, 0.45) !important;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+}
+
+.legendary-search-hub.active {
+    display: flex !important;
+}
+
+.modal-backdrop-blur {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(201, 168, 76, 0.08), transparent 70%);
+}
+
+.legendary-panel {
+    background: linear-gradient(135deg, rgba(15, 12, 8, 0.95), rgba(25, 20, 15, 0.8)) !important;
+    border: 1px solid rgba(201, 168, 76, 0.25) !important;
+    border-top: 1px solid rgba(201, 168, 76, 0.5) !important;
+    border-radius: 40px !important;
+    max-width: 900px !important;
+    width: 100% !important;
+    box-shadow: 0 50px 100px rgba(0,0,0,0.9), 0 0 60px rgba(201,168,76,0.1) !important;
+    overflow: hidden !important;
+    transform: perspective(1000px) !important;
+    animation: lux-search-entry 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes lux-search-entry {
+    from { opacity: 0; transform: perspective(1000px) translateY(40px) rotateX(-5deg) scale(0.95); }
+    to { opacity: 1; transform: perspective(1000px) translateY(0) rotateX(0) scale(1); }
+}
+
+.legendary-search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.lux-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.legendary-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 20px !important;
+    padding: 1.5rem 2rem !important;
+    font-size: 1.25rem !important;
+    color: #fff !important;
+    outline: none !important;
+    font-family: 'Cairo', sans-serif !important;
+    transition: all 0.4s ease !important;
+}
+
+.legendary-input:focus {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: var(--lux-gold) !important;
+    box-shadow: 0 0 30px rgba(201, 168, 76, 0.1) !important;
+}
+
+.input-glow-line {
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--lux-gold), transparent);
+    opacity: 0;
+    transform: scaleX(0);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.legendary-input:focus ~ .input-glow-line {
+    opacity: 0.6;
+    transform: scaleX(1);
+    left: 5%;
+    right: 5%;
+}
+
+.search-actions-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.lux-glass-btn {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--lux-gold) !important;
+    width: 60px;
+    height: 60px;
+    border-radius: 18px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer;
+}
+
+.lux-glass-btn:hover {
+    background: rgba(201, 168, 76, 0.1) !important;
+    border-color: var(--lux-gold) !important;
+    transform: translateY(-3px) scale(1.05);
+}
+
+.lux-search-submit {
+    flex-grow: 1;
+    background: linear-gradient(135deg, var(--lux-gold) 0%, #b87333 100%) !important;
+    border: none !important;
+    color: #0b0b0e !important;
+    border-radius: 18px !important;
+    font-weight: 800 !important;
+    font-size: 1.1rem !important;
+    padding: 0 2.5rem !important;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 10px 25px rgba(201, 168, 76, 0.25) !important;
+}
+
+.lux-search-submit:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(201, 168, 76, 0.4) !important;
+}
+
+.lux-search-submit i { transition: transform 0.3s ease; }
+.lux-search-submit:hover i { transform: translateX(-5px); }
+
+/* Filter Chips Redesign */
+.filter-chip {
+    padding: 0 !important;
+    cursor: pointer;
+}
+
+.filter-chip span {
+    display: inline-block;
+    padding: 0.6rem 1.4rem !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 100px !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    letter-spacing: 0.02em;
+}
+
+.filter-chip input:checked + span {
+    background: rgba(201, 168, 76, 0.12) !important;
+    border-color: var(--lux-gold) !important;
+    color: var(--lux-gold) !important;
+    box-shadow: 0 0 15px rgba(201, 168, 76, 0.15);
+}
+
+.filter-chip:hover span {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #fff !important;
+}
+
+/* History Badges */
+.badge-ghost {
+    background: rgba(201, 168, 76, 0.05) !important;
+    border: 1px solid rgba(201, 168, 76, 0.12) !important;
+    color: var(--lux-gold-dim) !important;
+    transition: all 0.3s ease !important;
+}
+
+.badge-ghost:hover {
+    background: rgba(201, 168, 76, 0.1) !important;
+    border-color: var(--lux-gold) !important;
+    color: var(--lux-gold) !important;
+    transform: scale(1.05);
 }

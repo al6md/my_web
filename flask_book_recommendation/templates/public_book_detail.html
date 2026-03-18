@@ -1,219 +1,107 @@
 {% extends "base.html" %}
+{% from 'components/macros.html' import render_carousel_section %}
 {% block title %}{{ book.title }} | ALHAM{% endblock %}
+{% block body_class %}royal-detail-page{% endblock %}
 
 {% block head %}
 <style>
   /* ══════════════════════════════════════════════════════════════════════════
-   📖 PUBLIC BOOK DETAIL - PREMIUM AURORA DESIGN v2
+   📖 PUBLIC BOOK DETAIL - ROYAL CLASSIC DESIGN
    ══════════════════════════════════════════════════════════════════════════ */
 
-  /* ═══ Hero Backdrop Enhancement ═══ */
+  /* ═══ Global Font Override ═══ */
+  .royal-detail-page, 
+  .royal-detail-page body,
+  .royal-detail-page .book-title,
+  .royal-detail-page .section-heading,
+  .royal-detail-page .book-author,
+  .royal-detail-page p,
+  .royal-detail-page span:not(.ph),
+  .royal-detail-page div:not(.ph) {
+    font-family: 'Amiri', 'Playfair Display', serif !important;
+  }
+
+  .royal-detail-page .ph, 
+  .royal-detail-page [class^="ph-"] {
+    font-family: "Phosphor" !important;
+  }
+
+  /* ═══ Background & Layout ═══ */
   .book-backdrop {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100vh;
+    top: 0; left: 0; right: 0; bottom: 0;
     z-index: -1;
-    overflow: hidden;
+    background-color: #0f0c08;
+    background-image: 
+      radial-gradient(circle at center, rgba(30, 25, 20, 0) 0%, rgba(15, 12, 8, 1) 100%),
+      url("https://www.transparenttextures.com/patterns/dark-leather.png");
   }
 
-  .book-backdrop::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(10, 12, 18, 0.7) 30%,
-        var(--bg-base) 70%);
-    z-index: 1;
+  [data-theme="light"] .book-backdrop {
+    background-color: #f7f3ed;
+    background-image: 
+      radial-gradient(circle at center, rgba(255, 255, 250, 0.2) 0%, rgba(244, 238, 229, 1) 100%),
+      url("https://www.transparenttextures.com/patterns/paper.png");
   }
 
-  .book-backdrop::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 60%);
-    z-index: 2;
-  }
-
-  .book-backdrop img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: blur(60px) saturate(1.2);
-    transform: scale(1.1);
-    opacity: 0.5;
-  }
-
-  [data-theme="light"] .book-backdrop::before {
-    background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.7) 30%,
-        var(--bg-base) 70%);
-  }
-
-  /* ═══ Main Layout ═══ */
-  .detail-layout {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 3rem;
-    padding-top: 2rem;
-  }
-
-  @media (max-width: 968px) {
-    .detail-layout {
-      grid-template-columns: 1fr;
-      gap: 2rem;
-    }
-  }
-
-  /* ═══ Premium Glass Panel ═══ */
-  .glass-panel {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.05) 0%,
-        rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 2rem;
-    box-shadow:
-      0 10px 40px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .glass-panel::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg,
-        transparent,
-        rgba(255, 255, 255, 0.2),
-        transparent);
-  }
-
-  [data-theme="light"] .glass-panel {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.8) 0%,
-        rgba(255, 255, 255, 0.6) 100%);
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  }
-
-  .card.glass-panel {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.05) 0%,
-        rgba(255, 255, 255, 0.02) 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  }
-
-  [data-theme="light"] .card.glass-panel {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(255, 255, 255, 0.7) 100%) !important;
-    border-color: rgba(0, 0, 0, 0.08) !important;
-  }
-
-  /* ═══ Cover Section - Premium Style ═══ */
-  .cover-section {
-    position: sticky;
-    top: calc(var(--header-height) + 2rem);
-    background: linear-gradient(145deg,
-        rgba(139, 92, 246, 0.08) 0%,
-        rgba(59, 130, 246, 0.05) 100%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(139, 92, 246, 0.15);
-    border-radius: 28px;
-    padding: 1.75rem;
-    box-shadow:
-      0 20px 60px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  }
-
-  .cover-section::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at 30% 30%,
-        rgba(139, 92, 246, 0.1) 0%,
-        transparent 50%);
-    animation: coverGlow 8s ease-in-out infinite;
-    pointer-events: none;
-  }
-
-  @keyframes coverGlow {
-
-    0%,
-    100% {
-      transform: translate(0, 0);
-    }
-
-    50% {
-      transform: translate(5%, 5%);
-    }
-  }
-
-  [data-theme="light"] .cover-section {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(139, 92, 246, 0.08) 100%);
-    border-color: rgba(139, 92, 246, 0.2);
-    box-shadow: 0 20px 60px rgba(139, 92, 246, 0.15);
+  .ai-card-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--lux-surface) !important;
+    border: 1px solid var(--lux-gold) !important;
+    color: var(--lux-gold) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    box-shadow: 0 0 15px rgba(201, 168, 76, 0.2);
   }
 
   .cover-wrapper {
-    position: relative;
-    border-radius: 20px;
-    overflow: hidden;
-    aspect-ratio: 2/3;
-    box-shadow:
-      0 25px 50px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.08);
-    transform: perspective(1000px) rotateY(-2deg);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    border: 2px solid #2a241c;
+    margin-bottom: 1.5rem;
   }
 
-  .cover-wrapper::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.15) 0%,
-        transparent 50%,
-        rgba(0, 0, 0, 0.2) 100%);
-    pointer-events: none;
+  [data-theme="light"] .cover-wrapper {
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    border-color: #e5e0d8;
   }
 
   .cover-wrapper img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .cover-section:hover .cover-wrapper {
-    transform: perspective(1000px) rotateY(0deg) scale(1.02);
+    transition: transform 0.5s ease;
   }
 
   .cover-section:hover .cover-wrapper img {
-    transform: scale(1.08);
+    transform: scale(1.03);
   }
 
-  /* ═══ Shelf Buttons - Premium ═══ */
+  /* Ribbon */
+  .status-ribbon {
+    position: absolute;
+    top: 20px;
+    right: -35px;
+    background: var(--lux-gold);
+    color: #000;
+    padding: 5px 40px;
+    transform: rotate(45deg);
+    font-weight: bold;
+    font-family: var(--lux-font-serif);
+    font-size: 0.9rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 10;
+  }
+
+  /* ═══ Action Buttons ═══ */
   .shelf-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 0.75rem;
     margin-top: 1.5rem;
   }
 
@@ -221,395 +109,436 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.6rem;
-    padding: 1rem;
-    border-radius: 16px;
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.08) 0%,
-        rgba(255, 255, 255, 0.03) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    color: var(--lux-text-secondary);
+    font-family: var(--lux-font-serif);
+    transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
     overflow: hidden;
   }
 
+  [data-theme="light"] .shelf-btn {
+    border-color: #e5e0d8;
+    color: #665c50;
+  }
+
+  .shelf-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--lux-gold);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+  }
+
+  .shelf-btn:hover {
+    border-color: var(--lux-gold);
+    color: var(--lux-gold);
+    transform: translateY(-2px);
+  }
+
+  .shelf-btn:hover::before {
+    opacity: 0.05;
+  }
+
+  .shelf-btn i, .shelf-btn span {
+    position: relative;
+    z-index: 1;
+  }
+
   .shelf-btn i {
-    font-size: 1.5rem;
-    transition: transform 0.3s ease;
+    font-size: 1.35rem;
   }
 
   .shelf-btn span {
     font-size: 0.85rem;
     font-weight: 600;
+    letter-spacing: 0.05em;
   }
 
-  [data-theme="light"] .shelf-btn {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.95) 0%,
-        rgba(255, 255, 255, 0.8) 100%);
+  /* Active Status Styles */
+  .shelf-btn[class*="active-"] {
+    background: rgba(201, 168, 76, 0.1);
+    border-color: var(--lux-gold);
+    color: var(--lux-gold);
+  }
+  [data-theme="light"] .shelf-btn[class*="active-"] {
+    background: rgba(201, 168, 76, 0.05);
+    color: #b08d3a;
+    border-color: #b08d3a;
   }
 
-  .shelf-btn:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  /* ═══ Content Side ═══ */
+  .book-title {
+    font-family: var(--lux-font-display);
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+    color: var(--lux-gold);
+    text-shadow: 0 2px 10px rgba(201,168,76,0.1);
   }
 
-  .shelf-btn:hover i {
-    transform: scale(1.2);
+  [data-theme="light"] .book-title {
+    color: #2a241c;
+    text-shadow: none;
   }
 
-  .shelf-btn.active-favorite {
-    background: linear-gradient(135deg,
-        rgba(244, 63, 94, 0.2) 0%,
-        rgba(244, 63, 94, 0.1) 100%);
-    border-color: rgba(244, 63, 94, 0.5);
-    color: #f43f5e;
-    box-shadow: 0 8px 25px rgba(244, 63, 94, 0.3);
+  .book-author {
+    font-family: var(--lux-font-serif);
+    font-size: 1.5rem;
+    color: var(--lux-text-secondary);
+    margin-bottom: 1.5rem;
+    font-style: italic;
   }
 
-  .shelf-btn.active-later {
-    background: linear-gradient(135deg,
-        rgba(245, 158, 11, 0.2) 0%,
-        rgba(245, 158, 11, 0.1) 100%);
-    border-color: rgba(245, 158, 11, 0.5);
-    color: #f59e0b;
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  [data-theme="light"] .book-author {
+    color: #665c50;
   }
 
-  /* ═══ Meta Tags - Enhanced ═══ */
+  /* Decorative separator */
+  .classic-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 2rem 0;
+    opacity: 0.6;
+  }
+  .classic-separator::before,
+  .classic-separator::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(90deg, transparent, var(--lux-gold), transparent);
+  }
+  [data-theme="light"] .classic-separator::before,
+  [data-theme="light"] .classic-separator::after {
+    background: linear-gradient(90deg, transparent, #b08d3a, transparent);
+  }
+  .classic-separator i {
+    color: var(--lux-gold);
+    font-size: 0.8rem;
+  }
+  [data-theme="light"] .classic-separator i {
+    color: #b08d3a;
+  }
+
+  /* Meta Tags */
   .meta-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
   }
 
   .meta-tag {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: linear-gradient(135deg,
-        rgba(139, 92, 246, 0.15) 0%,
-        rgba(139, 92, 246, 0.08) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--primary-300);
-    backdrop-filter: blur(10px);
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    font-size: 0.9rem;
+    font-family: var(--lux-font-serif);
+    color: var(--lux-text-primary);
+    position: relative;
   }
-
+  
   [data-theme="light"] .meta-tag {
-    background: linear-gradient(135deg,
-        rgba(139, 92, 246, 0.12) 0%,
-        rgba(139, 92, 246, 0.06) 100%);
-    color: var(--primary-600);
+    border-color: #e5e0d8;
+    color: #2a241c;
   }
 
-  /* ═══ Book Title - Premium Typography ═══ */
-  .book-title {
-    font-size: clamp(1.75rem, 5vw, 2.5rem);
-    font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg,
-        var(--text-primary) 0%,
-        var(--primary-300) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -0.02em;
+  .meta-tag i {
+    color: var(--lux-gold);
+  }
+  [data-theme="light"] .meta-tag i {
+    color: #b08d3a;
   }
 
-  .book-author {
-    font-size: 1.15rem;
-    color: var(--text-secondary);
+  /* Ext Info Grid */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .info-item {
+    padding: 1rem;
+    border-right: 1px solid var(--lux-border);
+  }
+  [data-theme="light"] .info-item {
+    border-color: #e5e0d8;
+  }
+  .info-item:last-child {
+    border-right: none;
+  }
+
+  .info-label {
+    font-size: 0.75rem;
+    color: var(--lux-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-family: var(--lux-font-sans);
+  }
+  [data-theme="light"] .info-label {
+    color: #8b7355;
+  }
+
+  .info-value {
+    font-size: 1.1rem;
+    color: var(--lux-text-primary);
+    font-family: var(--lux-font-serif);
+  }
+  [data-theme="light"] .info-value {
+    color: #2a241c;
+  }
+
+  /* Quotes / Synopsis Section */
+  .quote-card {
+    background: rgba(15, 12, 8, 0.4);
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    padding: 2rem;
     margin-bottom: 2rem;
+    position: relative;
   }
-
-  .book-author strong {
-    color: var(--primary-400);
+  [data-theme="light"] .quote-card {
+    background: #fbfaf8;
+    border-color: #e5e0d8;
   }
-
-  /* ═══ Rating Stars Display ═══ */
-  .stars-display {
-    display: flex;
-    gap: 2px;
-  }
-
-  .stars-display i {
+  
+  .quote-text {
+    font-family: var(--lux-font-serif);
     font-size: 1.25rem;
-    color: #fbbf24;
-    filter: drop-shadow(0 2px 4px rgba(251, 191, 36, 0.4));
+    line-height: 1.8;
+    color: var(--lux-text-primary);
+    text-align: justify;
+    margin-bottom: 0.5rem;
+  }
+  [data-theme="light"] .quote-text {
+    color: #2a241c;
+  }
+  .quote-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--lux-text-muted);
+    border-top: 1px solid var(--lux-border);
+    padding-top: 1rem;
+    margin-top: 1rem;
+  }
+  [data-theme="light"] .quote-meta {
+    border-color: #e5e0d8;
+    color: #8b7355;
   }
 
-  /* ═══ AI Features Section - Premium Grid ═══ */
+  /* AI Section */
   .ai-section-title {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-family: var(--lux-font-display);
+    font-size: 1.8rem;
+    color: var(--lux-gold);
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
   }
+  [data-theme="light"] .ai-section-title {
+    color: #b08d3a;
+  }
 
   .ai-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
-  }
-
-  @media (max-width: 600px) {
-    .ai-grid {
-      grid-template-columns: 1fr;
-    }
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1rem;
   }
 
   .ai-card {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    padding: 1.75rem;
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    padding: 2rem 1.5rem;
     text-align: center;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s ease;
     position: relative;
-    overflow: hidden;
+  }
+  [data-theme="light"] .ai-card {
+    border-color: #e5e0d8;
   }
 
   .ai-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg,
-        transparent,
-        rgba(255, 255, 255, 0.1),
-        transparent);
-    transition: 0.5s;
-  }
-
-  .ai-card:hover::before {
-    left: 100%;
-  }
-
-  [data-theme="light"] .ai-card {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.95) 0%,
-        rgba(255, 255, 255, 0.8) 100%);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    inset: 4px;
+    border: 1px solid transparent;
+    transition: all 0.4s ease;
   }
 
   .ai-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    border-color: var(--primary-400);
-    box-shadow:
-      0 20px 40px rgba(0, 0, 0, 0.2),
-      0 0 30px rgba(139, 92, 246, 0.15);
+    border-color: var(--lux-gold);
+    transform: translateY(-5px);
+  }
+  .ai-card:hover::before {
+    border-color: rgba(201, 168, 76, 0.3);
   }
 
-  .ai-card-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
+  .ai-icon {
+    font-size: 2.5rem;
+    color: var(--lux-gold);
+    margin-bottom: 1rem;
+    display: inline-flex;
     justify-content: center;
-    font-size: 1.75rem;
-    margin: 0 auto 1rem;
-    color: white;
-    position: relative;
+    align-items: center;
   }
-
-  .ai-card-icon::after {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border-radius: 18px;
-    background: inherit;
-    filter: blur(12px);
-    opacity: 0.5;
-    z-index: -1;
+  [data-theme="light"] .ai-icon {
+    color: #b08d3a;
   }
 
   .ai-card h4 {
-    font-size: 1rem;
-    font-weight: 700;
+    font-family: var(--lux-font-serif);
+    font-size: 1.2rem;
+    color: var(--lux-text-primary);
     margin-bottom: 0.5rem;
-    color: var(--text-primary);
+  }
+  [data-theme="light"] .ai-card h4 {
+    color: #2a241c;
   }
 
   .ai-card p {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin: 0;
-    line-height: 1.5;
+    font-size: 0.9rem;
+    color: var(--lux-text-secondary);
+    font-family: var(--lux-font-sans);
+  }
+  [data-theme="light"] .ai-card p {
+    color: #665c50;
   }
 
-  /* ═══ Horizontal Scroll Items ═══ */
-  .horizontal-scroll-section {
-    position: relative;
-    margin: 0 -1rem;
-    padding: 0 1rem;
-  }
-
-  .horizontal-scroll-container {
-    display: flex;
-    gap: 1.25rem;
-    overflow-x: auto;
-    padding: 1rem 0;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .horizontal-scroll-container::-webkit-scrollbar {
-    display: none;
-  }
-
-  .hs-item {
-    width: 160px;
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .hs-item:hover {
-    transform: translateY(-8px) scale(1.03);
-  }
-
-  .hs-cover {
-    border-radius: 16px;
-    overflow: hidden;
-    aspect-ratio: 2/3;
-    margin-bottom: 1rem;
-    box-shadow:
-      0 10px 30px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.05);
-    position: relative;
-    transition: all 0.3s ease;
-  }
-
-  .hs-item:hover .hs-cover {
-    box-shadow:
-      0 20px 40px rgba(0, 0, 0, 0.4),
-      0 0 20px rgba(139, 92, 246, 0.2);
-  }
-
-  .hs-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.4s ease;
-  }
-
-  .hs-item:hover .hs-cover img {
-    transform: scale(1.1);
-  }
-
-  .hs-cover .rating-badge {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(0deg,
-        rgba(0, 0, 0, 0.9) 0%,
-        transparent 100%);
-    backdrop-filter: blur(8px);
-    color: #fbbf24;
-    padding: 8px;
-    font-size: 0.8rem;
+  /* Share Buttons */
+  .share-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    font-weight: 700;
+    border: 1px solid var(--lux-border);
+    color: var(--lux-text-secondary);
+    transition: all 0.3s ease;
+    background: transparent;
+  }
+  [data-theme="light"] .share-btn {
+    border-color: #e5e0d8;
+    color: #665c50;
+  }
+  .share-btn:hover {
+    border-color: var(--lux-gold);
+    color: var(--lux-gold);
+    transform: scale(1.1);
   }
 
-  /* ═══ Review Section Enhancement ═══ */
-  .review-card {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.04) 0%,
-        rgba(255, 255, 255, 0.01) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
-    padding: 1.5rem;
+  /* Horizontal Scroll Items */
+  .horizontal-section {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--lux-border);
+  }
+  [data-theme="light"] .horizontal-section {
+    border-color: #e5e0d8;
+  }
+
+  .hs-container {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding: 1rem 0 2rem;
+    scrollbar-width: none;
+  }
+  .hs-container::-webkit-scrollbar { display: none; }
+
+  .hs-item {
+    min-width: 140px;
+    width: 140px;
+    transition: transform 0.3s ease;
+  }
+  .hs-item:hover {
+    transform: translateY(-5px);
+  }
+
+  .hs-img {
+    border-radius: 2px;
+    border: 1px solid var(--lux-border);
+    aspect-ratio: 2/3;
+    overflow: hidden;
     margin-bottom: 1rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 100%; object-fit: cover;
+  }
+  [data-theme="light"] .hs-img {
+    border-color: #e5e0d8;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+
+  .hs-cover {
+    border-radius: 2px;
+    border: 1px solid var(--lux-border);
+    aspect-ratio: 2/3;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  [data-theme="light"] .hs-cover {
+    border-color: #e5e0d8;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  .hs-cover img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .hs-cover:hover img {
+    transform: scale(1.05);
+  }
+  .hs-title {
+    font-family: var(--lux-font-serif);
+    font-size: 1rem;
+    color: var(--lux-text-primary);
+    margin-bottom: 0.25rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  [data-theme="light"] .hs-title { color: #2a241c; }
+
+
+  /* Button / Input Styles */
+  .primary-btn {
+    background: var(--lux-gold);
+    color: #000;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--lux-font-serif);
+    font-weight: 600;
+    border-radius: 2px;
+    cursor: pointer;
     transition: all 0.3s ease;
   }
-
-  .review-card:hover {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(255, 255, 255, 0.02) 100%);
-    border-color: rgba(139, 92, 246, 0.2);
+  .primary-btn:hover {
+    filter: brightness(1.1);
   }
 
-  [data-theme="light"] .review-card {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(255, 255, 255, 0.7) 100%);
-    border-color: rgba(0, 0, 0, 0.05);
-  }
-
-  .review-stars {
-    display: flex;
-    gap: 2px;
-    color: #fbbf24;
-  }
-
-  /* ═══ Star Rating Input ═══ */
-  .star-rating {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
-    gap: 4px;
-  }
-
-  .star-rating input {
-    display: none;
-  }
-
-  .star-rating label {
-    cursor: pointer;
-    font-size: 1.75rem;
-    color: rgba(255, 255, 255, 0.2);
-    transition: all 0.2s ease;
-  }
-
-  [data-theme="light"] .star-rating label {
-    color: rgba(0, 0, 0, 0.15);
-  }
-
-  .star-rating label:hover,
-  .star-rating label:hover~label,
-  .star-rating input:checked~label {
-    color: #fbbf24;
-    filter: drop-shadow(0 2px 6px rgba(251, 191, 36, 0.5));
-  }
-
-  /* ═══ Section Titles ═══ */
-  .section-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.35rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    color: var(--text-primary);
-  }
-
-  .section-title i {
-    font-size: 1.5rem;
-  }
-
-  /* ═══ Modal Enhancements ═══ */
+  /* MODALS */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -633,169 +562,102 @@
     width: 90%;
     max-width: 600px;
     max-height: 80vh;
-    background: linear-gradient(145deg,
-        rgba(20, 22, 30, 0.98) 0%,
-        rgba(15, 17, 23, 0.98) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
+    background: var(--lux-surface);
+    border: 1px solid var(--lux-gold);
+    border-radius: 2px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     box-shadow:
-      0 30px 60px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+      0 30px 60px rgba(0, 0, 0, 0.5);
     transform: scale(0.95) translateY(20px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   [data-theme="light"] .modal-container {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.98) 0%,
-        rgba(248, 250, 252, 0.98) 100%);
+    background: #fbfaf8;
   }
 
   .modal-overlay.active .modal-container {
     transform: scale(1) translateY(0);
   }
 
-  /* ═══ Animations ═══ */
-  @keyframes fadeUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Review Section */
+  .review-card {
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+  }
+  .review-card:hover {
+    border-color: var(--lux-gold);
+  }
+  [data-theme="light"] .review-card {
+    border-color: #e5e0d8;
+  }
+  .review-stars {
+    display: flex;
+    gap: 2px;
+    color: var(--lux-gold);
   }
 
+  /* Star Rating Input */
+  .star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  .star-rating input {
+    display: none;
+  }
+  .star-rating label {
+    cursor: pointer;
+    font-size: 1.75rem;
+    color: var(--lux-border);
+    transition: all 0.2s ease;
+  }
+  [data-theme="light"] .star-rating label {
+    color: #e5e0d8;
+  }
+  .star-rating label:hover,
+  .star-rating label:hover~label,
+  .star-rating input:checked~label {
+    color: var(--lux-gold);
+  }
+
+  .section-title {
+    font-family: var(--lux-font-display);
+    font-size: 1.8rem;
+    color: var(--lux-gold);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  [data-theme="light"] .section-title {
+    color: #b08d3a;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .animate-on-scroll.fade-up {
     animation: fadeUp 0.6s ease forwards;
   }
-
-  .delay-1 {
-    animation-delay: 0.1s;
-  }
-
-  .delay-2 {
-    animation-delay: 0.2s;
-  }
-
-  .delay-3 {
-    animation-delay: 0.3s;
-  }
-
-  /* ═══ Spin Animation ═══ */
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
   @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
+  .spin { animation: spin 1s linear infinite; }
 
-  .spin {
-    animation: spin 1s linear infinite;
-  }
-
-  /* ═══ Responsive Adjustments ═══ */
-  @media (max-width: 768px) {
-    .cover-section {
-      position: relative;
-      top: 0;
-    }
-
-    .ai-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 500px) {
-    .ai-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* ═══ Info Grid ═══ */
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .info-item {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    transition: all 0.3s ease;
-  }
-
-  .info-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateY(-2px);
-  }
-
-  .info-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .info-value {
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-  }
-
-  /* ═══ Share Buttons ═══ */
-  .share-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-  }
-
-  .share-btn:hover {
-    transform: translateY(-3px) scale(1.1);
-    color: white;
-  }
-
-  .share-twitter:hover {
-    background: #1da1f2;
-    border-color: #1da1f2;
-  }
-
-  .share-facebook:hover {
-    background: #1877f2;
-    border-color: #1877f2;
-  }
-
-  .share-whatsapp:hover {
-    background: #25d366;
-    border-color: #25d366;
-  }
-
-  .share-copy:hover {
-    background: var(--primary-500);
-    border-color: var(--primary-500);
-  }
 </style>
 {% endblock %}
 
@@ -844,10 +706,11 @@
 
         <script>
           async function updateShelf(btn, status) {
-            {% if not current_user.is_authenticated %}
-            window.location.href = "{{ url_for('auth.login') }}";
-            return;
-            {% endif %}
+            const isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
+            if (!isAuthenticated) {
+              window.location.href = "{{ url_for('auth.login') }}";
+              return;
+            }
 
             const iconEl = btn.querySelector('i');
             const originalIconClass = iconEl.className;
@@ -907,7 +770,7 @@
         </script>
 
         {% if book.preview %}
-        <a href="{{ book.preview }}" target="_blank" class="btn btn-secondary w-100 justify-center">
+        <a href="{{ book.preview }}" target="_blank" class="ghost-btn w-100 justify-center d-flex align-items-center gap-2 mt-2">
           <i class="ph ph-eye"></i> معاينة
         </a>
         {% endif %}
@@ -930,133 +793,131 @@
     <!-- Right Column - Details -->
     <div class="animate-on-scroll fade-up delay-1">
       <!-- Meta Tags -->
-      <div class="meta-tags">
-        <span class="meta-tag">
+      <div class="meta-tags d-flex flex-wrap gap-3 mb-4">
+        <span class="meta-tag fw-bold" style="color: var(--lux-cream); background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.3);">
           <i class="ph-fill ph-book-open"></i> كتاب
         </span>
         {% if book.rating %}
-        <span class="meta-tag" style="color: var(--warning); border-color: rgba(251, 191, 36, 0.3);">
+        <span class="meta-tag fw-bold" style="color: var(--lux-gold); border-color: rgba(201,168,76,0.3);">
           <i class="ph-fill ph-star"></i> {{ book.rating }}
         </span>
         {% endif %}
         {% if book.publishedDate %}
-        <span class="meta-tag">
-          <i class="ph-fill ph-calendar"></i> {{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else
-          book.publishedDate }}
+        <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
+          <i class="ph-fill ph-calendar text-muted"></i> {{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else book.publishedDate }}
         </span>
         {% endif %}
         {% if book.pageCount %}
-        <span class="meta-tag">
-          <i class="ph ph-file-text"></i> {{ book.pageCount }} صفحة
+        <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
+          <i class="ph ph-file-text text-muted"></i> {{ book.pageCount }} صفحة
         </span>
         {% endif %}
       </div>
 
       <!-- Title & Author -->
-      <h1 class="book-title mb-1">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
+      <h1 class="book-title mb-2" style="font-size: clamp(3rem, 6vw, 4.5rem); letter-spacing: -0.02em;">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
       {% if book.rating %}
       <div class="d-flex align-center gap-2 mb-3">
-        <div class="stars-display" style="color: var(--warning); font-size: 1.1rem;">
+        <div class="stars-display" style="color: var(--lux-gold); font-size: 1.2rem;">
           {% for i in range(1, 6) %}
-          <i class="ph-fill ph-star {{ 'text-warning' if i <= book.rating|round else 'text-muted' }}"
-            style="opacity: {{ '1' if i <= book.rating|round else '0.3' }}"></i>
+          <i class="ph-fill ph-star"
+            style="opacity: {{ 1 if i <= book.rating|round else 0.3 }}"></i>
           {% endfor %}
         </div>
-        <span style="font-weight: 700; color: var(--text-primary);">{{ book.rating }}</span>
-        <span class="text-muted small">تقييم عالمي</span>
+        <span style="font-weight: 700; color: var(--lux-cream); font-size: 1.2rem;">{{ book.rating }}</span>
+        <span class="text-muted small" style="opacity: 0.7;">تقييم عالمي</span>
       </div>
       {% endif %}
-      <div class="book-author">
-        بقلم <strong class="text-gradient">{{ book.author or 'مؤلف غير معروف' }}</strong>
+      <div class="book-author" style="font-size: 1.8rem; letter-spacing: 0.02em;">
+        بقلم <strong style="color: var(--lux-gold);">{{ book.author or 'مؤلف غير معروف' }}</strong>
         {% if book.publishedDate %}
-        <span class="text-muted small ms-2">({{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else
-          book.publishedDate }})</span>
+        <span class="text-muted small ms-2" style="font-size: 1rem;">({{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else book.publishedDate }})</span>
         {% endif %}
       </div>
 
+      <div class="classic-separator animate-up delay-1">
+        <i class="ph-fill ph-diamonds-four"></i>
+      </div>
+
       <!-- Extended Info - بطاقة معلومات الكتاب -->
-      <div class="card glass-panel mb-4" style="padding: 1.5rem;">
-        <h3 class="h6 text-muted mb-3" style="letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
-          <i class="ph ph-info"></i> معلومات الكتاب
+      <div class="glass-panel mb-5 p-4" style="background: rgba(15, 12, 8, 0.6); border: 1px solid rgba(201, 168, 76, 0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.4rem; border-color: rgba(201,168,76,0.2) !important;">
+          <i class="ph-fill ph-info text-primary" style="color: var(--lux-gold) !important;"></i> بيانات الإصدار
         </h3>
         <div class="info-grid">
           {% if book.categories %}
-          <div class="info-item" style="border-color: rgba(139, 92, 246, 0.3);">
-            <span class="info-label">📚 التصنيف</span>
-            <span class="info-value" style="color: var(--primary-400);">{{ book.categories|join(', ') if book.categories
-              is iterable and book.categories is not string else book.categories }}</span>
+          <div class="info-item">
+            <span class="info-label"><i class="ph-fill ph-books mb-1"></i> التصنيف</span>
+            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.categories|join(', ') if book.categories is iterable and book.categories is not string else book.categories }}</span>
           </div>
           {% endif %}
           {% if book.language %}
           <div class="info-item">
-            <span class="info-label">🌍 اللغة</span>
-            <span class="info-value">{{ book.language|upper }}</span>
+            <span class="info-label"><i class="ph-fill ph-translate mb-1"></i> اللغة</span>
+            <span class="info-value text-uppercase" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.language }}</span>
           </div>
           {% endif %}
           {% if book.publisher %}
           <div class="info-item">
-            <span class="info-label">🏢 الناشر</span>
-            <span class="info-value">{{ book.publisher }}</span>
+            <span class="info-label"><i class="ph-fill ph-buildings mb-1"></i> الناشر</span>
+            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.publisher }}</span>
           </div>
           {% endif %}
           {% if book.pageCount %}
           <div class="info-item">
-            <span class="info-label">📄 الصفحات</span>
-            <span class="info-value">{{ book.pageCount }}</span>
+            <span class="info-label"><i class="ph-fill ph-files mb-1"></i> الصفحات</span>
+            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.pageCount }}</span>
           </div>
           {% endif %}
           {% if book.publishedDate %}
           <div class="info-item">
-            <span class="info-label">📅 النشر</span>
-            <span class="info-value">{{ book.publishedDate }}</span>
+            <span class="info-label"><i class="ph-fill ph-calendar-blank mb-1"></i> تاريخ النشر</span>
+            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.publishedDate }}</span>
           </div>
           {% endif %}
           {% if total_views and total_views > 0 %}
-          <div class="info-item" style="border-color: rgba(59, 130, 246, 0.3);">
-            <span class="info-label">👁️ المشاهدات</span>
-            <span class="info-value" style="color: var(--info);">{{ total_views }}</span>
+          <div class="info-item">
+            <span class="info-label"><i class="ph-fill ph-eye mb-1"></i> المشاهدات</span>
+            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ total_views }}</span>
           </div>
           {% endif %}
           {% if unique_viewers and unique_viewers > 0 %}
-          <div class="info-item" style="border-color: rgba(16, 185, 129, 0.3);">
-            <span class="info-label">👥 القراء</span>
-            <span class="info-value" style="color: var(--success);">{{ unique_viewers }}</span>
+          <div class="info-item">
+            <span class="info-label"><i class="ph-fill ph-users mb-1"></i> القراء</span>
+            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ unique_viewers }}</span>
           </div>
           {% endif %}
           {% if book.isbn %}
-          <div class="info-item" style="opacity: 0.85;">
-            <span class="info-label">🔢 ISBN</span>
-            <span class="info-value" style="font-family: monospace; font-size: 0.8rem;">{{ book.isbn }}</span>
+          <div class="info-item" style="border-right: none;">
+            <span class="info-label"><i class="ph-fill ph-barcode mb-1"></i> ردمك (ISBN)</span>
+            <span class="info-value" style="font-family: monospace; font-size: 1rem; color: var(--lux-text-muted);">{{ book.isbn }}</span>
           </div>
           {% endif %}
         </div>
       </div>
 
-
       <!-- Description Card -->
-      <div class="card glass-panel mb-5">
-        <h3 class="h6 text-muted mb-3" style="letter-spacing: 0.05em; text-transform: uppercase;">
-          <i class="ph ph-text-align-right"></i> نبذة عن الكتاب
+      <div class="quote-card mb-5 p-5" style="background: rgba(15, 12, 8, 0.4); border-radius: 8px;">
+        <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.5rem; color: var(--lux-gold); border-color: rgba(201,168,76,0.1) !important;">
+          <i class="ph-fill ph-text-align-right" style="color: var(--lux-gold);"></i> نبذة عن الكتاب
           {% if book.ai_generated_desc %}
-          <span class="badge"
-            style="background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white; font-size: 0.65rem; margin-right: 0.5rem;">✨
-            AI</span>
+          <span class="badge ms-2" style="font-size: 0.75rem; background: rgba(201,168,76,0.1); border: 1px solid var(--lux-gold); color: var(--lux-gold); font-weight: 500;">✨ ملخص ذكي</span>
           {% endif %}
         </h3>
-        <p class="text-secondary mb-0" style="line-height: 1.9; font-size: 1.05rem;">
+        <div class="book-description-content" style="line-height: 2.2; font-size: 1.25rem; color: var(--lux-cream); text-align: justify; text-justify: inter-word; opacity: 0.95;">
           {{ book.desc | safe if book.desc else 'لا يوجد وصف متاح لهذا الكتاب.' }}
-        </p>
+        </div>
       </div>
 
       <!-- AI Features -->
-      <h3 class="section-title">
-        <i class="ph-fill ph-sparkle" style="color: var(--accent-cyan);"></i>
-        مميزات <span class="text-gradient">الذكاء الاصطناعي</span>
+      <h3 class="section-heading">
+        <i class="ph-fill ph-sparkle text-primary"></i>
+        مميزات الذكاء الاصطناعي
       </h3>
       <div class="ai-grid">
         <!-- Chat Card -->
         <div class="ai-card" onclick="openChatModal()">
-          <div class="ai-card-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
+          <div class="ai-card-icon">
             <i class="ph-fill ph-chat-circle-text"></i>
           </div>
           <h4>تحدث مع الكتاب</h4>
@@ -1065,7 +926,7 @@
 
         <!-- Summary Card -->
         <div class="ai-card" onclick="generateSummary()">
-          <div class="ai-card-icon" style="background: linear-gradient(135deg, #ec4899, #8b5cf6);">
+          <div class="ai-card-icon">
             <i class="ph-fill ph-magic-wand"></i>
           </div>
           <h4>ملخص ذكي</h4>
@@ -1074,109 +935,24 @@
 
         <!-- Coach Card -->
         <div class="ai-card" onclick="openCoachModal()">
-          <div class="ai-card-icon" style="background: linear-gradient(135deg, #10b981, #06b6d4);">
+          <div class="ai-card-icon">
             <i class="ph-fill ph-calendar-check"></i>
           </div>
           <h4>مدرب القراءة</h4>
           <p>خطة قراءة مخصصة لوقتك</p>
         </div>
-
-
       </div>
     </div>
   </div>
 
   <!-- Books by Same Author -->
   {% if author_books %}
-  <div class="mt-5 pt-5 border-top border-subtle animate-on-scroll fade-up">
-    <h3 class="h4 mb-4">
-      <i class="ph ph-pen-nib" style="color: var(--accent-purple);"></i>
-      المزيد من أعمال <span class="text-gradient">{{ book.author.split(',')[0] if book.author else 'المؤلف' }}</span>
-    </h3>
-    <div class="horizontal-scroll-section">
-      <div class="horizontal-scroll-container">
-        {% for item in author_books %}
-        <a href="{{ url_for('public.book_detail', gid=item.id) }}" class="d-block text-decoration-none hs-item">
-          <div class="hs-cover">
-            {% set ai_cover_url = url_for('public.generate_book_cover', title=item.title, author=item.author or '') %}
-            <img src="{{ item.cover or ai_cover_url }}" alt="{{ item.title }}"
-              onerror="this.onerror=null; this.src='{{ ai_cover_url }}';">
-            {% if item.rating %}
-            <div class="rating-badge"
-              style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); color: #ffc107; padding: 4px; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 600;">
-              <i class="ph-fill ph-star"></i> {{ item.rating }}
-            </div>
-            {% endif %}
-          </div>
-          <h5 class="text-truncate mb-1"
-            style="font-size: 0.9rem; color: var(--text-primary); direction: rtl; text-align: right;">{{ item.title }}
-          </h5>
-          {% if item.rating %}
-          <div class="d-flex align-center gap-1 mt-1"
-            style="color: var(--warning); font-size: 0.75rem; direction: rtl; justify-content: flex-start;">
-            <i class="ph-fill ph-star"></i>
-            <span>{{ item.rating }}</span>
-          </div>
-          {% endif %}
-        </a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
+  {{ render_carousel_section('المزيد من أعمال ' ~ (book.author.split(',')[0] if book.author else 'المؤلف'), 'ph-fill ph-books', author_books, 'author-books', [], '#') }}
   {% endif %}
 
   <!-- Similar Books -->
   {% if similar %}
-  <div class="mt-5 pt-5 border-top border-subtle animate-on-scroll fade-up">
-    <h3 class="h4 mb-4">
-      <i class="ph ph-books" style="color: var(--accent-cyan);"></i>
-      كتب قد <span class="text-gradient">تعجبك</span> أيضاً
-    </h3>
-    <div class="horizontal-scroll-section">
-      <div class="horizontal-scroll-container">
-        {% for item in similar %}
-        <a href="{{ url_for('public.book_detail', gid=item.id) }}" class="d-block text-decoration-none hs-item">
-          <div class="hs-cover">
-            {% set ai_cover_url = url_for('public.generate_book_cover', title=item.title, author=item.author or '') %}
-            <img src="{{ item.cover or ai_cover_url }}" alt="{{ item.title }}"
-              onerror="this.onerror=null; this.src='{{ ai_cover_url }}';">
-
-            {% if item.rating %}
-            <div class="rating-badge"
-              style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); color: #ffc107; padding: 4px; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 600;">
-              <i class="ph-fill ph-star"></i> {{ item.rating }}
-            </div>
-            {% endif %}
-          </div>
-
-          <h5 class="text-truncate mb-1"
-            style="font-size: 0.9rem; color: var(--text-primary); direction: rtl; text-align: right;">{{ item.title }}
-          </h5>
-
-          {% if item.author %}
-          <p class="text-truncate text-muted mb-0" style="font-size: 0.75rem; direction: rtl; text-align: right;">{{
-            item.author }}</p>
-          {% endif %}
-
-          {% if item.rating %}
-          <div class="d-flex align-center gap-1 mt-1"
-            style="color: var(--warning); font-size: 0.75rem; direction: rtl; justify-content: flex-start;">
-            <i class="ph-fill ph-star"></i>
-            <span>{{ item.rating }}</span>
-          </div>
-          {% endif %}
-
-          {% if item.reason %}
-          <p class="mt-2 mb-0"
-            style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 600; direction: rtl; text-align: right;">
-            {{ item.reason }}
-          </p>
-          {% endif %}
-        </a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
+  {{ render_carousel_section('كتب قد تعجبك أيضاً', 'ph-fill ph-books text-primary', similar, 'similar-books', [], '#') }}
   {% endif %}
 
   <!-- Reviews Section -->
@@ -1427,7 +1203,11 @@
       const res = await fetch('/public/api/coach/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: bookTitle, pages: {{ book.pageCount or 200 }}, days: parseInt(days) })
+        body: JSON.stringify({
+          title: bookTitle,
+          pages: parseInt("{{ book.pageCount or 200 }}"),
+          days: parseInt(days)
+        })
   });
   const data = await res.json();
 

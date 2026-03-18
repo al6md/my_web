@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
     <!-- Icons - Phosphor -->
@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     {% block head %}{% endblock %}
     <!-- Luxury Classic Dark Theme — MUST BE LAST -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/luxury-theme.css') }}?v=1.8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/luxury-theme.css') }}?v=2.2">
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
@@ -129,22 +129,35 @@
         </div>
     </nav>
 
-    <!-- Search Modal -->
-    <div id="searchModal" class="modal-overlay">
-        <div onclick="toggleSearch()" style="position: absolute; inset: 0;"></div>
-        <div class="modal-content">
-            <div class="p-4">
-                <form action="{{ url_for('public.list_books') }}" class="search-form" id="searchForm">
-                    <input type="text" name="q" id="searchInput" class="form-control flex-grow-1"
-                        placeholder="ابحث عن كتاب، مؤلف، أو موضوع..." autofocus>
-                    <!-- Voice Search Button -->
-                    <button type="button" class="btn btn-secondary btn-icon" id="voiceSearchBtn"
-                        onclick="startVoiceSearch()" title="البحث الصوتي">
-                        <i class="ph ph-microphone"></i>
-                    </button>
-                    <button type="submit" class="btn btn-primary btn-icon">
-                        <i class="ph ph-magnifying-glass"></i>
-                    </button>
+    <!-- Search Modal - Holographic Hub -->
+    <div id="searchModal" class="modal-overlay legendary-search-hub" style="backdrop-filter: blur(40px) saturate(150%);">
+        <div onclick="toggleSearch()" class="modal-backdrop-blur" style="background: var(--lux-mesh-2); opacity: 0.5;"></div>
+        <div class="modal-content legendary-panel">
+            <div class="p-5">
+                <div class="search-header-hub mb-4">
+                    <h4 class="lux-gold-text mb-1"><i class="ph-fill ph-magnifying-glass ms-2"></i>محرك البحث الذكي</h4>
+                    <p class="small text-muted">ابحث في أكثر من 150,000 كتاب بدقة متناهية</p>
+                </div>
+                
+                <form action="{{ url_for('public.list_books') }}" class="legendary-search-form" id="searchForm" style="position: relative; border-radius: 16px; background: rgba(15, 12, 8, 0.4); border: 1px solid rgba(224, 185, 106, 0.3); padding: 5px; box-shadow: 0 0 40px rgba(224, 185, 106, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05); overflow: hidden;">
+                    <div class="lux-input-wrapper" style="display: flex; align-items: center; width: 100%;">
+                        <i class="ph-bold ph-sparkle" style="color: var(--lux-gold); padding: 0 15px; font-size: 1.2rem; animation: lux-pulse-soft 2s infinite;"></i>
+                        <input type="text" name="q" id="searchInput" class="legendary-input"
+                            placeholder="ماذا تبحث عنه اليوم؟ (عنوان، مؤلف، أو موضوع...)" autofocus
+                            style="flex: 1; background: transparent; border: none; color: #fff; font-size: 1.1rem; padding: 15px 0; outline: none;">
+                        <div class="input-glow-line" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--lux-gold), transparent); transform: translateX(-100%); transition: transform 0.5s ease;"></div>
+                    </div>
+                    
+                    <div class="search-actions-group">
+                        <button type="button" class="lux-glass-btn voice-btn" id="voiceSearchBtn"
+                            onclick="startVoiceSearch()" title="البحث الصوتي">
+                            <i class="ph-fill ph-microphone"></i>
+                        </button>
+                        <button type="submit" class="lux-search-submit">
+                            <span>بحث</span>
+                            <i class="ph-bold ph-arrow-left"></i>
+                        </button>
+                    </div>
                 </form>
 
                 <!-- Voice Search Status -->
@@ -227,70 +240,88 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer section py-5"
-        style="border-top: 1px solid var(--border-subtle); background: transparent; backdrop-filter: blur(20px); z-index: 10; position: relative;">
-        <div class="container">
+    <footer class="footer py-5" style="position: relative; overflow: hidden;">
+        <!-- Ambient Glow -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; opacity: 0.3;">
+            <div style="position: absolute; top: -60px; right: 15%; width: 250px; height: 250px; background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -40px; left: 15%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(184,115,51,0.08) 0%, transparent 70%); border-radius: 50%;"></div>
+        </div>
+
+        <div class="container" style="position: relative; z-index: 2;">
             <div class="grid-4 gap-5">
+                <!-- Brand Column -->
                 <div class="footer-brand">
                     <h4 class="mb-3 d-inline-flex align-center gap-2">
-                        <i class="ph-fill ph-sparkle text-primary"></i>
-                        <span class="text-gradient">ALHAM LIBRARY</span>
+                        <i class="ph-fill ph-sparkle" style="color: var(--lux-gold);"></i>
+                        <span style="font-family: var(--lux-font-display); background: linear-gradient(135deg, #c9a84c 0%, #f3dfa2 50%, #c9a84c 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.1em; font-weight: 700;">ALHAM</span>
                     </h4>
-                    <p class="text-muted small mb-4">اكتشف عالم القراءة الذكي. توصيات مخصصة ومجتمع من القراء.</p>
+                    <p class="small mb-4" style="color: var(--lux-text-muted); line-height: 1.7;">منصتك الذكية لاكتشاف عالم القراءة بتوصيات دقيقة مدعومة بالذكاء الاصطناعي.</p>
                     <div class="d-flex gap-2">
-                        <a href="#" class="btn-icon">
+                        <a href="#" class="footer-social-btn" aria-label="Twitter">
                             <i class="ph ph-twitter-logo"></i>
                         </a>
-                        <a href="#" class="btn-icon">
+                        <a href="#" class="footer-social-btn" aria-label="Instagram">
                             <i class="ph ph-instagram-logo"></i>
                         </a>
-                        <a href="#" class="btn-icon">
+                        <a href="#" class="footer-social-btn" aria-label="GitHub">
                             <i class="ph ph-github-logo"></i>
                         </a>
                     </div>
                 </div>
+
+                <!-- Browse Links -->
                 <div>
                     <h5 class="mb-3">تصفح</h5>
-                    <div class="d-flex flex-column gap-2">
-                        <a href="{{ url_for('main.home') }}" class="text-secondary"><i
-                                class="ph ph-house ms-2"></i>الرئيسية</a>
-                        <a href="{{ url_for('main.home') }}" class="text-secondary"><i
-                                class="ph ph-compass ms-2"></i>استكشف</a>
-                        <a href="{{ url_for('public.list_books') }}" class="text-secondary"><i
-                                class="ph ph-books ms-2"></i>المكتبة</a>
+                    <div class="d-flex flex-column gap-3 mt-4">
+                        <a href="{{ url_for('main.home') }}" class="footer-link"><i class="ph ph-house ms-2"></i>الرئيسية</a>
+                        <a href="{{ url_for('public.list_books') }}" class="footer-link"><i class="ph ph-books ms-2"></i>المكتبة</a>
+                        <a href="{{ url_for('main.home') }}" class="footer-link"><i class="ph ph-compass ms-2"></i>استكشف</a>
                     </div>
                 </div>
+
+                <!-- Account Links -->
                 <div>
                     <h5 class="mb-3">الحساب</h5>
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-3 mt-4">
                         {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('main.books') }}" class="text-secondary"><i
-                                class="ph ph-bookmark-simple ms-2"></i>محفوظاتي</a>
-                        <a href="{{ url_for('auth.logout') }}" class="text-secondary"><i
-                                class="ph ph-sign-out ms-2"></i>تسجيل الخروج</a>
+                        <a href="{{ url_for('main.books') }}" class="footer-link"><i class="ph ph-bookmark-simple ms-2"></i>محفوظاتي</a>
+                        <a href="{{ url_for('auth.logout') }}" class="footer-link"><i class="ph ph-sign-out ms-2"></i>تسجيل الخروج</a>
                         {% else %}
-                        <a href="{{ url_for('auth.login') }}" class="text-secondary"><i
-                                class="ph ph-sign-in ms-2"></i>تسجيل الدخول</a>
-                        <a href="{{ url_for('auth.register') }}" class="text-secondary"><i
-                                class="ph ph-user-plus ms-2"></i>انشاء حساب</a>
+                        <a href="{{ url_for('auth.login') }}" class="footer-link"><i class="ph ph-sign-in ms-2"></i>تسجيل الدخول</a>
+                        <a href="{{ url_for('auth.register') }}" class="footer-link"><i class="ph ph-user-plus ms-2"></i>انشاء حساب</a>
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Contact & Newsletter -->
                 <div>
-                    <h5 class="mb-3">تواصل معنا</h5>
-                    <div class="d-flex flex-column gap-2">
-                        <a href="#" class="text-secondary"><i class="ph ph-twitter-logo ms-2"></i>Twitter</a>
-                        <a href="#" class="text-secondary"><i class="ph ph-instagram-logo ms-2"></i>Instagram</a>
-                        <a href="#" class="text-secondary"><i class="ph ph-envelope ms-2"></i>Email</a>
+                    <h5 class="mb-3">النشرة البريدية</h5>
+                    <p class="small mb-4" style="color: var(--lux-text-muted); line-height: 1.6;">اشترك ليصلك أحدث الكتب والتوصيات الذكية أسبوعياً.</p>
+                    <form class="footer-newsletter-form mb-4" style="position: relative; display: flex; align-items: center;">
+                        <input type="email" placeholder="البريد الإلكتروني..." 
+                            style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(201,168,76,0.2); border-radius: 8px; padding: 0.6rem 2.5rem 0.6rem 0.6rem; color: #fff; outline: none; transition: border-color 0.3s ease;"
+                            onfocus="this.style.borderColor='rgba(201,168,76,0.6)'" 
+                            onblur="this.style.borderColor='rgba(201,168,76,0.2)'">
+                        <i class="ph ph-envelope" style="position: absolute; right: 0.8rem; color: var(--lux-gold);"></i>
+                        <button type="submit" 
+                            style="position: absolute; left: 0.3rem; background: linear-gradient(135deg, var(--lux-gold) 0%, var(--lux-copper) 100%); border: none; width: 32px; height: 32px; border-radius: 6px; color: #000; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease;"
+                            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            <i class="ph-bold ph-paper-plane-right"></i>
+                        </button>
+                    </form>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="footer-link small"><i class="ph ph-envelope ms-1"></i> support@alham.com</a>
                     </div>
                 </div>
             </div>
-            <div class="text-center text-muted small mt-5 pt-4 border-top border-subtle">
-                <p class="mb-0">© 2025 ALHAM Project. صُنع بـ <i class="ph-fill ph-heart text-accent-500"></i> في بيئة
-                    الذكاء الاصطناعي</p>
+
+            <!-- Copyright -->
+            <div class="text-center small mt-5 pt-4" style="border-top: 1px solid rgba(201,168,76,0.08); color: var(--lux-text-muted);">
+                <p class="mb-0" style="letter-spacing: 0.05em;">© 2026 ALHAM. صُنع بإلهام <i class="ph-fill ph-heart" style="color: var(--lux-gold);"></i> مدعوم بالذكاء الاصطناعي</p>
             </div>
         </div>
     </footer>
+
 
 
     <!-- AI Chat Toggle -->
@@ -341,6 +372,23 @@
     <script>
         // ... (Keep existing JS logic, but minor cleanup if needed) ...
         // [Existing Theme, Mobile Menu, Scroll logic...]
+
+        // ---------------------------------------------------------
+        // 🔮 MAGNETIC MICRO-INTERACTIONS
+        // ---------------------------------------------------------
+        function handleMagneticHover(event, element) {
+            const rect = element.getBoundingClientRect();
+            const x = event.clientX - rect.left - rect.width / 2;
+            const y = event.clientY - rect.top - rect.height / 2;
+            
+            // Subtle rotation and translation
+            element.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px) rotateY(${x * 0.05}deg) rotateX(${-y * 0.05}deg)`;
+        }
+
+        function resetMagneticHover(element) {
+            // Spring back
+            element.style.transform = `translate(0px, 0px) rotateY(0deg) rotateX(0deg)`;
+        }
 
         // ---------------------------------------------------------
         // 🔍 SEARCH ENHANCEMENTS (Live Search & History)
@@ -673,6 +721,7 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
     <script>
         // Initialize AOS globally
         document.addEventListener('DOMContentLoaded', function () {

@@ -1,141 +1,103 @@
 {% extends "base.html" %}
+{% from 'components/macros.html' import render_carousel_section %}
 {% block title %}{{ book.title }} | ALHAM{% endblock %}
+{% block body_class %}royal-detail-page{% endblock %}
 
 {% block head %}
 <style>
   /* ══════════════════════════════════════════════════════════════════════════
-   📖 BOOK DETAIL - AURORA PREMIUM DESIGN V2
+   📖 BOOK DETAIL - ROYAL CLASSIC DESIGN
    ══════════════════════════════════════════════════════════════════════════ */
 
-  /* ═══ Hero Backdrop ═══ */
+  /* ═══ Global Font Override ═══ */
+  .royal-detail-page, 
+  .royal-detail-page body,
+  .royal-detail-page .book-title,
+  .royal-detail-page .section-heading,
+  .royal-detail-page .book-author,
+  .royal-detail-page p,
+  .royal-detail-page span:not(.ph),
+  .royal-detail-page div:not(.ph) {
+    font-family: 'Amiri', 'Playfair Display', serif !important;
+  }
+
+  .royal-detail-page .ph, 
+  .royal-detail-page [class^="ph-"] {
+    font-family: "Phosphor" !important;
+  }
+
+  /* ═══ Background & Layout ═══ */
   .book-backdrop {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100vh;
+    top: 0; left: 0; right: 0; bottom: 0;
     z-index: -1;
-    overflow: hidden;
+    background-color: #0f0c08;
+    background-image: 
+      radial-gradient(circle at center, rgba(30, 25, 20, 0) 0%, rgba(15, 12, 8, 1) 100%),
+      url("https://www.transparenttextures.com/patterns/dark-leather.png");
   }
 
-  .book-backdrop::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(10, 12, 18, 0.7) 30%,
-        var(--bg-base) 70%);
-    z-index: 1;
+  [data-theme="light"] .book-backdrop {
+    background-color: #f7f3ed;
+    background-image: 
+      radial-gradient(circle at center, rgba(255, 255, 250, 0.2) 0%, rgba(244, 238, 229, 1) 100%),
+      url("https://www.transparenttextures.com/patterns/paper.png");
   }
 
-  .book-backdrop::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 60%);
-    z-index: 2;
-  }
-
-  .book-backdrop img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: blur(60px) saturate(1.2);
-    transform: scale(1.1);
-    opacity: 0.5;
-  }
-
-  [data-theme="light"] .book-backdrop::before {
-    background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.7) 30%,
-        var(--bg-base) 70%);
-  }
-
-  /* ═══ Layout ═══ */
-  .detail-layout {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 3.5rem;
-    padding-top: 2rem;
-  }
-
-  @media (max-width: 992px) {
-    .detail-layout {
-      grid-template-columns: 1fr;
-      gap: 2.5rem;
-    }
-  }
-
-  /* ═══ Premium Glass Panel ═══ */
-  .glass-panel {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.05) 0%,
-        rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    padding: 2rem;
-    box-shadow:
-      0 10px 40px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    position: relative;
-    overflow: hidden;
-  }
-
-  [data-theme="light"] .glass-panel {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.8) 0%,
-        rgba(255, 255, 255, 0.6) 100%);
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  }
-
-  /* ═══ Cover Section ═══ */
-  .cover-section {
-    position: sticky;
-    top: calc(var(--header-height) + 2rem);
-    background: linear-gradient(145deg,
-        rgba(139, 92, 246, 0.08) 0%,
-        rgba(59, 130, 246, 0.05) 100%);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(139, 92, 246, 0.15);
-    border-radius: 28px;
-    padding: 1.75rem;
-    animation: slideUp 0.6s ease-out;
-  }
-
-  [data-theme="light"] .cover-section {
-    background: linear-gradient(145deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(139, 92, 246, 0.08) 100%);
+  .ai-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--lux-surface) !important;
+    border: 1px solid var(--lux-gold) !important;
+    color: var(--lux-gold) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    font-size: 1.8rem;
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
   }
 
   .cover-wrapper {
-    position: relative;
-    border-radius: 20px;
-    overflow: hidden;
-    aspect-ratio: 2/3;
-    box-shadow:
-      0 25px 50px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.08);
-    transform: perspective(1000px) rotateY(-2deg);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    border: 2px solid #2a241c;
+    margin-bottom: 1.5rem;
   }
 
-  .cover-section:hover .cover-wrapper {
-    transform: perspective(1000px) rotateY(0deg) scale(1.02);
+  [data-theme="light"] .cover-wrapper {
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    border-color: #e5e0d8;
   }
 
   .cover-wrapper img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.5s ease;
   }
 
-  /* ═══ Status Grid ═══ */
+  .cover-section:hover .cover-wrapper img {
+    transform: scale(1.03);
+  }
+
+  /* Ribbon */
+  .status-ribbon {
+    position: absolute;
+    top: 20px;
+    right: -35px;
+    background: var(--lux-gold);
+    color: #000;
+    padding: 5px 40px;
+    transform: rotate(45deg);
+    font-weight: bold;
+    font-family: var(--lux-font-serif);
+    font-size: 0.9rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 10;
+  }
+
+  /* ═══ Action Buttons ═══ */
   .status-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -148,112 +110,150 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 1rem 0.5rem;
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    color: var(--lux-text-secondary);
+    font-family: var(--lux-font-serif);
+    transition: all 0.3s ease;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
   }
 
   [data-theme="light"] .status-btn {
-    background: rgba(255, 255, 255, 0.6);
-    border-color: rgba(0, 0, 0, 0.05);
+    border-color: #e5e0d8;
+    color: #665c50;
+  }
+
+  .status-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--lux-gold);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
   }
 
   .status-btn:hover {
+    border-color: var(--lux-gold);
+    color: var(--lux-gold);
     transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .status-btn:hover::before {
+    opacity: 0.05;
+  }
+
+  .status-btn i, .status-btn span {
+    position: relative;
+    z-index: 1;
   }
 
   .status-btn i {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
   }
 
   .status-btn span {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 600;
+    letter-spacing: 0.05em;
   }
 
   /* Active Status Styles */
-  .status-btn.active-favorite {
-    background: rgba(244, 63, 94, 0.15);
-    border-color: rgba(244, 63, 94, 0.5);
-    color: #f43f5e;
+  .status-btn[class*="active-"] {
+    background: rgba(201, 168, 76, 0.1);
+    border-color: var(--lux-gold);
+    color: var(--lux-gold);
+  }
+  [data-theme="light"] .status-btn[class*="active-"] {
+    background: rgba(201, 168, 76, 0.05);
+    color: #b08d3a;
+    border-color: #b08d3a;
   }
 
-  .status-btn.active-later {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: rgba(245, 158, 11, 0.5);
-    color: #f59e0b;
-  }
-
-  .status-btn.active-reading {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.5);
-    color: #8b5cf6;
-  }
-
-  .status-btn.active-on_hold {
-    background: rgba(107, 114, 128, 0.15);
-    border-color: rgba(107, 114, 128, 0.5);
-    color: #9ca3af;
-  }
-
-  .status-btn.active-dropped {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #ef4444;
-  }
-
-  /* Success Button (Mark as Finished) */
   .btn-finish {
     grid-column: span 2;
     flex-direction: row;
     justify-content: center;
-    background: linear-gradient(135deg, #10b981, #059669);
-    border: none;
-    color: white;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(201,168,76,0.2), transparent);
+    border-color: var(--lux-gold);
+    color: var(--lux-gold);
   }
 
   .btn-finish:hover {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    background: var(--lux-gold);
+    color: #000;
   }
 
   .btn-finish.is-finished {
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.5);
-    color: #10b981;
-    box-shadow: none;
+    background: var(--lux-gold);
+    color: #000;
   }
 
   /* ═══ Content Side ═══ */
   .book-title {
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 800;
+    font-family: var(--lux-font-display);
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 700;
     line-height: 1.1;
-    margin-bottom: 0.75rem;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-300) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+    color: var(--lux-gold);
+    text-shadow: 0 2px 10px rgba(201,168,76,0.1);
+  }
+
+  [data-theme="light"] .book-title {
+    color: #2a241c;
+    text-shadow: none;
   }
 
   .book-author {
-    font-size: 1.25rem;
-    color: var(--text-secondary);
-    margin-bottom: 2rem;
+    font-family: var(--lux-font-serif);
+    font-size: 1.5rem;
+    color: var(--lux-text-secondary);
+    margin-bottom: 1.5rem;
+    font-style: italic;
+  }
+
+  [data-theme="light"] .book-author {
+    color: #665c50;
+  }
+
+  /* Decorative separator */
+  .classic-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 2rem 0;
+    opacity: 0.6;
+  }
+  .classic-separator::before,
+  .classic-separator::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(90deg, transparent, var(--lux-gold), transparent);
+  }
+  [data-theme="light"] .classic-separator::before,
+  [data-theme="light"] .classic-separator::after {
+    background: linear-gradient(90deg, transparent, #b08d3a, transparent);
+  }
+  .classic-separator i {
+    color: var(--lux-gold);
+    font-size: 0.8rem;
+  }
+  [data-theme="light"] .classic-separator i {
+    color: #b08d3a;
   }
 
   /* Meta Tags */
   .meta-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 1rem;
     margin-bottom: 2rem;
   }
 
@@ -261,267 +261,235 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--primary-300);
-  }
-
-  /* AI Grid */
-  .ai-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.25rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .ai-card {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .ai-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary-400);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  }
-
-  .ai-icon {
-    width: 56px;
-    height: 56px;
-    margin: 0 auto 1rem;
-    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.75rem;
-    color: white;
-    box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
-  }
-
-  /* Timeline */
-  .timeline-badge {
-    background: var(--bg-surface-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    padding: 0.75rem 1.25rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .timeline-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
     font-size: 0.9rem;
+    font-family: var(--lux-font-serif);
+    color: var(--lux-text-primary);
+    position: relative;
+  }
+  
+  [data-theme="light"] .meta-tag {
+    border-color: #e5e0d8;
+    color: #2a241c;
   }
 
-  /* Notes */
-  .notes-area {
-    width: 100%;
-    min-height: 200px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-subtle);
-    border-radius: 20px;
-    padding: 1.5rem;
-    color: var(--text-body);
-    font-size: 1rem;
-    resize: vertical;
-    transition: all 0.2s;
+  .meta-tag i {
+    color: var(--lux-gold);
+  }
+  [data-theme="light"] .meta-tag i {
+    color: #b08d3a;
   }
 
-  .notes-area:focus {
-    outline: none;
-    border-color: var(--primary-500);
-    background: rgba(0, 0, 0, 0.3);
-  }
-
-  [data-theme="light"] .notes-area {
-    background: #f8fafc;
-  }
-
-  [data-theme="light"] .notes-area:focus {
-    background: white;
-  }
-
-  /* Utils */
-  .animate-up {
-    animation: fadeInUp 0.6s ease forwards;
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  .delay-1 {
-    animation-delay: 0.1s;
-  }
-
-  .delay-2 {
-    animation-delay: 0.2s;
-  }
-
-  .delay-3 {
-    animation-delay: 0.3s;
-  }
-
-  @keyframes fadeInUp {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Action Buttons */
-  .danger-btn {
-    width: 100%;
-    margin-top: 1rem;
-    padding: 0.75rem;
-    border-radius: 12px;
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    font-size: 0.9rem;
-    transition: all 0.2s;
-  }
-
-  .danger-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
-  }
-
-  /* ═══ Circular Progress ═══ */
-  .progress-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    text-align: center;
-  }
-
-  .circular-chart {
-    display: block;
-    margin: 0 auto;
-    max-width: 120px;
-    max-height: 250px;
-  }
-
-  .circle-bg {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.1);
-    stroke-width: 2.5;
-  }
-
-  .circle {
-    fill: none;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    animation: progress 1s ease-out forwards;
-    stroke: var(--primary-500);
-    transition: stroke-dasharray 0.5s ease;
-  }
-
-  .percentage {
-    fill: var(--text-primary);
-    font-family: inherit;
-    font-weight: bold;
-    font-size: 0.5em;
-    text-anchor: middle;
-  }
-
-  /* ═══ Extended Info ═══ */
+  /* Ext Info Grid */
   .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-    background: rgba(255, 255, 255, 0.02);
-    padding: 1.5rem;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
   }
 
   .info-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    padding: 1rem;
+    border-right: 1px solid var(--lux-border);
+  }
+  [data-theme="light"] .info-item {
+    border-color: #e5e0d8;
+  }
+  .info-item:last-child {
+    border-right: none;
   }
 
   .info-label {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--lux-text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-family: var(--lux-font-sans);
+  }
+  [data-theme="light"] .info-label {
+    color: #8b7355;
   }
 
   .info-value {
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-
-  /* ═══ Quotes Section ═══ */
-  .quote-card {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-    position: relative;
-    transition: transform 0.2s;
-  }
-
-  .quote-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .quote-text {
     font-size: 1.1rem;
-    line-height: 1.6;
-    color: var(--text-body);
-    font-style: italic;
-    margin-bottom: 0.75rem;
+    color: var(--lux-text-primary);
+    font-family: var(--lux-font-serif);
+  }
+  [data-theme="light"] .info-value {
+    color: #2a241c;
+  }
+
+  /* Quotes / Synopsis Section */
+  .quote-card {
+    background: rgba(15, 12, 8, 0.4);
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    padding: 2rem;
+    margin-bottom: 2rem;
     position: relative;
-    padding-right: 1.5rem;
   }
-
-  .quote-text::before {
-    content: '"';
-    position: absolute;
-    right: -0.5rem;
-    top: -0.5rem;
-    font-size: 3rem;
-    color: rgba(255, 255, 255, 0.1);
-    font-family: serif;
-    line-height: 1;
+  [data-theme="light"] .quote-card {
+    background: #fbfaf8;
+    border-color: #e5e0d8;
   }
-
+  
+  .quote-text {
+    font-family: var(--lux-font-serif);
+    font-size: 1.25rem;
+    line-height: 1.8;
+    color: var(--lux-text-primary);
+    text-align: justify;
+    margin-bottom: 0.5rem;
+  }
+  [data-theme="light"] .quote-text {
+    color: #2a241c;
+  }
   .quote-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--lux-text-muted);
+    border-top: 1px solid var(--lux-border);
+    padding-top: 1rem;
+    margin-top: 1rem;
+  }
+  [data-theme="light"] .quote-meta {
+    border-color: #e5e0d8;
+    color: #8b7355;
   }
 
-  /* ═══ Horizontal Scroll (Author & Similar) ═══ */
+  /* AI Section */
+  .ai-section-title {
+    font-family: var(--lux-font-display);
+    font-size: 1.8rem;
+    color: var(--lux-gold);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  [data-theme="light"] .ai-section-title {
+    color: #b08d3a;
+  }
+
+  .ai-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .ai-card {
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    position: relative;
+  }
+  [data-theme="light"] .ai-card {
+    border-color: #e5e0d8;
+  }
+
+  .ai-card::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid transparent;
+    transition: all 0.4s ease;
+  }
+
+  .ai-card:hover {
+    border-color: var(--lux-gold);
+    transform: translateY(-5px);
+  }
+  .ai-card:hover::before {
+    border-color: rgba(201, 168, 76, 0.3);
+  }
+
+  .ai-icon {
+    font-size: 2.5rem;
+    color: var(--lux-gold);
+    margin-bottom: 1rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+  }
+  [data-theme="light"] .ai-icon {
+    color: #b08d3a;
+  }
+
+  .ai-card h4 {
+    font-family: var(--lux-font-serif);
+    font-size: 1.2rem;
+    color: var(--lux-text-primary);
+    margin-bottom: 0.5rem;
+  }
+  [data-theme="light"] .ai-card h4 {
+    color: #2a241c;
+  }
+
+  .ai-card p {
+    font-size: 0.9rem;
+    color: var(--lux-text-secondary);
+    font-family: var(--lux-font-sans);
+  }
+  [data-theme="light"] .ai-card p {
+    color: #665c50;
+  }
+
+  /* Progress Card */
+  .progress-card {
+    background: transparent;
+    border: 1px solid var(--lux-border);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    text-align: center;
+    border-radius: 2px;
+  }
+  [data-theme="light"] .progress-card {
+    border-color: #e5e0d8;
+  }
+
+  /* Share Buttons */
+  .share-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--lux-border);
+    color: var(--lux-text-secondary);
+    transition: all 0.3s ease;
+    background: transparent;
+  }
+  [data-theme="light"] .share-btn {
+    border-color: #e5e0d8;
+    color: #665c50;
+  }
+  .share-btn:hover {
+    border-color: var(--lux-gold);
+    color: var(--lux-gold);
+    transform: scale(1.1);
+  }
+
+  /* Horizontal Scroll Items */
   .horizontal-section {
-    margin-top: 3rem;
+    margin-top: 4rem;
     padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--lux-border);
+  }
+  [data-theme="light"] .horizontal-section {
+    border-color: #e5e0d8;
   }
 
   .hs-container {
@@ -531,68 +499,187 @@
     padding: 1rem 0 2rem;
     scrollbar-width: none;
   }
-
-  .hs-container::-webkit-scrollbar {
-    display: none;
-  }
+  .hs-container::-webkit-scrollbar { display: none; }
 
   .hs-item {
     min-width: 140px;
     width: 140px;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease;
   }
-
   .hs-item:hover {
     transform: translateY(-5px);
   }
 
   .hs-img {
-    border-radius: 12px;
-    width: 100%;
+    border-radius: 2px;
+    border: 1px solid var(--lux-border);
     aspect-ratio: 2/3;
-    object-fit: cover;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 100%; object-fit: cover;
+  }
+  [data-theme="light"] .hs-img {
+    border-color: #e5e0d8;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
   }
 
-  /* ═══ Share Buttons ═══ */
-  .share-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: transform 0.2s;
+  /* Button / Input Styles */
+  .notes-area {
+    width: 100%;
+    min-height: 150px;
+    background: rgba(15, 12, 8, 0.4);
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    padding: 1.5rem;
+    color: var(--lux-text-primary);
+    font-family: var(--lux-font-serif);
     font-size: 1.1rem;
+    resize: vertical;
+    transition: border-color 0.3s;
+  }
+  .notes-area:focus {
+    outline: none;
+    border-color: var(--lux-gold);
+  }
+  [data-theme="light"] .notes-area {
+    background: #fbfaf8;
+    border-color: #e5e0d8;
+    color: #2a241c;
   }
 
-  .share-btn:hover {
-    transform: scale(1.1);
+  .primary-btn {
+    background: var(--lux-gold);
+    color: #000;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--lux-font-serif);
+    font-weight: 600;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .primary-btn:hover {
+    filter: brightness(1.1);
   }
 
-  .share-twitter {
-    background: #1DA1F2;
+  .ghost-btn {
+    background: transparent;
+    color: var(--lux-gold);
+    border: 1px solid var(--lux-gold);
+    padding: 0.5rem 1rem;
+    font-family: var(--lux-font-serif);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .ghost-btn:hover {
+    background: rgba(201, 168, 76, 0.1);
   }
 
-  .share-facebook {
-    background: #4267B2;
+  .danger-btn {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    font-family: var(--lux-font-serif);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-radius: 2px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .danger-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
   }
 
-  .share-whatsapp {
-    background: #25D366;
+  .circular-chart {
+    display: block;
+    margin: 0 auto;
+    max-width: 120px;
+    max-height: 250px;
   }
-
-  .share-copy {
-    background: #71717a;
+  .circle-bg {
+    fill: none;
+    stroke: var(--lux-border);
+    stroke-width: 2.5;
   }
+  .circle {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    animation: progress 1s ease-out forwards;
+    stroke: var(--lux-gold);
+    transition: stroke-dasharray 0.5s ease;
+  }
+  .percentage {
+    fill: var(--lux-text-primary);
+    font-family: var(--lux-font-serif);
+    font-weight: bold;
+    font-size: 0.5em;
+    text-anchor: middle;
+  }
+  [data-theme="light"] .circle-bg { stroke: #e5e0d8; }
+  [data-theme="light"] .percentage { fill: #2a241c; }
 
   @keyframes progress {
-    0% {
-      stroke-dasharray: 0, 100;
-    }
+    0% { stroke-dasharray: 0, 100; }
   }
+  .relative { position: relative; }
+  .animate-up {
+    animation: fadeInUp 0.6s ease forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+
+  @keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Timeline */
+  .timeline-badge {
+    border: 1px solid var(--lux-border);
+    border-radius: 2px;
+    padding: 1rem 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    font-family: var(--lux-font-serif);
+  }
+  [data-theme="light"] .timeline-badge {
+    border-color: #e5e0d8;
+  }
+  .timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    color: var(--lux-text-secondary);
+  }
+  [data-theme="light"] .timeline-item {
+    color: #665c50;
+  }
+  .section-heading {
+    font-family: var(--lux-font-display);
+    font-size: 1.5rem;
+    color: var(--lux-gold);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  [data-theme="light"] .section-heading {
+    color: #b08d3a;
+  }
+
 </style>
 {% endblock %}
 
@@ -745,61 +832,112 @@
     <div class="content-side">
 
       <div class="animate-up">
-        <h1 class="book-title">{{ book.title }}</h1>
-        <div class="book-author">
-          بقلم <strong>{{ book.author or 'مؤلف غير معروف' }}</strong>
-        </div>
-
         <!-- Meta Tags -->
-        <div class="meta-tags">
-          <div class="meta-tag">
-            <i class="ph-fill ph-tag"></i>
-            {{ book.categories.split(',')[0] if book.categories else 'عام' }}
-          </div>
-          {% if book.page_count %}
-          <div class="meta-tag">
-            <i class="ph-fill ph-files"></i>
-            {{ book.page_count }} صفحة
-          </div>
-          {% endif %}
-          {% if book.language %}
-          <div class="meta-tag">
-            <i class="ph-fill ph-translate"></i>
-            {{ book.language|upper }}
-          </div>
-          {% endif %}
+        <div class="meta-tags d-flex flex-wrap gap-3 mb-4">
+          <span class="meta-tag fw-bold" style="color: var(--lux-cream); background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.3);">
+            <i class="ph-fill ph-book-open"></i> كتاب
+          </span>
           {% if book.rating %}
-          <div class="meta-tag"
-            style="background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.2); color: #fbbf24;">
-            <i class="ph-fill ph-star"></i>
-            {{ book.rating }}
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- Extended Info -->
-        <div class="info-grid animate-up delay-1">
-          {% if book.publisher %}
-          <div class="info-item">
-            <span class="info-label">الناشر</span>
-            <span class="info-value">{{ book.publisher }}</span>
-          </div>
+          <span class="meta-tag fw-bold" style="color: var(--lux-gold); border-color: rgba(201,168,76,0.3);">
+            <i class="ph-fill ph-star"></i> {{ book.rating }}
+          </span>
           {% endif %}
           {% if book.published_date %}
-          <div class="info-item">
-            <span class="info-label">تاريخ النشر</span>
-            <span class="info-value">{{ book.published_date }}</span>
-          </div>
+          <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
+            <i class="ph-fill ph-calendar text-muted"></i> {{ book.published_date.split('-')[0] if '-' in book.published_date else book.published_date }}
+          </span>
           {% endif %}
-          {% if book.isbn %}
-          <div class="info-item">
-            <span class="info-label">ISBN</span>
-            <span class="info-value">{{ book.isbn }}</span>
-          </div>
+          {% if book.page_count %}
+          <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
+            <i class="ph ph-file-text text-muted"></i> {{ book.page_count }} صفحة
+          </span>
           {% endif %}
-          <div class="info-item">
-            <span class="info-label">تاريخ الإضافة</span>
-            <span class="info-value">{{ book.created_at.strftime('%Y-%m-%d') }}</span>
+        </div>
+
+        <!-- Title & Author -->
+        <h1 class="book-title mb-2" style="font-size: clamp(3rem, 6vw, 4.5rem); letter-spacing: -0.02em;">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
+        {% if book.rating %}
+        <div class="d-flex align-center gap-2 mb-3">
+          <div class="stars-display" style="color: var(--lux-gold); font-size: 1.2rem;">
+            {% for i in range(1, 6) %}
+            <i class="ph-fill ph-star"
+              style="opacity: {{ 1 if i <= book.rating|round else 0.3 }}"></i>
+            {% endfor %}
+          </div>
+          <span style="font-weight: 700; color: var(--lux-cream); font-size: 1.2rem;">{{ book.rating }}</span>
+          <span class="text-muted small" style="opacity: 0.7;">تقييم عالمي</span>
+        </div>
+        {% endif %}
+        <div class="book-author" style="font-size: 1.8rem; letter-spacing: 0.02em;">
+          بقلم <strong style="color: var(--lux-gold);">{{ book.author or 'مؤلف غير معروف' }}</strong>
+          {% if book.published_date %}
+          <span class="text-muted small ms-2" style="font-size: 1rem;">({{ book.published_date.split('-')[0] if '-' in book.published_date else book.published_date }})</span>
+          {% endif %}
+        </div>
+
+        <div class="classic-separator animate-up delay-1">
+          <i class="ph-fill ph-diamonds-four"></i>
+        </div>
+
+        <!-- Extended Info - بطاقة معلومات الكتاب -->
+        <div class="glass-panel mb-5 p-4 animate-up delay-1" style="background: rgba(15, 12, 8, 0.6); border: 1px solid rgba(201, 168, 76, 0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.4rem; border-color: rgba(201,168,76,0.2) !important;">
+            <i class="ph-fill ph-info text-primary" style="color: var(--lux-gold) !important;"></i> بيانات الإصدار
+          </h3>
+          <div class="info-grid">
+            {% if book.categories %}
+            <div class="info-item">
+              <span class="info-label"><i class="ph-fill ph-books mb-1"></i> التصنيف</span>
+              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.categories.split(',')[0] if book.categories else 'عام' }}</span>
+            </div>
+            {% endif %}
+            {% if book.language %}
+            <div class="info-item">
+              <span class="info-label"><i class="ph-fill ph-translate mb-1"></i> اللغة</span>
+              <span class="info-value text-uppercase" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.language|upper }}</span>
+            </div>
+            {% endif %}
+            {% if book.publisher %}
+            <div class="info-item">
+              <span class="info-label"><i class="ph-fill ph-buildings mb-1"></i> الناشر</span>
+              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.publisher }}</span>
+            </div>
+            {% endif %}
+            {% if book.page_count %}
+            <div class="info-item">
+              <span class="info-label"><i class="ph-fill ph-files mb-1"></i> الصفحات</span>
+              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.page_count }}</span>
+            </div>
+            {% endif %}
+            {% if book.published_date %}
+            <div class="info-item">
+              <span class="info-label"><i class="ph-fill ph-calendar-blank mb-1"></i> تاريخ النشر</span>
+              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.published_date }}</span>
+            </div>
+            {% endif %}
+            {% if book.isbn %}
+            <div class="info-item">
+              <span class="info-label"><i class="ph-fill ph-barcode mb-1"></i> ردمك (ISBN)</span>
+              <span class="info-value" style="font-family: monospace; font-size: 1rem; color: var(--lux-text-muted);">{{ book.isbn }}</span>
+            </div>
+            {% endif %}
+            <div class="info-item" style="border-right: none;">
+              <span class="info-label"><i class="ph-fill ph-clock mb-1"></i> تاريخ الإضافة</span>
+              <span class="info-value" style="font-family: monospace; font-size: 1rem; color: var(--lux-text-muted);">{{ book.created_at.strftime('%Y-%m-%d') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description Card -->
+        <div class="quote-card mb-5 p-5 animate-up delay-1" style="background: rgba(15, 12, 8, 0.4); border-radius: 8px;">
+          <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.5rem; color: var(--lux-gold); border-color: rgba(201,168,76,0.1) !important;">
+            <i class="ph-fill ph-text-align-right" style="color: var(--lux-gold);"></i> نبذة عن الكتاب
+            {% if book.ai_generated_desc %}
+            <span class="badge ms-2" style="font-size: 0.75rem; background: rgba(201,168,76,0.1); border: 1px solid var(--lux-gold); color: var(--lux-gold); font-weight: 500;">✨ ملخص ذكي</span>
+            {% endif %}
+          </h3>
+          <div class="book-description-content" style="line-height: 2.2; font-size: 1.25rem; color: var(--lux-cream); text-align: justify; text-justify: inter-word; opacity: 0.95;">
+            {{ book.description | safe if book.description else 'لا يوجد وصف متاح لهذا الكتاب.' }}
           </div>
         </div>
 
@@ -825,7 +963,7 @@
 
       <!-- AI Section -->
       <section class="glass-panel animate-up delay-1 mb-4">
-        <h3 class="mb-4 font-bold text-xl flex items-center gap-2">
+        <h3 class="section-heading">
           <i class="ph-fill ph-sparkle text-primary"></i>
           قدرات الذكاء الاصطناعي
         </h3>
@@ -840,7 +978,7 @@
           </div>
 
           <div class="ai-card" onclick="startAiSummary()">
-            <div class="ai-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <div class="ai-icon">
               <i class="ph-fill ph-magic-wand"></i>
             </div>
             <h4 class="font-bold mb-2">التلخيص الذكي</h4>
@@ -851,7 +989,7 @@
 
       <!-- Rating Section -->
       <section class="glass-panel animate-up delay-1 mb-4">
-        <h3 class="mb-3 font-bold text-lg flex items-center gap-2">
+        <h3 class="section-heading">
           <i class="ph-fill ph-star text-warning"></i>
           تقييمي للكتاب
         </h3>
@@ -887,7 +1025,7 @@
 
       <!-- Notes Section -->
       <section class="glass-panel animate-up delay-2">
-        <h3 class="mb-4 font-bold text-xl flex items-center gap-2">
+        <h3 class="section-heading">
           <i class="ph-fill ph-notebook text-primary"></i>
           ملاحظاتي الشخصية
         </h3>
@@ -897,8 +1035,8 @@
           <textarea name="notes" class="notes-area mb-4"
             placeholder="سجل أفكارك، اقتباساتك، وما تعلمته من الكتاب هنا...">{{ book.notes or '' }}</textarea>
 
-          <div class="text-left">
-            <button type="submit" class="btn btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+          <div class="text-left mt-3">
+            <button type="submit" class="primary-btn flex items-center gap-2">
               <i class="ph-bold ph-floppy-disk"></i>
               حفظ الملاحظات
             </button>
@@ -909,7 +1047,7 @@
       <!-- Quotes Section -->
       <section class="glass-panel animate-up delay-2 mt-4">
         <div class="d-flex justify-between align-items-center mb-4">
-          <h3 class="font-bold text-xl flex items-center gap-2 mb-0">
+          <h3 class="section-heading mb-0">
             <i class="ph-fill ph-quotes text-primary"></i> اقتباسات
           </h3>
           <button onclick="document.getElementById('addQuoteForm').classList.toggle('d-none')"
@@ -943,7 +1081,7 @@
                 <button class="btn-icon text-muted hover-text-danger" onclick="deleteQuote({{ q.id }})"><i
                     class="ph-bold ph-trash"></i></button>
                 <button class="btn-icon text-muted hover-text-primary"
-                  onclick="navigator.clipboard.writeText(`{{ q.quote_text }}`); alert('تم النسخ')"><i
+                  onclick="copyQuote(this, {{ q.quote_text|tojson|safe }})"><i
                     class="ph-bold ph-copy"></i></button>
               </div>
             </div>
@@ -957,18 +1095,7 @@
 
       <!-- Author Books -->
       {% if author_books %}
-      <div class="horizontal-section animate-up delay-3">
-        <h4 class="mb-3 font-bold" style="color: var(--text-primary);">المزيد للمؤلف {{ book.author }}</h4>
-        <div class="hs-container">
-          {% for b in author_books %}
-          <a href="#" class="hs-item text-decoration-none">
-            <img src="{{ b.cover or b.thumbnail }}" class="hs-img" loading="lazy"
-              onerror="this.src='https://via.placeholder.com/150x220?text=No+Cover'">
-            <h6 class="text-white text-truncate text-sm">{{ b.title }}</h6>
-          </a>
-          {% endfor %}
-        </div>
-      </div>
+      {{ render_carousel_section('المزيد من أعمال ' ~ (book.author.split(',')[0] if book.author else 'المؤلف'), 'ph-fill ph-books', author_books, 'author-books', [], '#') }}
       {% endif %}
 
     </div>
@@ -1012,6 +1139,14 @@
 </div>
 
 <script>
+  function copyQuote(btn, text) {
+    navigator.clipboard.writeText(text);
+    const icon = btn.querySelector('i');
+    const originalClass = icon.className;
+    icon.className = 'ph-bold ph-check text-success';
+    setTimeout(() => { icon.className = originalClass; }, 2000);
+  }
+
   function openChatModal() {
     document.getElementById('chatModal').classList.add('active');
     document.getElementById('chatInput').focus();
