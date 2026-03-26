@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Elham - The Inspired Reader</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error-container": "#f76a80",
+                        "on-surface": "#353229",
+                        "surface-container-low": "#f9f3e9",
+                        "on-error": "#fff7f7",
+                        "background": "#fff9f0",
+                        "secondary-fixed-dim": "#ffc9b0",
+                        "error": "#ac3149",
+                        "primary-fixed-dim": "#bea5ff",
+                        "primary": "#6f26f6",
+                        "error-dim": "#770326",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#7b5913",
+                        "secondary-container": "#ffdbcb",
+                        "on-secondary-fixed": "#6e2b00",
+                        "on-background": "#353229",
+                        "secondary": "#a14200",
+                        "on-tertiary-container": "#634500",
+                        "tertiary-container": "#fed07f",
+                        "on-secondary-container": "#8b3800",
+                        "on-tertiary-fixed": "#4b3400",
+                        "surface": "#fff9f0",
+                        "primary-fixed": "#cab6ff",
+                        "surface-dim": "#e0d9ca",
+                        "on-tertiary": "#fff8f1",
+                        "surface-bright": "#fff9f0",
+                        "on-primary-container": "#4800b1",
+                        "surface-variant": "#e9e2d4",
+                        "on-tertiary-fixed-variant": "#6e4f07",
+                        "tertiary-fixed-dim": "#efc373",
+                        "on-surface-variant": "#635f54",
+                        "tertiary-fixed": "#fed07f",
+                        "tertiary-dim": "#6d4d05",
+                        "secondary-fixed": "#ffdbcb",
+                        "on-secondary": "#fff7f5",
+                        "inverse-on-surface": "#a19c95",
+                        "on-error-container": "#68001f",
+                        "inverse-surface": "#100e09",
+                        "surface-container": "#f4ede2",
+                        "on-primary-fixed-variant": "#5300c8",
+                        "surface-container-highest": "#e9e2d4",
+                        "secondary-dim": "#8d3900",
+                        "primary-container": "#cab6ff",
+                        "inverse-primary": "#9e79ff",
+                        "outline-variant": "#b7b1a4",
+                        "on-secondary-fixed-variant": "#9b3f00",
+                        "surface-container-high": "#eee7db",
+                        "outline": "#7f7a6f",
+                        "on-primary": "#fdf7ff",
+                        "on-primary-fixed": "#30007c",
+                        "primary-dim": "#6302ea",
+                        "surface-tint": "#6f26f6"
+                    },
+                    fontFamily: {
+                        "headline": ["Be Vietnam Pro"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fff9f0;
+            color: #353229;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="antialiased">
+<!-- TopNavBar -->
+<header class="fixed top-0 z-50 w-full glass-nav shadow-[0_40px_40px_-15px_rgba(53,50,41,0.06)]">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-[1440px] mx-auto">
+<div class="flex items-center gap-12">
+<a class="text-3xl font-black tracking-tighter text-[#6200EA]" href="#">Elham <span class="text-xl font-normal ml-1">إلهام</span></a>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-[#6200EA] transition-all duration-300" href="#">Discover</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-[#6200EA] transition-all duration-300" href="#">Categories</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-[#6200EA] transition-all duration-300" href="#">My Library</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-[#6200EA] transition-all duration-300" href="#">Series</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="bg-surface-container-high rounded-md py-2 pl-10 pr-4 border-none focus:ring-2 focus:ring-primary w-64 text-sm" placeholder="Search series, authors..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-slate-100/50 rounded-full transition-all active:scale-95">
+<span class="material-symbols-outlined text-slate-600">notifications</span>
+</button>
+<button class="p-2 hover:bg-slate-100/50 rounded-full transition-all active:scale-95">
+<span class="material-symbols-outlined text-slate-600">shopping_bag</span>
+</button>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold hover:shadow-lg transition-all active:scale-95">Subscribe</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="User Profile Avatar" data-alt="professional headshot of a smiling middle-eastern man with soft studio lighting and a clean neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo4FWlfeYmsX1gIZ_ziBoNVzigoCDVtKtzIkMaN7hKB-gsDxQ9pClD-poaUB5NC2iL2RKU7gw_g1Tt_P92q20Cba3uawPG5APGI9myTCHY4snSDvqsm8a01wF2HH24r_pAhBDWQyZ1ApIv3sM4Qeh0nxgTY5JgMAo9jztgDp95tDDsRE5gQs-QFNd_qTJjAK4krVVj_RNdBMi8bjzrY070AUEaU-AjnJK0qNLjnUJ9vtaX8wKObD2TF8UXglKB6NOi8c2q_CeFrZQ"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative min-h-[819px] flex items-center overflow-hidden bg-gradient-to-br from-slate-900 via-[#30007c] to-[#6f26f6] text-white py-20 px-8">
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDwgkC_cgKneCJu3L5F51pdugw_Kh-tpsSnvxSO6DiMRKAs0JIBdY2IJG9sKXmG3LtFd5s9daKUe9hO83VJftIB5gj_oiMWvRZyt0J3fAUmTzefj8Sd8LvQg4-nlEjqA8MmnT1H6Bq-Hf5GsBSSz-yFHv-xCCZDIlZ53BXD9sHuYu9kSTfR5A6Wbm-tgqQhhFXLRYuChQyteziY17Q1BCuDmLS_KY38_yDBeTMaCKiZVKziJ4UmDaKhmjHFVMABycHlc-7LooTZ9yI');"></div>
+<div class="max-w-[1440px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+<!-- Left: Book Cover (Asymmetric Float) -->
+<div class="lg:col-span-5 relative group">
+<div class="absolute -inset-4 bg-primary/20 blur-3xl rounded-full"></div>
+<div class="relative transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+<img alt="Elham Book Cover" class="rounded-lg shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] w-full max-w-md mx-auto aspect-[2/3] object-cover border-4 border-white/10" data-alt="dramatic vertical book cover featuring abstract mystical calligraphy in glowing gold against a deep indigo and purple swirling galaxy background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnrp-FeZY2PIlo_QhG_aJrm7ZMJxH9nur29yl_AI_Tnmq0T4rB1_qC8yC5MuE4Mv-6XUrD6jmep9zSWRxVhgF2KnRihu2rIZkfpsFTaSvwzt-aQspY4L7EodJ8pmJt5nP-I34O4jR5YRECrHouFkTxhMVLAi_RDEiOpFphhIw2f5VQT0J5AMW6JjvTSvm4FqbeWLwtFFn6tE6kdJITJztqt4vcEu83HInSPkGNiBtSar7mv_1zixO0QIoTxQg8FaQiyflZuxWCwaY"/>
+<div class="absolute bottom-6 right-[-20px] bg-secondary px-6 py-3 rounded-xl shadow-xl animate-bounce">
+<p class="text-xs font-bold uppercase tracking-widest text-on-secondary">New Release</p>
+</div>
+</div>
+</div>
+<!-- Right: Content -->
+<div class="lg:col-span-7 space-y-8">
+<div class="space-y-4">
+<div class="flex items-center gap-3">
+<span class="px-4 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/20">Philosophy &amp; Wisdom</span>
+<div class="flex items-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">star_half</span>
+<span class="ml-2 text-white/80 text-sm">(1,240 Reviews)</span>
+</div>
+</div>
+<h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-none">Elham</h1>
+<p class="text-2xl text-primary-container font-medium">by Dr. Kareem Al-Hassan</p>
+</div>
+<p class="text-xl text-slate-300 max-w-2xl leading-relaxed">
+                        A journey through the architectural wonders of the soul and the silent languages of inspiration. Discover why "Elham" has become the definitive guide for modern creators seeking a deeper connection to their craft.
+                    </p>
+<div class="flex items-center gap-8 py-4">
+<div>
+<p class="text-sm text-slate-400 uppercase tracking-widest font-bold">Hardcover</p>
+<p class="text-4xl font-black">$34.00</p>
+</div>
+<div class="h-12 w-[1px] bg-white/20"></div>
+<div>
+<p class="text-sm text-slate-400 uppercase tracking-widest font-bold">Digital</p>
+<p class="text-4xl font-black text-primary-fixed">$12.99</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-4 pt-4">
+<button class="bg-primary text-on-primary px-10 py-5 rounded-xl text-lg font-bold hover:shadow-[0_20px_40px_rgba(111,38,246,0.3)] transition-all active:scale-95 flex items-center gap-3">
+<span class="material-symbols-outlined">shopping_cart</span>
+                            Purchase Now
+                        </button>
+<button class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-5 rounded-xl text-lg font-bold hover:bg-white/20 transition-all active:scale-95 flex items-center gap-3">
+<span class="material-symbols-outlined">library_add</span>
+                            Add to Library
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Content Section: Bento Meta & Description -->
+<section class="max-w-[1440px] mx-auto px-8 -mt-16 relative z-10">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Description Card -->
+<div class="lg:col-span-2 bg-white rounded-xl p-12 shadow-xl border border-outline-variant/10">
+<h2 class="text-3xl font-bold mb-8 flex items-center gap-4">
+<span class="w-12 h-1 bg-primary rounded-full"></span>
+                        About the Book
+                    </h2>
+<div class="prose prose-lg text-on-surface-variant space-y-6 leading-relaxed">
+<p>
+                            "Elham" (Arabic for Inspiration) is more than just a collection of essays; it is a meticulously structured roadmap for the creative mind. Dr. Kareem Al-Hassan bridges the gap between traditional Eastern philosophy and modern psychological insights, offering a unique perspective on how we perceive and capture "the spark."
+                        </p>
+<p>
+                            The book is divided into four cardinal directions: The Silence of Observation, The Weight of Craft, The Dialogue with History, and The Architecture of Legacy. Each chapter challenges the reader to look beyond the surface of their everyday life and find the sacred in the mundane.
+                        </p>
+<blockquote class="bg-surface-container-low p-8 rounded-xl border-l-8 border-secondary italic font-body text-xl text-secondary">
+                            "Inspiration is not a lightning bolt that strikes the idle; it is a persistent sun that rises for those who have spent the night preparing their fields."
+                        </blockquote>
+<p>
+                            With over 400 pages of profound wisdom, exquisite illustrations, and practical exercises, Elham is designed to be a lifelong companion for poets, designers, leaders, and anyone who believes that to live is to create.
+                        </p>
+</div>
+</div>
+<!-- Meta Info Side Column -->
+<div class="space-y-8">
+<!-- Stats Grid -->
+<div class="bg-primary text-on-primary rounded-xl p-8 shadow-lg">
+<h3 class="text-xl font-bold mb-6">Key Specifications</h3>
+<div class="grid grid-cols-2 gap-6">
+<div>
+<p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Pages</p>
+<p class="text-2xl font-bold">412</p>
+</div>
+<div>
+<p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Language</p>
+<p class="text-2xl font-bold">EN / AR</p>
+</div>
+<div>
+<p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Publisher</p>
+<p class="text-lg font-bold leading-tight">Miras Press</p>
+</div>
+<div>
+<p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">ISBN</p>
+<p class="text-lg font-bold leading-tight">978-3-16</p>
+</div>
+</div>
+</div>
+<!-- Author Spotlight -->
+<div class="bg-white rounded-xl p-8 border border-outline-variant/10 shadow-lg">
+<div class="flex items-center gap-4 mb-6">
+<img alt="Dr. Kareem Al-Hassan" class="w-16 h-16 rounded-full object-cover" data-alt="close-up portrait of an elderly scholarly man with silver hair and glasses in a library setting with warm ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRK-yQfQJwsC_xQSsYzT81e71H72OiO5O4wcqB4PcCMqTHwMl9wsL3_q-fd1PapSSBnXL6oD9dg7bmfii8YhV3H8KT6jg2H_mqwBLtEDzOWLFU9XHhZJOD500Ht55fmPkoIsdRC3d5jEcsZ3M6KJRtUzewSWce1PzTjS9lX8sxxTUwDn3AVfVhNS5iZAuAe9DF6jyxFulokfJJV-GNSpDvWS6RMh0fP8nY_qDGg_s6MxEsQKVCZL3cogDkR-lmd8-x74UtezZxBm4"/>
+<div>
+<h4 class="font-bold">Dr. Kareem Al-Hassan</h4>
+<p class="text-sm text-slate-500">Author &amp; Philosopher</p>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed mb-4">
+                            Dr. Al-Hassan is a renowned thinker whose works have been translated into twelve languages. He explores the intersection of spirituality and modernity.
+                        </p>
+<a class="text-primary font-bold text-sm flex items-center gap-2 hover:gap-3 transition-all" href="#">
+                            View Author Portal
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Reviews Section -->
+<section class="max-w-[1440px] mx-auto px-8 py-24">
+<div class="flex justify-between items-end mb-12">
+<div>
+<h2 class="text-4xl font-black tracking-tight mb-2">Voices of Inspiration</h2>
+<p class="text-slate-500">Hear from our community of readers</p>
+</div>
+<button class="bg-surface-container-high px-8 py-3 rounded-xl font-bold hover:bg-surface-container-highest transition-all">Write a Review</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Review Card 1 -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5">
+<div class="flex items-center gap-3 mb-4">
+<div class="flex text-secondary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<span class="text-xs font-bold text-slate-400">2 days ago</span>
+</div>
+<p class="text-on-surface font-medium mb-6 italic leading-relaxed">"This book changed the way I approach my morning routine. The chapters on 'The Silence of Observation' are pure magic."</p>
+<div class="flex items-center gap-3">
+<img alt="Reviewer" class="w-10 h-10 rounded-full" data-alt="portrait of a young woman with a friendly smile and natural lighting in an outdoor garden setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0pq3Ftwm1toMBWL-TSmsOLU7G-jKczYgw8mpmo9IIjCPB9SC_oDYudjI-VDxGB2LEnlEWY_ggIuhn9X1ShmQ9u-GuSpNReQuceu6jRYla1c0qjQQyFqV6_bJIHQVcG8oGJ7QNNMuTJ7_1W5KWejwXuzGAY3-7cdaM9t2c4cPDs04oCO3uxvmtICVsRgcW3A97nhbhcSC9YE0LSST_g0UvXj_nExOkP7rn8HkL3jcpvTDThSSj0gOB80EG1wVioqaOff-dKuPU-vM"/>
+<div>
+<p class="font-bold text-sm">Sarah Jenkins</p>
+<p class="text-xs text-slate-500">Creative Director</p>
+</div>
+</div>
+</div>
+<!-- Review Card 2 -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5">
+<div class="flex items-center gap-3 mb-4">
+<div class="flex text-secondary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">star</span>
+</div>
+<span class="text-xs font-bold text-slate-400">1 week ago</span>
+</div>
+<p class="text-on-surface font-medium mb-6 italic leading-relaxed">"The blend of Arabic calligraphy and philosophical depth is stunning. A masterpiece of design and thought."</p>
+<div class="flex items-center gap-3">
+<img alt="Reviewer" class="w-10 h-10 rounded-full" data-alt="headshot of a man with a beard and intense eyes in soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOXBJswlKLi7K8xXiC6pKhsYE5dIWLnVOxmJjjclNlQ6mXZnnFi9YRHnHIOVrDnFwnKhMTrHgdQH-Lq2MH8FWNIuA0dhzlVybQspPiEAZb2u0K2IYvJUFlx2zSEXc8Z72m47ifmk6fccaMTKiMPScx-B1l66uDaU-yGU5U6n3Nx1AjrU-GtiaMBvFQDe4yvmqJPVYDDnJfVSh0iYI-WNu54d_SoXKvvAjeQ9yOfjWNlFuESo_jklNjFWk9E8UgXHAE2bY4lwn6sP4"/>
+<div>
+<p class="font-bold text-sm">Omar Farooq</p>
+<p class="text-xs text-slate-500">Architect</p>
+</div>
+</div>
+</div>
+<!-- Review Card 3 -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/5">
+<div class="flex items-center gap-3 mb-4">
+<div class="flex text-secondary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<span class="text-xs font-bold text-slate-400">2 weeks ago</span>
+</div>
+<p class="text-on-surface font-medium mb-6 italic leading-relaxed">"I've gifted this book to three of my colleagues already. It's the kind of literature the world needs right now."</p>
+<div class="flex items-center gap-3">
+<img alt="Reviewer" class="w-10 h-10 rounded-full" data-alt="professional portrait of a confident woman with braided hair and a warm expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpOYVfX_OgNm-Dl1BbyIjE72OXSbjonwYGuYW4PFnYkr9_KmUZEQILl3CGybwZJ9mmP-kxdx8R2F9QtrEOAy5CHcSacZnixdtLPQBp22DC3_Y4ark2vv4Iq4TbwKVtzWqNObV5hvR6y07olGRGgD6hacLZ6nMIm_NkYFXMYES9gGdScLyWTbIJTuPjQPt6qVBOeWxvc00zpQBmf93_1B46__3ikmCq_HhxZACiL7fWEkR6X6OdoDbsPZFKx5l5CpKJQWo_0--Ebwo"/>
+<div>
+<p class="font-bold text-sm">Elena Rodriguez</p>
+<p class="text-xs text-slate-500">Lead Poet</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Related Books Section -->
+<section class="bg-surface-container-low py-24 px-8">
+<div class="max-w-[1440px] mx-auto">
+<div class="flex items-center justify-between mb-12">
+<h2 class="text-4xl font-black tracking-tight">Expand Your Library</h2>
+<div class="flex gap-4">
+<button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+<!-- Related Book 1 -->
+<div class="group cursor-pointer">
+<div class="aspect-[2/3] overflow-hidden rounded-lg mb-4 shadow-md group-hover:shadow-2xl transition-all group-hover:-translate-y-2 duration-300">
+<img alt="Similar Title" class="w-full h-full object-cover" data-alt="minimalist book cover with a single golden feather on a dark charcoal background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_JOnGA_pXtwRCGg3CXCsRSXGjKGYkoPqg8vD-5DHRVTej1yqNdtOsH6njAU7mLPLfhoHfRdGQjPHeHhE0DgQk4vhrBJe2_BfaXaeUuNS0so1Lv2s80K0aXvUizaLwBj2JtJcS7v1RKoV8lEDwyDgfF2suIP-Xnmo59B3ervyFe43WhBQIBKRGOtyYjTLVb4lL0y_IRB2l9WlxrK40rZA4HcMwxhOLYmihA_x_QBejJwseLpnMVVItYdTC7z3XYNHFEUS6xnnKvnQ"/>
+</div>
+<h4 class="font-bold group-hover:text-primary transition-colors">The Silent Script</h4>
+<p class="text-sm text-slate-500">M.N. Khalid</p>
+</div>
+<!-- Related Book 2 -->
+<div class="group cursor-pointer">
+<div class="aspect-[2/3] overflow-hidden rounded-lg mb-4 shadow-md group-hover:shadow-2xl transition-all group-hover:-translate-y-2 duration-300">
+<img alt="Similar Title" class="w-full h-full object-cover" data-alt="abstract artistic book cover with colorful geometric shapes and modern typography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAos5U_rngpi_sfKIpqcGc2nnNXLvSFCLZKeWUC6fNsTYzHQaA8Eyfq9Yjc3lfQ72bKTPSI8YHT8yz2me9stgVBKTJmJ2QgvcGnGonmKeA4HnjBrbYhT6rI6u-KmAJ3CKo0A6LF6hII0wDEBH4bMDNhSFcY-LyIGYwQFTOiinFqxCUYLqxEVVwhWcQq8BAAkh9J28LccA890TuBbtCVuTX7itbxefH3groN2QhMMildWq9r0yNteH3F0_G3vtSb_2N-vWYXe9oWT5E"/>
+</div>
+<h4 class="font-bold group-hover:text-primary transition-colors">Paths of Echoes</h4>
+<p class="text-sm text-slate-500">Yara Zain</p>
+</div>
+<!-- Related Book 3 -->
+<div class="group cursor-pointer">
+<div class="aspect-[2/3] overflow-hidden rounded-lg mb-4 shadow-md group-hover:shadow-2xl transition-all group-hover:-translate-y-2 duration-300">
+<img alt="Similar Title" class="w-full h-full object-cover" data-alt="vintage style book cover with intricate botanical illustrations and gold foil details" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnZYmlJZ_C39b5MRUlUAcjmUDDBsnHZy57LzDN-OKrp25cFu79AyAeAoBVEDUB1Xzk9RDASJdrn-io0EWDrwLvbdqQVF437dZUUZwipH4BisZ44v6ronoqteKlFKeG5LBgb5Dd22wm5cV6wr5SpyZzi8Y_khbKsXsrWXHFlXd8ZP2VfBvxCHCx2r2FtaM6I-EwTmIU2GhSXE2aZPq2ckdx3WBD-lBJQKY6rs4Hr_F5dIdIN-pHM6a9Ty_MvKkUU7y308mutm8-oWk"/>
+</div>
+<h4 class="font-bold group-hover:text-primary transition-colors">Ancient Whispers</h4>
+<p class="text-sm text-slate-500">Dr. Amina Rao</p>
+</div>
+<!-- Related Book 4 -->
+<div class="group cursor-pointer">
+<div class="aspect-[2/3] overflow-hidden rounded-lg mb-4 shadow-md group-hover:shadow-2xl transition-all group-hover:-translate-y-2 duration-300">
+<img alt="Similar Title" class="w-full h-full object-cover" data-alt="contemporary book cover featuring a dramatic landscape at dusk with atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUJLKVLN3BaFr4Gjf8rLctjB4OX14UuIju1H6CGzfnDF22or3fp1I8o8HRtdYc_HFXr2fFB7PUTs4aVIqlz2YfPmIR82XIQXosCq7WDLME6U72RgGdbb4hzKkxpeIKsnGiYyJK6G9Je5zR1QIxZyP3-c_HTUukzkvPGROaDMDApXVM0vEwZ5LSoVjDdDykxYMUT7cS32F1sBgqozkTa9jcknbEq1PsxAUloAwCX5x7TlGgVOmEy9S1hnfQdWaZyCfbOeP-LPXdqlM"/>
+</div>
+<h4 class="font-bold group-hover:text-primary transition-colors">Soul Architect</h4>
+<p class="text-sm text-slate-500">Samuel Reed</p>
+</div>
+<!-- Related Book 5 -->
+<div class="group cursor-pointer hidden lg:block">
+<div class="aspect-[2/3] overflow-hidden rounded-lg mb-4 shadow-md group-hover:shadow-2xl transition-all group-hover:-translate-y-2 duration-300">
+<img alt="Similar Title" class="w-full h-full object-cover" data-alt="clean elegant book cover with a central white space surrounded by flowing ink washes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKyADoLotoEZk8McHiwfl5iIOzON-ozFQS26e-yxoVt3uojXm9c34AEoHGuicnWrTTQRcAcKdOAd-ijqCzes2ix1dXJX25lqtjZJuIvfOwALdI77mQ8pqfecXtlAsTZTUNz2pe0u44OalOMxx9DWqFrF_rNTzWWeNKiTBARo18mq9ws16aYmig5tBstra3RSIObWIwUL0uzC6w12tbeyNiGDZa-Qf1qvwk6dK5D1Eo04HBooiLGS9-z4LXj8aLJ9Yu-VpnNdcRVr4"/>
+</div>
+<h4 class="font-bold group-hover:text-primary transition-colors">The Pure Canvas</h4>
+<p class="text-sm text-slate-500">Li Wei</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-50 dark:bg-slate-950 full-width mt-20 pt-16 pb-8 border-t border-slate-200/50 dark:border-slate-800/50">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 px-12 max-w-[1440px] mx-auto">
+<div class="space-y-6">
+<a class="text-xl font-bold text-[#6200EA]" href="#">Elham (إلهام)</a>
+<p class="text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans'] text-sm leading-relaxed">
+                    Connecting curious minds with profound voices. Elham is a curated sanctuary for those who read not just for information, but for transformation.
+                </p>
+</div>
+<div>
+<h5 class="font-bold text-on-surface mb-6">Explore</h5>
+<ul class="space-y-4">
+<li><a class="text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans'] text-sm hover:text-[#a14200] dark:hover:text-[#ffb300] transition-colors" href="#">About Us</a></li>
+<li><a class="text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans'] text-sm hover:text-[#a14200] dark:hover:text-[#ffb300] transition-colors" href="#">Authors Portal</a></li>
+<li><a class="text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans'] text-sm hover:text-[#a14200] dark:hover:text-[#ffb300] transition-colors" href="#">Book Series</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-on-surface mb-6">Legal</h5>
+<ul class="space-y-4">
+<li><a class="text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans'] text-sm hover:text-[#a14200] dark:hover:text-[#ffb300] transition-colors" href="#">Terms of Service</a></li>
+<li><a class="text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans'] text-sm hover:text-[#a14200] dark:hover:text-[#ffb300] transition-colors" href="#">Privacy Policy</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-on-surface mb-6">Stay Connected</h5>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full bg-slate-200/50 flex items-center justify-center hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-sm">alternate_email</span></a>
+<a class="w-10 h-10 rounded-full bg-slate-200/50 flex items-center justify-center hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-sm">share</span></a>
+<a class="w-10 h-10 rounded-full bg-slate-200/50 flex items-center justify-center hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-sm">forum</span></a>
+</div>
+</div>
+</div>
+<div class="mt-16 pt-8 border-t border-slate-200/50 dark:border-slate-800/50 text-center">
+<p class="text-slate-500 dark:text-slate-400 font-['Plus_Jakarta_Sans'] text-sm tracking-wide">
+                © 2024 Elham (إلهام). Crafted for the inspired reader.
+            </p>
+</div>
+</footer>
+</body></html>

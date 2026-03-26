@@ -1,217 +1,200 @@
 {% extends "base.html" %}
 
-{% block title %}حسابي - ALHAM{% endblock %}
+{% block title %}Profile | {{ current_user.name }}{% endblock %}
 
 {% block content %}
-<div class="profile-page">
-    <!-- Hero Section with Gradient Background -->
-    <div class="profile-hero">
-        <div class="profile-hero-bg"></div>
-        <div class="profile-hero-content">
-            <!-- Profile Picture with Upload -->
-            <div class="profile-avatar-wrapper">
-                <form id="avatarForm" method="POST" action="{{ url_for('auth.profile') }}"
-                    enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="file" id="profilePictureInput" name="profile_picture" accept="image/*" hidden>
-                    <div class="profile-avatar" onclick="document.getElementById('profilePictureInput').click()">
+<main class="pt-24 pb-32 px-4 md:px-6 max-w-7xl mx-auto bg-background min-h-screen">
+    <!-- Header Section: Profile Area -->
+    <section class="mb-12">
+        <div class="bg-surface-container-low rounded-xl p-8 md:p-12 relative overflow-hidden shadow-sm border border-outline-variant/10">
+            <!-- Background Gradient Accent -->
+            <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-primary to-primary-container opacity-10"></div>
+            <div class="relative flex flex-col md:flex-row items-center md:items-end gap-8">
+                <div class="relative group cursor-pointer" onclick="document.getElementById('profilePictureInput').click()">
+                    <div class="w-40 h-40 md:w-48 md:h-48 rounded-full border-8 border-surface-container-lowest shadow-xl overflow-hidden -mt-4 md:mt-0 bg-surface-container-highest flex items-center justify-center transition-all group-hover:border-primary group-hover:scale-105 duration-500">
                         {% if current_user.profile_picture %}
-                        <img src="{{ current_user.profile_picture }}" alt="صورة الملف الشخصي" id="avatarPreview">
+                            <img src="{{ current_user.profile_picture }}" alt="{{ current_user.name }}" class="w-full h-full object-cover">
                         {% else %}
-                        <div class="avatar-placeholder" id="avatarPlaceholder">
-                            <i class="ph-fill ph-user"></i>
-                        </div>
-                        <img src="" alt="صورة الملف الشخصي" id="avatarPreview" style="display: none;">
+                            <span class="font-headline font-black text-6xl text-on-surface/20">{{ current_user.name[0]|upper }}</span>
                         {% endif %}
-                        <div class="avatar-overlay">
-                            <i class="ph ph-camera"></i>
-                            <span>تغيير الصورة</span>
+                    </div>
+                    <!-- Hover state -->
+                    <div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm rounded-full">
+                        <span class="material-symbols-outlined text-white text-4xl">photo_camera</span>
+                    </div>
+                </div>
+                
+                <div class="flex-1 text-center md:text-right">
+                    <h1 class="text-4xl md:text-5xl font-extrabold font-be-vietnam-pro text-on-surface mb-2">{{ current_user.name }}</h1>
+                    <p class="text-lg text-on-surface-variant max-w-2xl mb-6 leading-relaxed">
+                        {% if current_user.is_admin %}
+                        Digital Director | Architect of the Archive
+                        {% else %}
+                        Curator of Infinite Volumes | Indexer of Knowledge
+                        {% endif %}
+                    </p>
+                    <div class="flex flex-wrap justify-center md:justify-start gap-8">
+                        <div class="text-center">
+                            <span class="block text-2xl font-bold text-primary">{{ current_user.book_statuses|length }}</span>
+                            <span class="text-xs font-semibold text-outline uppercase tracking-wider">Volumes</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-2xl font-bold text-primary">{{ current_user.reviews.count() }}</span>
+                            <span class="text-xs font-semibold text-outline uppercase tracking-wider">Reviews</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-2xl font-bold text-primary">0</span>
+                            <span class="text-xs font-semibold text-outline uppercase tracking-wider">Followers</span>
                         </div>
                     </div>
-                </form>
-                <div class="avatar-glow"></div>
-            </div>
-
-            <!-- User Info -->
-            <div class="profile-info">
-                <h1 class="profile-name">{{ current_user.name }}</h1>
-                <p class="profile-email">
-                    <i class="ph ph-envelope-simple"></i>
-                    {{ current_user.email }}
-                </p>
-                <div class="profile-badge">
-                    <i class="ph-fill ph-star"></i>
-                    <span>عضو نشط</span>
+                </div>
+                
+                <div class="flex gap-3">
+                    <a href="{{ url_for('auth.logout') }}" class="bg-surface-container-highest text-on-surface px-6 py-3 rounded-full font-bold hover:bg-error/10 hover:text-error transition-all active:scale-95 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">logout</span>
+                        Relinquish
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="profile-container">
-        <!-- Stats Cards -->
-        <div class="profile-stats">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="ph-fill ph-books"></i>
-                </div>
-                <div class="stat-content">
-                    <span class="stat-value">{{ current_user.books.count() if current_user.books else 0 }}</span>
-                    <span class="stat-label">كتبي</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon star">
-                    <i class="ph-fill ph-heart"></i>
-                </div>
-                <div class="stat-content">
-                    <span class="stat-value">{{ interests|length if interests else 0 }}</span>
-                    <span class="stat-label">اهتمامات</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon reviews">
-                    <i class="ph-fill ph-chat-circle-text"></i>
-                </div>
-                <div class="stat-content">
-                    <span class="stat-value">{{ current_user.reviews.count() if current_user.reviews else 0 }}</span>
-                    <span class="stat-label">مراجعات</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content — Single Column -->
-        <div class="profile-grid">
-            <!-- Account Settings Card -->
-            <div class="profile-card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="ph ph-user-circle"></i>
-                    </div>
-                    <h2>المعلومات الشخصية</h2>
-                </div>
-
-                <form method="POST" action="{{ url_for('auth.profile') }}" class="profile-form"
-                    enctype="multipart/form-data">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Sidebar -->
+        <aside class="lg:col-span-4 space-y-6">
+            <!-- Form Area -->
+            <div class="bg-white rounded-xl p-8 border border-outline-variant/10 shadow-lg">
+                <h3 class="text-xl font-bold mb-8 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">fingerprint</span>
+                    Identity Core
+                </h3>
+                
+                <form method="POST" action="{{ url_for('auth.profile') }}" enctype="multipart/form-data" class="space-y-8">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" id="profilePictureInput" name="profile_picture" accept="image/*" hidden onchange="this.form.submit()">
 
-                    <div class="form-group">
-                        <label for="name">
-                            <i class="ph ph-user"></i>
-                            الاسم الكامل
-                        </label>
-                        <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
+                    <div class="space-y-2">
+                        <label class="font-label text-[10px] uppercase font-black text-secondary tracking-widest">Designation</label>
+                        <input type="text" name="name" value="{{ current_user.name }}" required 
+                               class="w-full bg-surface-container-low border-none rounded-xl px-4 py-3 font-headline text-lg focus:ring-2 focus:ring-primary outline-none transition-all">
                     </div>
 
-                    <div class="form-group">
-                        <label for="email">
-                            <i class="ph ph-at"></i>
-                            البريد الإلكتروني
-                        </label>
-                        <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
+                    <div class="space-y-2">
+                        <label class="font-label text-[10px] uppercase font-black text-secondary tracking-widest">Digital Coordinate</label>
+                        <input type="email" name="email" value="{{ current_user.email }}" required 
+                               class="w-full bg-surface-container-low border-none rounded-xl px-4 py-3 font-headline text-lg focus:ring-2 focus:ring-primary outline-none transition-all">
                     </div>
 
-                    <div class="form-divider">
-                        <span>تغيير كلمة المرور</span>
+                    <div class="pt-4 border-t border-on-surface/5">
+                        <p class="text-[10px] font-black uppercase text-outline mb-6 tracking-widest">Security Override</p>
+                        <div class="space-y-6">
+                            <div class="space-y-2">
+                                <label class="font-label text-[10px] uppercase font-black text-on-surface-variant tracking-widest">Current Cipher</label>
+                                <input type="password" name="current_password" placeholder="••••••••"
+                                       class="w-full bg-surface-container-low border-none rounded-xl px-4 py-3 font-headline text-lg focus:ring-2 focus:ring-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="font-label text-[10px] uppercase font-black text-on-surface-variant tracking-widest">New Cipher String</label>
+                                <input type="password" name="new_password" placeholder="••••••••"
+                                       class="w-full bg-surface-container-low border-none rounded-xl px-4 py-3 font-headline text-lg focus:ring-2 focus:ring-primary outline-none transition-all">
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="current_password">
-                            <i class="ph ph-lock"></i>
-                            كلمة المرور الحالية
-                        </label>
-                        <input type="password" id="current_password" name="current_password"
-                            placeholder="اتركها فارغة إذا لم ترد التغيير">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="new_password">
-                            <i class="ph ph-lock-key"></i>
-                            كلمة المرور الجديدة
-                        </label>
-                        <input type="password" id="new_password" name="new_password"
-                            placeholder="أدخل كلمة المرور الجديدة">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-save">
-                        <i class="ph ph-check-circle"></i>
-                        حفظ التغييرات
+                    <button type="submit" class="w-full bg-primary text-on-primary py-4 rounded-xl font-bold hover:shadow-xl hover:translate-y-[-2px] active:scale-95 transition-all">
+                        Commit Identity Changes
                     </button>
                 </form>
             </div>
 
-            <!-- Quick Actions Card -->
-            <div class="profile-card actions-card">
-                <div class="card-header">
-                    <div class="card-icon actions-icon">
-                        <i class="ph ph-lightning"></i>
-                    </div>
-                    <h2>إجراءات سريعة</h2>
+            <!-- Reading Goals -->
+            <div class="bg-surface-container rounded-xl p-8 shadow-sm">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">flag</span>
+                    Neural Acquisition Goal
+                </h3>
+                <div class="mb-2 flex justify-between text-sm font-bold">
+                    <span>18 of 25 nodes</span>
+                    <span class="text-primary">72%</span>
                 </div>
-
-                <div class="quick-actions">
-                    <a href="{{ url_for('main.books') }}" class="action-item">
-                        <div class="action-icon">
-                            <i class="ph ph-books"></i>
-                        </div>
-                        <div class="action-content">
-                            <span class="action-title">مكتبتي</span>
-                            <span class="action-desc">تصفح كتبك المحفوظة</span>
-                        </div>
-                        <i class="ph ph-caret-left action-arrow"></i>
-                    </a>
-
-                    <a href="{{ url_for('explore.index') }}" class="action-item">
-                        <div class="action-icon explore">
-                            <i class="ph ph-compass"></i>
-                        </div>
-                        <div class="action-content">
-                            <span class="action-title">استكشف</span>
-                            <span class="action-desc">اكتشف كتب جديدة</span>
-                        </div>
-                        <i class="ph ph-caret-left action-arrow"></i>
-                    </a>
-
-                    <a href="{{ url_for('public.list_books') }}" class="action-item">
-                        <div class="action-icon library">
-                            <i class="ph ph-bank"></i>
-                        </div>
-                        <div class="action-content">
-                            <span class="action-title">المكتبة العامة</span>
-                            <span class="action-desc">تصفح المكتبة الكاملة</span>
-                        </div>
-                        <i class="ph ph-caret-left action-arrow"></i>
-                    </a>
-
-                    <a href="{{ url_for('public.analytics') }}" class="action-item">
-                        <div class="action-icon analytics">
-                            <i class="ph ph-chart-line"></i>
-                        </div>
-                        <div class="action-content">
-                            <span class="action-title">رادار القراءة</span>
-                            <span class="action-desc">تحليل عاداتك في القراءة</span>
-                        </div>
-                        <i class="ph ph-caret-left action-arrow"></i>
-                    </a>
+                <div class="h-3 bg-surface-container-highest rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-primary to-primary-container w-[72%] rounded-full"></div>
                 </div>
+                <p class="mt-4 text-xs text-on-surface-variant leading-tight font-medium italic">Protocol Status: Optimal. You are 2 nodes ahead of schedule.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="lg:col-span-8 space-y-8">
+            <!-- Tabs -->
+            <div class="flex gap-8 border-b border-outline-variant/20 overflow-x-auto no-scrollbar">
+                <button class="pb-4 text-primary font-bold border-b-4 border-primary px-2 transition-all whitespace-nowrap">My Reviews</button>
+                <button class="pb-4 text-on-surface-variant font-semibold hover:text-primary px-2 transition-all whitespace-nowrap">Archives</button>
+                <button class="pb-4 text-on-surface-variant font-semibold hover:text-primary px-2 transition-all whitespace-nowrap">Neural Patterns</button>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('admin.dashboard') }}" class="pb-4 text-secondary font-bold hover:text-primary px-2 transition-all whitespace-nowrap">Admin Deck</a>
+                {% endif %}
             </div>
 
-            <!-- Danger Zone Card -->
-            <div class="profile-card danger-card">
-                <div class="card-header">
-                    <div class="card-icon danger-icon">
-                        <i class="ph ph-warning-circle"></i>
+            <!-- Reviews Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {% if user_reviews %}
+                    {% for review in user_reviews %}
+                    <div class="bg-white rounded-xl p-4 flex gap-5 shadow-sm border border-outline-variant/5 hover:shadow-md transition-all group">
+                        <div class="w-20 h-28 rounded-md overflow-hidden flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300 bg-surface-container">
+                            {% set br = review.book %}
+                            {% if br and br.cover_url %}
+                                <img alt="Book" class="w-full h-full object-cover" src="{{ br.cover_url }}">
+                            {% else %}
+                                <div class="w-full h-full flex items-center justify-center bg-surface-container-highest text-on-surface/20">
+                                    <span class="material-symbols-outlined">book</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex flex-col justify-between py-1 flex-1">
+                            <div>
+                                <h4 class="font-bold text-sm mb-1 line-clamp-1 truncate">{{ br.title if br else 'Unknown Volume' }}</h4>
+                                <div class="flex text-secondary scale-75 origin-left mb-2">
+                                    {% for i in range(5) %}
+                                    <span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' {{ 1 if review.rating > i else 0 }};">star</span>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-xs text-on-surface-variant line-clamp-3 italic leading-relaxed">
+                                    "{{ review.review_text|truncate(80) if review.review_text else 'No detailed synthesis provided.' }}"
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <h2>منطقة الخطر</h2>
-                </div>
-
-                <p class="danger-text">هذه الإجراءات لا يمكن التراجع عنها</p>
-
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
-                    <i class="ph ph-sign-out"></i>
-                    تسجيل الخروج
-                </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-span-full py-20 text-center bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant/20">
+                        <span class="material-symbols-outlined text-outline-variant text-6xl mb-4 block">edit_note</span>
+                        <p class="font-headline font-black text-outline-variant uppercase tracking-widest text-xs">No activity logs detected</p>
+                    </div>
+                {% endif %}
             </div>
+            
+            {% if current_user.reviews.count() > 6 %}
+            <div class="flex justify-center pt-8">
+                <button class="bg-surface-container-high text-primary px-8 py-3 rounded-full font-bold hover:bg-primary hover:text-on-primary transition-all active:scale-95">Explore Full Narrative Archive</button>
+            </div>
+            {% endif %}
+
+            <!-- Interests Summary -->
+            {% if interests %}
+            <div class="bg-primary/5 rounded-xl p-8 border border-primary/10">
+                <h3 class="font-headline font-black text-primary text-xs uppercase tracking-[0.4em] mb-6">Semantic Affinities</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for pref in interests %}
+                    <span class="bg-white px-4 py-1 rounded-full text-xs font-bold text-on-surface shadow-sm border border-primary/10">
+                        {{ pref.topic }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
-</div>
+</main>
 {% endblock %}

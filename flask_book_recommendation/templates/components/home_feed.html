@@ -1,460 +1,199 @@
-{% from "components/macros.html" import render_book_card, render_carousel_section, render_stars %}
-
-{# [3] الاصناف (Categories Grid) #}
-<div data-aos="fade-up" data-aos-delay="150">
-    <!-- <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="lux-group-title mb-0">الاصناف</h3>
-    </div> -->
-    <div class="lux-section-header mb-3">
-        <div class="lux-section-title-row">
-            <i class="ph-fill ph-squares-four" style="color:var(--lux-gold);font-size:1.1rem;"></i>
-            <h2
-                style="font-family:var(--lux-font-display, serif);font-weight:600;font-size:1.5rem;color:var(--lux-cream, #f5ead4);letter-spacing:0.02em;margin:0;">
-                الاصناف
+<!-- Because you searched for Section -->
+{% if dynamic_search_books is defined and dynamic_search_books and dynamic_search_books|length > 0 %}
+<section class="max-w-[1440px] mx-auto px-8 mb-20">
+    <div class="bg-[#fdf2d7] rounded-[40px] p-10 md:p-16 flex flex-col lg:flex-row items-center gap-16 border border-[#f5e1b9]">
+        <!-- Left Side: Content -->
+        <div class="lg:w-2/5">
+            <h2 class="text-5xl md:text-6xl font-black text-[#5e4518] mb-6 leading-tight font-headline">
+                Because you searched for <br>
+                <span class="italic text-[#a86e24]">"{{ last_search_term }}"</span>
             </h2>
+            <p class="text-[#8b6e3f] text-lg font-medium mb-10 max-w-md leading-relaxed">
+                We noticed you're on a journey of improvement. These hand-picked titles might be the next step in your evolution.
+            </p>
+            <button class="px-10 py-5 bg-[#7b541d] text-white rounded-2xl font-bold text-lg hover:bg-[#634317] transition-all hover:shadow-xl hover:-translate-y-1">
+                Refine My Journey
+            </button>
+        </div>
+
+        <!-- Right Side: Grid of Books -->
+        <div class="lg:w-3/5 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            {% for book in dynamic_search_books[:4] %}
+            <div class="bg-white rounded-[32px] p-6 flex items-center gap-6 shadow-sm hover:shadow-md transition-shadow group cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.google_id or book.id) }}';">
+                <!-- Book Cover Container -->
+                <div class="w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-[#e2e8f0] relative">
+                    <img src="{{ book.cover_url or book.cover or 'https://placehold.co/200x300/f8fafc/7b541d?text=Growth' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                </div>
+                <!-- Book Info -->
+                <div class="flex flex-col">
+                    <h3 class="text-xl font-bold text-[#1a1a1a] mb-1 line-clamp-1">{{ book.title }}</h3>
+                    <p class="text-[#6b7280] text-sm mb-3 font-medium">{{ book.author or "Author" }}</p>
+                    <span class="inline-flex items-center px-3 py-1 bg-[#f3edff] text-[#7c3aed] text-[10px] font-black uppercase tracking-wider rounded-full self-start">
+                        {{ [98, 94, 88, 82, 79]|random }}% Match
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Binge-Worthy Series / Folio Groups -->
+{% if featured_lists is defined and featured_lists and featured_lists|length > 0 %}
+<section class="max-w-[1440px] mx-auto px-8 py-20">
+    <div class="flex flex-col md:flex-row items-end justify-between mb-16 gap-4">
+        <div>
+            <h2 class="text-3xl font-black text-on-surface tracking-tight font-headline uppercase">Curated Collections</h2>
+            <p class="text-on-surface-variant mt-2 font-medium">Immerse yourself in handpicked worlds that don't end on the last page.</p>
+        </div>
+        <a href="{{ url_for('public.list_books') }}" class="text-primary font-bold hover:gap-2 transition-all flex items-center">
+            <span>Explore All</span>
+            <span class="material-symbols-outlined text-sm ml-1" data-icon="arrow_forward">arrow_forward</span>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+        {% for flist in featured_lists[:3] %}
+        <!-- Series Card -->
+        <div class="group cursor-pointer" onclick="window.location.href='{{ flist.url }}';">
+            <div class="flex items-end justify-center h-72 mb-8 relative rounded-2xl bg-surface-container-high group-hover:bg-primary-container/30 transition-colors border border-surface-container-highest">
+                {% if flist.covers and flist.covers|length >= 1 %}
+                    {% set c1 = flist.covers[0] %}
+                    {% set c2 = flist.covers[1] if flist.covers|length > 1 else c1 %}
+                    {% set c3 = flist.covers[2] if flist.covers|length > 2 else c2 %}
+                    
+                    <img alt="Series Cover 1" class="h-56 w-36 object-cover rounded-lg shadow-2xl relative z-30 translate-x-12 translate-y-4 group-hover:translate-y-0 transition-all duration-500" src="{{ c1 }}">
+                    <img alt="Series Cover 2" class="h-52 w-32 object-cover rounded-lg shadow-xl relative z-20 translate-x-4 opacity-80" src="{{ c2 }}">
+                    <img alt="Series Cover 3" class="h-48 w-28 object-cover rounded-lg shadow-lg relative z-10 -translate-x-4 opacity-60" src="{{ c3 }}">
+                {% else %}
+                    <!-- Fallbacks if no covers -->
+                    <div class="h-56 w-36 bg-surface-variant rounded-lg shadow-2xl relative z-30 translate-x-12 translate-y-4 group-hover:translate-y-0 transition-all duration-500"></div>
+                {% endif %}
+            </div>
+            
+            <h3 class="text-2xl font-black text-on-surface mb-2 font-headline group-hover:text-primary transition-colors">{{ flist.title }}</h3>
+            <p class="text-on-surface-variant font-bold text-sm flex items-center gap-2">
+                <span class="px-3 py-1 bg-surface-container text-xs rounded-full uppercase tracking-widest">{{ flist.count }} Volumes</span>
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{# Readers Like You (Similar Minds) #}
+{% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
+<section class="max-w-[1440px] mx-auto px-8 py-20 border-t border-surface-container-highest mt-12">
+    <div class="text-center mb-16">
+        <span class="text-primary font-black text-[10px] tracking-[0.2em] uppercase mb-4 block">Parallel Curators</span>
+        <h2 class="text-4xl font-black text-on-surface font-headline">Because You Both Read...</h2>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+        {% for book in similar_minds[:6] %}
+        <div class="group cursor-pointer flex flex-col" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+            <div class="aspect-[2/3] bg-surface-container overflow-hidden rounded-xl shadow-md mb-4 relative">
+                <img src="{{ book.cover_url or book.cover or 'https://placehold.co/200x300/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors flex items-center justify-center">
+                    <span class="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-primary backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-sm" data-icon="visibility">visibility</span></span>
+                </div>
+            </div>
+            <h4 class="font-bold text-on-surface text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">{{ book.title }}</h4>
+            <p class="text-on-surface-variant text-xs">{{ book.author }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{# Neural Engine Highlights #}
+{% if neural_sections is defined and neural_sections %}
+<section class="max-w-[1440px] mx-auto px-8 py-20 bg-[#f8fafc] rounded-[60px] my-20">
+    <div class="flex items-center gap-12 mb-16">
+        <div class="w-1 bg-[#7c3aed] self-stretch rounded-full"></div>
+        <div>
+            <span class="text-[#7c3aed] font-black text-[10px] tracking-[0.3em] uppercase block mb-2">Neural Core Intelligence</span>
+            <h2 class="text-5xl font-black text-[#1e293b] font-headline">Engine Results</h2>
         </div>
     </div>
 
-    <style>
-        /* Base modifications for slider */
-        .cat-slider-track {
-            display: flex;
-            gap: 1.5rem;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            scroll-snap-type: x mandatory;
-            padding: 1rem 0 2rem;
-            direction: rtl;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .cat-slider-track::-webkit-scrollbar {
-            display: none;
-        }
-
-        .cat-glass-card {
-            position: relative;
-            height: 140px;
-            flex: 0 0 240px;
-            border-radius: 20px;
-            overflow: hidden;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            color: white;
-            padding: 0 2rem;
-            scroll-snap-align: start;
-        }
-
-        .cat-glass-card::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
-            z-index: 1;
-        }
-
-        .cat-glass-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-            border-color: rgba(201, 168, 76, 0.4);
-            background: rgba(201, 168, 76, 0.08);
-            color: var(--lux-gold-light);
-        }
-
-        .cat-glass-card:hover .cat-icon {
-            transform: scale(1.1) rotate(5deg);
-            color: var(--lux-gold);
-        }
-
-        .cat-glass-title {
-            position: relative;
-            z-index: 2;
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin: 0;
-            font-family: var(--lux-font-body);
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-
-        .cat-icon {
-            position: absolute;
-            left: -15px;
-            bottom: -20px;
-            font-size: 6rem;
-            opacity: 0.15;
-            z-index: 0;
-            transition: all 0.4s ease;
-            color: #fff;
-        }
-    </style>
-
-    <div class="carousel-container-ng" style="direction: rtl;">
-        <button class="carousel-btn-ng next" style="right: -20px; z-index: 20;"
-            onclick="document.getElementById('cat-slider').scrollBy({left: -280, behavior: 'smooth'})">
-            <i class="ph ph-caret-right"></i>
-        </button>
-        <button class="carousel-btn-ng prev" style="left: -20px; z-index: 20;"
-            onclick="document.getElementById('cat-slider').scrollBy({left: 280, behavior: 'smooth'})">
-            <i class="ph ph-caret-left"></i>
-        </button>
-
-        <div class="cat-slider-track" id="cat-slider">
-            <a href="{{ url_for('public.list_books', cat='Fiction') }}" class="cat-glass-card">
-                <i class="ph-fill ph-flying-saucer cat-icon"></i>
-                <h3 class="cat-glass-title">خيالي</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Mystery') }}" class="cat-glass-card">
-                <i class="ph-fill ph-detective cat-icon"></i>
-                <h3 class="cat-glass-title">تشويق</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Adventure') }}" class="cat-glass-card">
-                <i class="ph-fill ph-compass cat-icon"></i>
-                <h3 class="cat-glass-title">مغامرة</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Magic') }}" class="cat-glass-card">
-                <i class="ph-fill ph-magic-wand cat-icon"></i>
-                <h3 class="cat-glass-title">سحر</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='History') }}" class="cat-glass-card">
-                <i class="ph-fill ph-scroll cat-icon"></i>
-                <h3 class="cat-glass-title">تاريخ</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Science') }}" class="cat-glass-card">
-                <i class="ph-fill ph-flask cat-icon"></i>
-                <h3 class="cat-glass-title">علوم</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Technology') }}" class="cat-glass-card">
-                <i class="ph-fill ph-cpu cat-icon"></i>
-                <h3 class="cat-glass-title">تكنولوجيا</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Psychology') }}" class="cat-glass-card">
-                <i class="ph-fill ph-brain cat-icon"></i>
-                <h3 class="cat-glass-title">علم النفس</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Biography') }}" class="cat-glass-card">
-                <i class="ph-fill ph-user-circle cat-icon"></i>
-                <h3 class="cat-glass-title">سيرة ذاتية</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Romance') }}" class="cat-glass-card">
-                <i class="ph-fill ph-heart cat-icon"></i>
-                <h3 class="cat-glass-title">رومانسية</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Self Help') }}" class="cat-glass-card">
-                <i class="ph-fill ph-trend-up cat-icon"></i>
-                <h3 class="cat-glass-title">تطوير الذات</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Business') }}" class="cat-glass-card">
-                <i class="ph-fill ph-briefcase cat-icon"></i>
-                <h3 class="cat-glass-title">أعمال</h3>
-            </a>
-            <a href="{{ url_for('public.list_books', cat='Art') }}" class="cat-glass-card">
-                <i class="ph-fill ph-palette cat-icon"></i>
-                <h3 class="cat-glass-title">فنون</h3>
-            </a>
-        </div>
-
-        {# ═══════════════════════════════════════════════════════════════════════
-        GROUP 1: ✨ اكتشافات ذكية (Smart Discoveries)
-        ═══════════════════════════════════════════════════════════════════════ #}
-
-        {# Luxury Group Header — Smart Discoveries #}
-        <div class="lux-group-header" data-aos="fade-up">
-            <div class="lux-group-eyeline">
-                <div class="lux-group-line"></div>
-                <i class="ph-fill ph-sparkle" style="color:var(--lux-gold);font-size:0.7rem;"></i>
-                <div class="lux-group-line right"></div>
+    <div class="space-y-24">
+        {% for key, section in neural_sections.items() %}
+        {% if section.books %}
+        <div class="space-y-10">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                <h3 class="text-2xl font-bold text-slate-800 uppercase tracking-tight">{{ section.title }}</h3>
+                <span class="text-[10px] font-black bg-slate-100 px-3 py-1 rounded text-slate-500">TAG: {{ key|upper }}</span>
             </div>
-            <h3 class="lux-group-title">اكتشافات ذكية</h3>
-            <p class="lux-group-desc">توصيات مصممة خصيصاً لك بواسطة الذكاء الاصطناعي</p>
-        </div>
-
-        {# [1] مُقترحة لك #}
-        {% set rfy = neural_sections.get('recommended_for_you', []) if neural_sections is defined else [] %}
-        {% if rfy and rfy|length > 0 %}
-        <div data-aos="fade-up" data-aos-delay="50">
-            {{ render_carousel_section(
-            title='مُقترحة لك',
-            icon='ph-fill ph-sparkle',
-            books=rfy,
-            id_prefix='rfy',
-            badges=[],
-            view_all_url=url_for('main.browse', category='unified'),
-            color='gold'
-            ) }}
-        </div>
-        {% endif %}
-
-        {# [1.5] اكتشافات عبر الشبكة (Graph Discovery) #}
-        {% set graph_books = neural_sections.get('graph_discovery', []) if neural_sections is defined else [] %}
-        {% if graph_books and graph_books|length > 0 %}
-        <div data-aos="fade-up" data-aos-delay="75">
-            {{ render_carousel_section(
-            title='اكتشافات عبر الشبكة',
-            icon='ph-fill ph-graph',
-            books=graph_books,
-            id_prefix='graph_discovery',
-            badges=[],
-            view_all_url=url_for('main.browse', category='unified'),
-            color='gold'
-            ) }}
+            <div class="flex overflow-x-auto gap-8 pb-8 no-scrollbar">
+                {% for book in section.books[:8] %}
+                <div class="shrink-0 w-48 group cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+                    <div class="aspect-[2/3] bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-4 relative">
+                        <!-- Rank Badge -->
+                        <div class="absolute top-2 left-2 z-20 bg-slate-900/80 backdrop-blur-sm text-white font-bold text-[10px] w-6 h-6 flex items-center justify-center rounded-full border border-white/20">
+                            {{ loop.index }}
+                        </div>
+                        <img src="{{ book.cover_url or 'https://placehold.co/200x300/f1f5f9/64748b?text=NEURAL' }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center text-[#7c3aed] opacity-0 group-hover:opacity-100 transition-all">
+                            <span class="material-symbols-outlined text-sm">bolt</span>
+                        </div>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-1 line-clamp-1">{{ book.title }}</h4>
+                </div>
+                {% endfor %}
+            </div>
         </div>
         {% endif %}
-
-        {# [2] اختيارات مميزة #}
-        {% if deep_learning_books is defined and deep_learning_books and deep_learning_books|length > 0 %}
-        <div data-aos="fade-up" data-aos-delay="100">
-            {{ render_carousel_section(
-            title='اختيارات مميزة',
-            icon='ph-fill ph-star',
-            books=deep_learning_books,
-            id_prefix='deep_learning',
-            badges=[],
-            view_all_url=url_for('main.browse', category='unified'),
-            color='gold'
-            ) }}
-        </div>
-        {% endif %}
-
-
-
-
+        {% endfor %}
     </div>
+</section>
+{% endif %}
 
-    {# ═══════════════════════════════════════════════════════════════════════
-    FEATURED LISTS — قوائم مميزة (Goodreads-style)
-    ═══════════════════════════════════════════════════════════════════════ #}
-    {% if featured_lists is defined and featured_lists and featured_lists|length > 0 %}
-    <div data-aos="fade-up" data-aos-delay="200" style="margin-top: 2rem;">
-        <style>
-            .fl-slider-track {
-                display: flex;
-                gap: 1.25rem;
-                overflow-x: auto;
-                scroll-behavior: smooth;
-                scroll-snap-type: x mandatory;
-                padding: 1rem 0.5rem 2rem;
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-            }
-
-            .fl-slider-track::-webkit-scrollbar {
-                display: none;
-            }
-
-            .fl-card {
-                flex: 0 0 300px;
-                scroll-snap-align: start;
-                text-decoration: none;
-                color: white;
-                border-radius: 20px;
-                overflow: hidden;
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(255, 255, 255, 0.06);
-                backdrop-filter: blur(20px);
-                transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            }
-
-            .fl-card:hover {
-                transform: translateY(-8px);
-                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(201, 168, 76, 0.2);
-                border-color: rgba(201, 168, 76, 0.4);
-                background: rgba(255, 255, 255, 0.05);
-            }
-
-            /* Stacked covers area — Goodreads style */
-            .fl-covers {
-                position: relative;
-                height: 200px;
-                padding: 1.25rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow: hidden;
-                border-radius: 20px 20px 0 0;
-                background: radial-gradient(circle at top right, rgba(255,255,255,0.1), transparent);
-            }
-
-            .fl-cover-img {
-                position: absolute;
-                width: 100px;
-                height: 150px;
-                object-fit: cover;
-                border-radius: 8px;
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-                transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            }
-
-            /* Fan layout for 4 covers */
-            .fl-cover-img:nth-child(1) {
-                left: 15px;
-                bottom: 20px;
-                z-index: 4;
-                transform: rotate(-6deg);
-            }
-
-            .fl-cover-img:nth-child(2) {
-                left: 70px;
-                bottom: 25px;
-                z-index: 3;
-                transform: rotate(-2deg);
-            }
-
-            .fl-cover-img:nth-child(3) {
-                left: 125px;
-                bottom: 22px;
-                z-index: 2;
-                transform: rotate(3deg);
-            }
-
-            .fl-cover-img:nth-child(4) {
-                left: 180px;
-                bottom: 18px;
-                z-index: 1;
-                transform: rotate(7deg);
-                opacity: 0.85;
-            }
-
-            .fl-card:hover .fl-cover-img:nth-child(1) {
-                transform: rotate(-4deg) translateY(-8px) scale(1.05);
-            }
-
-            .fl-card:hover .fl-cover-img:nth-child(2) {
-                transform: rotate(0deg) translateY(-10px) scale(1.05);
-            }
-
-            .fl-card:hover .fl-cover-img:nth-child(3) {
-                transform: rotate(2deg) translateY(-6px) scale(1.05);
-            }
-
-            .fl-info {
-                padding: 1.25rem;
-                display: flex;
-                flex-direction: column;
-                gap: 0.4rem;
-                background: linear-gradient(0deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%);
-            }
-
-            .fl-title {
-                font-family: var(--lux-font-body, 'Cairo', sans-serif);
-                font-size: 1.15rem;
-                font-weight: 700;
-                color: var(--lux-cream, #f5ead4);
-                margin: 0;
-                line-height: 1.4;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-            }
-
-            .fl-count {
-                font-size: 0.85rem;
-                color: rgba(255, 255, 255, 0.5);
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                gap: 0.3rem;
-            }
-        </style>
-
-        <div class="lux-section-header mb-3">
-            <div class="lux-section-title-row">
-                <i class="ph-fill ph-list-star" style="color:var(--lux-gold);font-size:1.1rem;"></i>
-                <h2
-                    style="font-family:var(--lux-font-display, serif);font-weight:600;font-size:1.5rem;color:var(--lux-cream, #f5ead4);letter-spacing:0.02em;margin:0;">
-                    قوائم مميزة
-                </h2>
-            </div>
+{# Deep Learning + Mood AI Bento #}
+<div class="max-w-[1440px] mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 pb-24">
+    {% if deep_learning_books %}
+    <div class="bg-slate-900 rounded-[40px] p-12 text-white relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-12 opacity-10">
+            <span class="material-symbols-outlined text-[120px]">psychology</span>
         </div>
-
-        <div class="carousel-container-ng" style="direction: rtl;">
-            <button class="carousel-btn-ng next" style="right: -20px; z-index: 20;"
-                onclick="document.getElementById('fl-slider').scrollBy({left: -340, behavior: 'smooth'})">
-                <i class="ph ph-caret-right"></i>
-            </button>
-            <button class="carousel-btn-ng prev" style="left: -20px; z-index: 20;"
-                onclick="document.getElementById('fl-slider').scrollBy({left: 340, behavior: 'smooth'})">
-                <i class="ph ph-caret-left"></i>
-            </button>
-
-            <div class="fl-slider-track" id="fl-slider">
-                {% for flist in featured_lists %}
-                <a href="{{ flist.url }}" class="fl-card">
-                    <div class="fl-covers" style="background: {{ flist.color }};">
-                        {% for cover in flist.covers %}
-                        <img src="{{ cover }}" alt="" class="fl-cover-img" loading="lazy"
-                            onerror="this.style.display='none'">
-                        {% endfor %}
+        <div class="relative z-10">
+            <span class="text-primary font-black text-[10px] tracking-widest uppercase mb-4 block">Deep Learning Engine</span>
+            <h2 class="text-4xl font-black mb-8 font-headline">Pattern Recognition</h2>
+            <div class="grid grid-cols-2 gap-6">
+                {% for book in deep_learning_books[:4] %}
+                <div class="flex items-center gap-4 bg-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+                    <div class="w-12 h-16 bg-white/10 rounded overflow-hidden flex-shrink-0">
+                        <img src="{{ book.cover_url or 'https://placehold.co/100x150/ffffff/000000?text=DL' }}" class="w-full h-full object-cover">
                     </div>
-                    <div class="fl-info">
-                        <h4 class="fl-title">{{ flist.title }}</h4>
-                        <span class="fl-count"><i class="ph-fill ph-books" style="color:var(--lux-gold);"></i> {{ flist.count }} كتاب</span>
-                    </div>
-                </a>
+                    <p class="text-xs font-bold line-clamp-2 opacity-80">{{ book.title }}</p>
+                </div>
                 {% endfor %}
             </div>
         </div>
     </div>
     {% endif %}
 
-
-
-
-
-    {# ═══════════════════════════════════════════════════════════════════════
-    GROUP 3: 📊 رائج الآن (Trending Now)
-    ═══════════════════════════════════════════════════════════════════════ #}
-
-    {# Luxury Group Header — Trending Now #}
-    <div class="lux-group-header" data-aos="fade-up">
-        <div class="lux-group-eyeline">
-            <div class="lux-group-line"></div>
-            <i class="ph-fill ph-chart-line-up" style="color:var(--lux-gold);font-size:0.7rem;"></i>
-            <div class="lux-group-line right"></div>
+    {% if mood_ai_books %}
+    <div class="bg-[#fdf2d7] rounded-[40px] p-12 border border-[#f5e1b9] group">
+        <span class="text-[#a86e24] font-black text-[10px] tracking-widest uppercase mb-4 block">Mood AI Analysis</span>
+        <h2 class="text-4xl font-black mb-8 font-headline text-[#5e4518]">Emotional Curation</h2>
+        <div class="space-y-4">
+            {% for book in mood_ai_books[:3] %}
+            <div class="flex items-center justify-between p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-14 bg-slate-100 rounded overflow-hidden">
+                        <img src="{{ book.cover_url or 'https://placehold.co/100x150/fdf2d7/a86e24?text=MOOD' }}" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <p class="text-sm font-black text-[#1a1a1a] mb-0.5">{{ book.title }}</p>
+                        <p class="text-[10px] text-[#8b6e3f] font-bold uppercase tracking-wider">{{ book.author }}</p>
+                    </div>
+                </div>
+                <span class="material-symbols-outlined text-[#a86e24] opacity-0 group-hover:opacity-100 transition-opacity">auto_awesome</span>
+            </div>
+            {% endfor %}
         </div>
-        <h3 class="lux-group-title">رائج الآن</h3>
-        <p class="lux-group-desc">أبرز الكتب التي يتفاعل معها القرّاء في هذه اللحظة</p>
-    </div>
-
-    {# [8] قرّاء يشبهونك #}
-
-    {% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
-    <div data-aos="fade-up" data-aos-delay="50">
-        {{ render_carousel_section(
-        title='قرّاء يشبهونك',
-        icon='ph-fill ph-users',
-        books=similar_minds,
-        id_prefix='similar_minds',
-        badges=[],
-        view_all_url=url_for('main.browse', category='unified'),
-        color='gold'
-        ) }}
     </div>
     {% endif %}
-
-    {# [9] الأبرز حالياً #}
-    {% if hot_right_now is defined and hot_right_now and hot_right_now|length > 0 %}
-    <div data-aos="fade-up" data-aos-delay="100">
-        {{ render_carousel_section(
-        title='الأبرز حالياً',
-        icon='ph-fill ph-fire',
-        books=hot_right_now,
-        id_prefix='hot_right_now',
-        badges=[],
-        view_all_url=url_for('main.browse', category='most_viewed'),
-        color='gold'
-        ) }}
-    </div>
-    {% endif %}
+</div>

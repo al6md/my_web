@@ -1,274 +1,152 @@
 {# ═══════════════════════════════════════════════════════════════════════════
-📁 Sidebar Filters Component
-File: components/sidebar_filters.html
-═══════════════════════════════════════════════════════════════════════════ #}
+   SIDEBAR DISCOVERY — Architectural Parameters
+   ═══════════════════════════════════════════════════════════════════════════ #}
 
 {% macro render_sidebar_filters(available_genres, current_filters) %}
 {% set current_genre = current_filters.genre|default('') %}
 {% set current_rating = current_filters.rating_min|default(0)|float %}
 {% set current_query = current_filters.query|default('') %}
 
-<aside class="filters-sidebar" id="filtersSidebar">
-    <div class="filters-header d-flex justify-between align-center mb-4">
-        <h5 class="mb-0 d-flex align-center gap-2">
-            <i class="ph-fill ph-funnel text-primary"></i>
-            <span>Smart Filters</span>
-        </h5>
-        <button class="btn-icon btn-sm d-md-none" onclick="toggleFilters()">
-            <i class="ph ph-x"></i>
+<aside class="bg-surface-container-low p-12 shadow-2xl sticky top-32 space-y-16 group" id="filtersSidebar">
+    <!-- Architectural Watermark -->
+    <div class="absolute -top-8 -right-8 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">DISCOVER</div>
+    
+    <header class="relative z-10 flex justify-between items-center pb-8 border-b border-on-surface/10">
+        <div class="space-y-1">
+            <h5 class="font-headline font-black text-xl text-on-surface">Parameters</h5>
+            <p class="font-label text-[10px] uppercase font-bold text-on-surface/30 tracking-widest">Filter Matrix</p>
+        </div>
+        <button class="md:hidden text-on-surface/40 hover:text-primary transition-colors" onclick="toggleFilters()">
+            <span class="material-symbols-outlined">close</span>
         </button>
-    </div>
+    </header>
 
-    <form action="{{ url_for('explore.index') }}" method="get" id="filterForm">
-        {# Preserve search query #}
+    <form action="{{ url_for('explore.index') }}" method="get" id="filterForm" class="relative z-10 space-y-16">
         {% if current_query %}
         <input type="hidden" name="q" value="{{ current_query }}">
         {% endif %}
 
-        {# ─── Genre Filter ─── #}
-        <div class="filter-group mb-4">
-            <label class="filter-label">
-                <i class="ph ph-books"></i> Genre
-            </label>
-            <select name="genre" class="filter-select" onchange="this.form.submit()">
-                <option value="">All Genres</option>
-                {% for genre in available_genres|default([]) %}
-                <option value="{{ genre }}" {% if current_genre==genre %}selected{% endif %}>
-                    {{ genre }}
-                </option>
-                {% endfor %}
-            </select>
+        <!-- Taxonomy Selection -->
+        <div class="space-y-6">
+            <label class="font-label text-[10px] uppercase font-black text-secondary tracking-[0.4em] block">Taxonomy</label>
+            <div class="relative">
+                <select name="genre" class="w-full bg-surface border-none p-6 font-headline font-black text-sm text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 transition-all shadow-2xl" onchange="this.form.submit()">
+                    <option value="">Full Archives</option>
+                    {% for genre in available_genres|default([]) %}
+                    <option value="{{ genre }}" {% if current_genre==genre %}selected{% endif %}>
+                        {{ genre }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-on-surface/20 pointer-events-none">expand_more</span>
+            </div>
         </div>
 
-        {# ─── Rating Filter ─── #}
-        <div class="filter-group mb-4">
-            <label class="filter-label">
-                <i class="ph ph-star"></i> Minimum Rating
-            </label>
-            <div class="rating-slider-wrap">
+        <!-- Intensity Threshold (Rating) -->
+        <div class="space-y-8">
+            <div class="flex justify-between items-end">
+                <label class="font-label text-[10px] uppercase font-black text-secondary tracking-[0.4em]">Intensity</label>
+                <span id="ratingLabel" class="font-headline font-black text-primary text-xl">
+                    {% if current_rating > 0 %}{{ current_rating }}+{% else %}ANY{% endif %}
+                </span>
+            </div>
+            <div class="px-2">
                 <input type="range" name="rating_min" min="0" max="5" step="0.5" value="{{ current_rating }}"
-                    class="rating-slider" oninput="updateRatingLabel(this.value)" onchange="this.form.submit()">
-                <div class="d-flex justify-between text-xs text-muted mt-1">
-                    <span>Any</span>
-                    <span id="ratingLabel" class="fw-bold text-warning">
-                        {% if current_rating > 0 %}{{ current_rating }}+{% else %}Any{% endif %}
-                    </span>
-                    <span>5.0</span>
-                </div>
+                    class="w-full h-px bg-on-surface/10 appearance-none cursor-pointer accent-primary" oninput="updateRatingLabel(this.value)" onchange="this.form.submit()">
             </div>
         </div>
 
-        {# ─── AI Threshold ─── #}
-        <div class="filter-group mb-4">
-            <label class="filter-label">
-                <i class="ph ph-brain"></i> AI Match Threshold
-            </label>
-            <div class="d-flex gap-2 flex-wrap">
-                <label class="chip-radio">
-                    <input type="radio" name="ai_threshold" value="0" checked>
-                    <span>Any</span>
+        <!-- Synchronization Logic -->
+        <div class="space-y-6">
+            <label class="font-label text-[10px] uppercase font-black text-secondary tracking-[0.4em] block">Logic Threshold</label>
+            <div class="grid grid-cols-1 gap-px bg-on-surface/5 border border-on-surface/5">
+                <label class="cursor-pointer group">
+                    <input type="radio" name="ai_threshold" value="0" checked class="hidden peer">
+                    <div class="bg-surface p-5 text-[10px] font-black uppercase tracking-widest text-on-surface/30 peer-checked:bg-primary peer-checked:text-white transition-all text-center">Unrestricted</div>
                 </label>
-                <label class="chip-radio">
-                    <input type="radio" name="ai_threshold" value="70">
-                    <span>70%+</span>
+                <label class="cursor-pointer group">
+                    <input type="radio" name="ai_threshold" value="70" class="hidden peer">
+                    <div class="bg-surface p-5 text-[10px] font-black uppercase tracking-widest text-on-surface/30 peer-checked:bg-primary peer-checked:text-white transition-all text-center">High Match (70%+)</div>
                 </label>
-                <label class="chip-radio">
-                    <input type="radio" name="ai_threshold" value="85">
-                    <span>85%+</span>
+                <label class="cursor-pointer group">
+                    <input type="radio" name="ai_threshold" value="85" class="hidden peer">
+                    <div class="bg-surface p-5 text-[10px] font-black uppercase tracking-widest text-on-surface/30 peer-checked:bg-primary peer-checked:text-white transition-all text-center">Neural Sync (85%+)</div>
                 </label>
             </div>
         </div>
 
-        {# ─── Clear Filters ─── #}
+        <!-- Reset Signal -->
         {% if current_genre or current_rating > 0 %}
-        <a href="{{ url_for('explore.index') }}" class="btn btn-ghost w-100 justify-center">
-            <i class="ph ph-eraser"></i> Clear Filters
+        <a href="{{ url_for('explore.index') }}" class="flex items-center justify-center gap-4 w-full bg-on-surface py-6 font-headline font-black text-[10px] uppercase tracking-widest text-white hover:bg-primary transition-all shadow-2xl">
+            <span class="material-symbols-outlined text-sm">refresh</span>
+            Reset Signal
         </a>
         {% endif %}
     </form>
 
-    {# ─── AI Assistance Card ─── #}
-    <div class="ai-assist-card mt-4">
-        <div class="d-flex gap-2 align-center mb-2">
-            <i class="ph-fill ph-sparkle text-accent"></i>
-            <span class="fw-bold text-sm">AI Exploration</span>
+    <!-- Neural Info -->
+    <footer class="pt-8 border-t border-on-surface/5 space-y-4">
+        <div class="flex items-center gap-4 text-primary">
+            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+            <span class="font-label text-[10px] uppercase font-black tracking-widest">Neural Insight</span>
         </div>
-        <p class="text-xs text-muted mb-0">
-            Filters work alongside AI to refine recommendations while preserving relevance.
+        <p class="font-body text-[11px] text-on-surface-variant leading-relaxed italic">
+            Discovery parameters are processed through the neural engine to ensure each folio matches your current intellectual trajectory.
         </p>
-    </div>
+    </footer>
 </aside>
 
 <script>
     function updateRatingLabel(val) {
         const label = document.getElementById('ratingLabel');
-        label.textContent = val > 0 ? val + '+' : 'Any';
+        label.textContent = val > 0 ? val + '+' : 'ANY';
     }
 
     function toggleFilters() {
-        document.getElementById('filtersSidebar').classList.toggle('open');
+        document.getElementById('filtersSidebar').classList.toggle('hidden');
     }
 </script>
-
-<style>
-    .filters-sidebar {
-        background: var(--bg-surface-1);
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-lg);
-        padding: 1.5rem;
-        position: sticky;
-        top: calc(var(--header-height) + 1rem);
-    }
-
-    @media (max-width: 768px) {
-        .filters-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: 280px;
-            z-index: 1001;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-            border-radius: 0;
-        }
-
-        .filters-sidebar.open {
-            transform: translateX(0);
-        }
-    }
-
-    .filter-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        color: var(--text-main);
-        margin-bottom: 0.75rem;
-    }
-
-    .filter-select {
-        width: 100%;
-        padding: 0.625rem 1rem;
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-md);
-        background: var(--bg-surface-2);
-        color: var(--text-main);
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all var(--transition-base);
-    }
-
-    .filter-select:focus {
-        outline: none;
-        border-color: var(--primary-400);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-
-    .rating-slider {
-        width: 100%;
-        accent-color: var(--warning);
-    }
-
-    .chip-radio {
-        cursor: pointer;
-    }
-
-    .chip-radio input {
-        display: none;
-    }
-
-    .chip-radio span {
-        display: inline-block;
-        padding: 0.375rem 0.75rem;
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-full);
-        font-size: 0.75rem;
-        font-weight: 500;
-        transition: all var(--transition-fast);
-    }
-
-    .chip-radio input:checked+span {
-        background: var(--primary-100);
-        border-color: var(--primary-300);
-        color: var(--primary-600);
-    }
-
-    [data-theme="dark"] .chip-radio input:checked+span {
-        background: rgba(99, 102, 241, 0.2);
-        border-color: var(--primary-500);
-        color: var(--primary-300);
-    }
-
-    .ai-assist-card {
-        background: linear-gradient(135deg, var(--primary-50), var(--accent-50));
-        border: 1px solid var(--primary-100);
-        border-radius: var(--radius-md);
-        padding: 1rem;
-    }
-
-    [data-theme="dark"] .ai-assist-card {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(244, 63, 94, 0.1));
-        border-color: var(--primary-800);
-    }
-</style>
 {% endmacro %}
 
-
 {# ═══════════════════════════════════════════════════════════════════════════
-🔀 Sorting Controls Component
-═══════════════════════════════════════════════════════════════════════════ #}
+   ARCHITECTURAL SORTING
+   ═══════════════════════════════════════════════════════════════════════════ #}
 
 {% macro render_sorting_bar(sort_options, current_filters, pagination) %}
 {% set current_sort = current_filters.sort|default('ai_relevance') %}
 {% set total = pagination.total|default(0) %}
 
-<div class="sorting-bar d-flex justify-between align-center flex-wrap gap-3 mb-4">
-    {# Results Count #}
-    <div class="results-info d-flex align-center gap-2">
-        <span class="text-muted">
-            <strong class="text-main">{{ total }}</strong> books found
-        </span>
-
-        {# Active Filter Chips #}
+<div class="bg-surface-container-low p-8 flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl relative overflow-hidden group mb-16">
+    <div class="absolute inset-y-0 left-0 w-2 bg-primary"></div>
+    
+    <div class="flex items-center gap-8 relative z-10">
+        <div class="bg-surface px-6 py-3 border border-on-surface/5 flex flex-col">
+            <span class="font-label text-[8px] uppercase font-black text-on-surface/30 leading-none">Cataloged</span>
+            <span class="font-headline font-black text-2xl text-primary">{{ total }} <span class="text-[10px] font-bold text-on-surface/20 uppercase tracking-widest">Folios</span></span>
+        </div>
+        
         {% if current_filters.genre %}
-        <span class="filter-chip">
-            <i class="ph ph-tag"></i> {{ current_filters.genre }}
-            <a href="{{ url_for('explore.index', sort=current_sort) }}" class="chip-remove">
-                <i class="ph ph-x"></i>
+        <div class="flex items-center gap-4 bg-primary/10 px-4 py-2 border border-primary/20">
+            <span class="font-label text-[10px] uppercase font-black text-primary tracking-widest">{{ current_filters.genre }}</span>
+            <a href="{{ url_for('explore.index', sort=current_sort) }}" class="text-primary/40 hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-sm">close</span>
             </a>
-        </span>
-        {% endif %}
-
-        {% if current_filters.rating_min and current_filters.rating_min > 0 %}
-        <span class="filter-chip">
-            <i class="ph ph-star"></i> {{ current_filters.rating_min }}+ rating
-            <a href="{{ url_for('explore.index', genre=current_filters.genre, sort=current_sort) }}"
-                class="chip-remove">
-                <i class="ph ph-x"></i>
-            </a>
-        </span>
+        </div>
         {% endif %}
     </div>
 
-    {# Sort Dropdown #}
-    <div class="sort-controls d-flex align-center gap-2">
-        <span class="text-muted text-sm">Sort by:</span>
-        <div class="sort-dropdown">
-            <select onchange="applySorting(this.value)" class="sort-select">
+    <div class="flex items-center gap-8 relative z-10 w-full md:w-auto">
+        <label class="font-label text-[10px] uppercase font-black text-on-surface/30 tracking-widest">Arrangement</label>
+        <div class="relative flex-1 md:flex-none">
+            <select onchange="applySorting(this.value)" class="w-full md:w-64 bg-surface border-none p-4 font-headline font-black text-xs uppercase tracking-widest text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 transition-all shadow-xl">
                 {% for opt in sort_options|default([]) %}
                 <option value="{{ opt.value }}" {% if current_sort==opt.value %}selected{% endif %}>
                     {{ opt.label }}
                 </option>
                 {% endfor %}
             </select>
+            <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface/20 pointer-events-none">expand_more</span>
         </div>
-
-        {# Mobile Filter Toggle #}
-        <button class="btn btn-secondary btn-sm d-md-none" onclick="toggleFilters()">
-            <i class="ph ph-funnel"></i> Filters
-        </button>
     </div>
 </div>
 
@@ -280,416 +158,44 @@ File: components/sidebar_filters.html
         window.location.href = url.toString();
     }
 </script>
-
-<style>
-    .sorting-bar {
-        background: var(--bg-surface-1);
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-md);
-        padding: 1rem 1.25rem;
-    }
-
-    .filter-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0.25rem 0.5rem;
-        background: var(--primary-100);
-        color: var(--primary-700);
-        border-radius: var(--radius-full);
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-
-    [data-theme="dark"] .filter-chip {
-        background: rgba(99, 102, 241, 0.2);
-        color: var(--primary-300);
-    }
-
-    .chip-remove {
-        display: flex;
-        margin-left: 0.25rem;
-        color: var(--primary-500);
-    }
-
-    .chip-remove:hover {
-        color: var(--accent-500);
-    }
-
-    .sort-select {
-        padding: 0.5rem 2rem 0.5rem 0.75rem;
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-md);
-        background: var(--bg-surface-2);
-        color: var(--text-main);
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 0.5rem center;
-        background-size: 1rem;
-    }
-
-    .sort-select:focus {
-        outline: none;
-        border-color: var(--primary-400);
-    }
-</style>
 {% endmacro %}
 
-
 {# ═══════════════════════════════════════════════════════════════════════════
-📖 Pagination Component
-═══════════════════════════════════════════════════════════════════════════ #}
+   SEQUENTIAL PAGINATION
+   ═══════════════════════════════════════════════════════════════════════════ #}
 
 {% macro render_pagination(pagination, current_filters) %}
 {% set page = pagination.page|default(1) %}
 {% set total_pages = pagination.total_pages|default(1) %}
 
 {% if total_pages > 1 %}
-<nav class="pagination-nav d-flex justify-center align-center gap-2 mt-5">
-    {# Previous #}
+<nav class="flex justify-center items-center gap-4 py-24">
     {% if pagination.has_prev %}
     <a href="{{ url_for('explore.index', page=page-1, sort=current_filters.sort, genre=current_filters.genre, q=current_filters.query) }}"
-        class="pagination-btn">
-        <i class="ph ph-caret-left"></i> Previous
+        class="bg-surface-container-high p-5 hover:bg-primary hover:text-white transition-all shadow-2xl group">
+        <span class="material-symbols-outlined group-hover:-translate-x-2 transition-transform">arrow_back</span>
     </a>
-    {% else %}
-    <span class="pagination-btn disabled">
-        <i class="ph ph-caret-left"></i> Previous
-    </span>
     {% endif %}
 
-    {# Page Numbers #}
-    <div class="pagination-pages d-flex gap-1">
+    <div class="flex gap-2">
         {% for p in range(1, total_pages + 1) %}
-        {% if p == page %}
-        <span class="pagination-page active">{{ p }}</span>
-        {% elif p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %} <a
-            href="{{ url_for('explore.index', page=p, sort=current_filters.sort, genre=current_filters.genre, q=current_filters.query) }}"
-            class="pagination-page">{{ p }}</a>
-            {% elif p == page - 2 or p == page + 2 %}
-            <span class="pagination-dots">...</span>
+            {% if p == page %}
+            <span class="w-14 h-14 bg-on-surface text-white flex items-center justify-center font-headline font-black text-sm shadow-2xl">{{ p }}</span>
+            {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+            <a href="{{ url_for('explore.index', page=p, sort=current_filters.sort, genre=current_filters.genre, q=current_filters.query) }}"
+                class="w-14 h-14 bg-surface border border-on-surface/5 flex items-center justify-center font-headline font-black text-sm text-on-surface/40 hover:text-primary transition-all">{{ p }}</a>
+            {% elif p == page - 3 or p == page + 3 %}
+            <span class="text-on-surface/10 font-black">...</span>
             {% endif %}
-            {% endfor %}
+        {% endfor %}
     </div>
 
-    {# Next #}
     {% if pagination.has_next %}
     <a href="{{ url_for('explore.index', page=page+1, sort=current_filters.sort, genre=current_filters.genre, q=current_filters.query) }}"
-        class="pagination-btn">
-        Next <i class="ph ph-caret-right"></i>
+        class="bg-surface-container-high p-5 hover:bg-primary hover:text-white transition-all shadow-2xl group">
+        <span class="material-symbols-outlined group-hover:translate-x-2 transition-transform">arrow_forward</span>
     </a>
-    {% else %}
-    <span class="pagination-btn disabled">
-        Next <i class="ph ph-caret-right"></i>
-    </span>
     {% endif %}
 </nav>
 {% endif %}
-
-<style>
-    .pagination-nav {
-        padding: 1rem;
-    }
-
-    .pagination-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.625rem 1rem;
-        background: var(--bg-surface-1);
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--text-main);
-        transition: all var(--transition-fast);
-    }
-
-    .pagination-btn:hover:not(.disabled) {
-        background: var(--primary-50);
-        border-color: var(--primary-200);
-        color: var(--primary-600);
-    }
-
-    .pagination-btn.disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
-
-    .pagination-page {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--text-muted);
-        transition: all var(--transition-fast);
-    }
-
-    .pagination-page:hover:not(.active) {
-        background: var(--bg-surface-2);
-        color: var(--text-main);
-    }
-
-    .pagination-page.active {
-        background: var(--gradient-primary);
-        color: white;
-    }
-
-    .pagination-dots {
-        display: flex;
-        align-items: center;
-        color: var(--text-muted);
-        padding: 0 0.25rem;
-    }
-</style>
-{% endmacro %}
-
-
-{# ═══════════════════════════════════════════════════════════════════════════
-🎴 Explore Book Card (Enhanced)
-═══════════════════════════════════════════════════════════════════════════ #}
-
-{% macro render_explore_card(book) %}
-{% set book_id = book.id|default('') %}
-{% set cover = book.cover|default(book.cover_url)|default('https://placehold.co/400x600/1e293b/64748b?text=Book') %}
-{% set title = book.title|default('Untitled') %}
-{% set author = book.author|default('Unknown Author') %}
-{% set rating = book.rating|default(0)|float %}
-{% set score = book.score|default(book.ai_score)|default(0)|float %}
-{% set algo_tag = book.algo_tag|default('AI') %}
-{% set reason = book.explore_reason|default(book.reason)|default('') %}
-{% set badges = book.badges|default([]) %}
-
-<article class="explore-card">
-    <div class="explore-cover">
-        <img src="{{ cover }}" alt="{{ title }}" loading="lazy"
-            onerror="this.src='https://placehold.co/400x600/1e293b/64748b?text=Book'">
-
-        {# Badges #}
-        <div class="explore-badges">
-            {% for badge in badges[:2] %}
-            <span class="explore-badge badge-{{ badge|lower|replace(' ', '-') }}">
-                {% if badge == 'AI Match' %}<i class="ph-fill ph-sparkle"></i>
-                {% elif badge == 'Trending' %}<i class="ph-fill ph-fire"></i>
-                {% elif badge == 'High Rated' %}<i class="ph-fill ph-star"></i>
-                {% elif badge == 'Discover' %}<i class="ph-fill ph-compass"></i>
-                {% endif %}
-                {{ badge }}
-            </span>
-            {% endfor %}
-        </div>
-
-        {# AI Score #}
-        {% if score > 0 %}
-        <div class="explore-score">
-            <span class="score-value">{{ score|int }}%</span>
-            <span class="score-label">match</span>
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="explore-info">
-        {# Algorithm Tag #}
-        <span class="algo-mini-tag">{{ algo_tag }}</span>
-
-        {# Title #}
-        <h5 class="explore-title">
-            <a href="{{ url_for('public.book_detail', gid=book_id) }}">{{ title }}</a>
-        </h5>
-
-        {# Author #}
-        <p class="explore-author">{{ author }}</p>
-
-        {# Rating #}
-        {% if rating > 0 %}
-        <div class="explore-rating">
-            <i class="ph-fill ph-star text-warning"></i>
-            <span>{{ rating|round(1) }}</span>
-        </div>
-        {% endif %}
-
-        {# AI Reason Tooltip #}
-        {% if reason %}
-        <div class="explore-reason" title="{{ reason }}">
-            <i class="ph-fill ph-sparkle"></i>
-            <span>{{ reason }}</span>
-        </div>
-        {% endif %}
-    </div>
-</article>
-
-<style>
-    .explore-card {
-        background: var(--bg-surface-1);
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        transition: all var(--transition-smooth);
-    }
-
-    .explore-card:hover {
-        transform: translateY(-6px);
-        box-shadow: var(--shadow-xl);
-        border-color: var(--primary-200);
-    }
-
-    .explore-cover {
-        position: relative;
-        aspect-ratio: 3/4;
-        max-height: 180px;
-        overflow: hidden;
-    }
-
-    .explore-cover img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.4s ease;
-    }
-
-    .explore-card:hover .explore-cover img {
-        transform: scale(1.05);
-    }
-
-    .explore-badges {
-        position: absolute;
-        top: 0.5rem;
-        left: 0.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .explore-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.2rem;
-        padding: 0.2rem 0.5rem;
-        border-radius: var(--radius-sm);
-        font-size: 0.65rem;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-    .badge-ai-match {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        color: white;
-    }
-
-    .badge-trending {
-        background: linear-gradient(135deg, #f43f5e, #fb7185);
-        color: white;
-    }
-
-    .badge-high-rated {
-        background: linear-gradient(135deg, #f59e0b, #fbbf24);
-        color: white;
-    }
-
-    .badge-discover {
-        background: linear-gradient(135deg, #14b8a6, #2dd4bf);
-        color: white;
-    }
-
-    .explore-score {
-        position: absolute;
-        bottom: 0.5rem;
-        right: 0.5rem;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(4px);
-        padding: 0.35rem 0.5rem;
-        border-radius: var(--radius-sm);
-        text-align: center;
-    }
-
-    .score-value {
-        display: block;
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #22c55e;
-    }
-
-    .score-label {
-        font-size: 0.6rem;
-        color: rgba(255, 255, 255, 0.7);
-        text-transform: uppercase;
-    }
-
-    .explore-info {
-        padding: 0.75rem;
-    }
-
-    .algo-mini-tag {
-        display: inline-block;
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: var(--primary-500);
-        margin-bottom: 0.5rem;
-    }
-
-    .explore-title {
-        font-size: 0.8rem;
-        font-weight: 600;
-        line-height: 1.3;
-        margin-bottom: 0.2rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .explore-title a {
-        color: var(--text-main);
-    }
-
-    .explore-title a:hover {
-        color: var(--primary-500);
-    }
-
-    .explore-author {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-        margin-bottom: 0.35rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .explore-rating {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
-
-    .explore-reason {
-        display: none;
-    }
-
-    .explore-reason i {
-        color: var(--accent-500);
-        flex-shrink: 0;
-        margin-top: 0.1rem;
-    }
-
-    .explore-reason span {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-</style>
 {% endmacro %}

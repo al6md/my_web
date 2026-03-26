@@ -5,7 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from ..extensions import db, csrf, cache
-from ..models import User, UserPreference
+from ..models import User, UserPreference, BookReview
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -218,7 +218,10 @@ def profile():
     # جلب اهتمامات المستخدم
     interests = UserPreference.query.filter_by(user_id=current_user.id).all()
     
-    return render_template("profile.html", interests=interests)
+    # جلب المراجعات الخاصة بالمستخدم
+    user_reviews = current_user.reviews.order_by(BookReview.created_at.desc()).limit(6).all()
+    
+    return render_template("profile.html", interests=interests, user_reviews=user_reviews)
 
 # مستخدم تجريبي جاهز للاختبار
 @auth_bp.route("/seed/demo")

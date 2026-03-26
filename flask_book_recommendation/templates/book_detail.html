@@ -1,1337 +1,201 @@
 {% extends "base.html" %}
-{% from 'components/macros.html' import render_carousel_section %}
-{% block title %}{{ book.title }} | ALHAM{% endblock %}
-{% block body_class %}royal-detail-page{% endblock %}
 
-{% block head %}
-<style>
-  /* ══════════════════════════════════════════════════════════════════════════
-   📖 BOOK DETAIL - ROYAL CLASSIC DESIGN
-   ══════════════════════════════════════════════════════════════════════════ */
-
-  /* ═══ Global Font Override ═══ */
-  .royal-detail-page, 
-  .royal-detail-page body,
-  .royal-detail-page .book-title,
-  .royal-detail-page .section-heading,
-  .royal-detail-page .book-author,
-  .royal-detail-page p,
-  .royal-detail-page span:not(.ph),
-  .royal-detail-page div:not(.ph) {
-    font-family: 'Amiri', 'Playfair Display', serif !important;
-  }
-
-  .royal-detail-page .ph, 
-  .royal-detail-page [class^="ph-"] {
-    font-family: "Phosphor" !important;
-  }
-
-  /* ═══ Background & Layout ═══ */
-  .book-backdrop {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: -1;
-    background-color: #0f0c08;
-    background-image: 
-      radial-gradient(circle at center, rgba(30, 25, 20, 0) 0%, rgba(15, 12, 8, 1) 100%),
-      url("https://www.transparenttextures.com/patterns/dark-leather.png");
-  }
-
-  [data-theme="light"] .book-backdrop {
-    background-color: #f7f3ed;
-    background-image: 
-      radial-gradient(circle at center, rgba(255, 255, 250, 0.2) 0%, rgba(244, 238, 229, 1) 100%),
-      url("https://www.transparenttextures.com/patterns/paper.png");
-  }
-
-  .ai-icon {
-    width: 60px;
-    height: 60px;
-    background: var(--lux-surface) !important;
-    border: 1px solid var(--lux-gold) !important;
-    color: var(--lux-gold) !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    margin: 0 auto 1.5rem;
-    font-size: 1.8rem;
-    box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
-  }
-
-  .cover-wrapper {
-    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-    border: 2px solid #2a241c;
-    margin-bottom: 1.5rem;
-  }
-
-  [data-theme="light"] .cover-wrapper {
-    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-    border-color: #e5e0d8;
-  }
-
-  .cover-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-
-  .cover-section:hover .cover-wrapper img {
-    transform: scale(1.03);
-  }
-
-  /* Ribbon */
-  .status-ribbon {
-    position: absolute;
-    top: 20px;
-    right: -35px;
-    background: var(--lux-gold);
-    color: #000;
-    padding: 5px 40px;
-    transform: rotate(45deg);
-    font-weight: bold;
-    font-family: var(--lux-font-serif);
-    font-size: 0.9rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    z-index: 10;
-  }
-
-  /* ═══ Action Buttons ═══ */
-  .status-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-  }
-
-  .status-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 0.5rem;
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    color: var(--lux-text-secondary);
-    font-family: var(--lux-font-serif);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-
-  [data-theme="light"] .status-btn {
-    border-color: #e5e0d8;
-    color: #665c50;
-  }
-
-  .status-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--lux-gold);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 0;
-  }
-
-  .status-btn:hover {
-    border-color: var(--lux-gold);
-    color: var(--lux-gold);
-    transform: translateY(-2px);
-  }
-
-  .status-btn:hover::before {
-    opacity: 0.05;
-  }
-
-  .status-btn i, .status-btn span {
-    position: relative;
-    z-index: 1;
-  }
-
-  .status-btn i {
-    font-size: 1.35rem;
-  }
-
-  .status-btn span {
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-  }
-
-  /* Active Status Styles */
-  .status-btn[class*="active-"] {
-    background: rgba(201, 168, 76, 0.1);
-    border-color: var(--lux-gold);
-    color: var(--lux-gold);
-  }
-  [data-theme="light"] .status-btn[class*="active-"] {
-    background: rgba(201, 168, 76, 0.05);
-    color: #b08d3a;
-    border-color: #b08d3a;
-  }
-
-  .btn-finish {
-    grid-column: span 2;
-    flex-direction: row;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(201,168,76,0.2), transparent);
-    border-color: var(--lux-gold);
-    color: var(--lux-gold);
-  }
-
-  .btn-finish:hover {
-    background: var(--lux-gold);
-    color: #000;
-  }
-
-  .btn-finish.is-finished {
-    background: var(--lux-gold);
-    color: #000;
-  }
-
-  /* ═══ Content Side ═══ */
-  .book-title {
-    font-family: var(--lux-font-display);
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    font-weight: 700;
-    line-height: 1.1;
-    margin-bottom: 0.5rem;
-    color: var(--lux-gold);
-    text-shadow: 0 2px 10px rgba(201,168,76,0.1);
-  }
-
-  [data-theme="light"] .book-title {
-    color: #2a241c;
-    text-shadow: none;
-  }
-
-  .book-author {
-    font-family: var(--lux-font-serif);
-    font-size: 1.5rem;
-    color: var(--lux-text-secondary);
-    margin-bottom: 1.5rem;
-    font-style: italic;
-  }
-
-  [data-theme="light"] .book-author {
-    color: #665c50;
-  }
-
-  /* Decorative separator */
-  .classic-separator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    margin: 2rem 0;
-    opacity: 0.6;
-  }
-  .classic-separator::before,
-  .classic-separator::after {
-    content: '';
-    height: 1px;
-    flex: 1;
-    background: linear-gradient(90deg, transparent, var(--lux-gold), transparent);
-  }
-  [data-theme="light"] .classic-separator::before,
-  [data-theme="light"] .classic-separator::after {
-    background: linear-gradient(90deg, transparent, #b08d3a, transparent);
-  }
-  .classic-separator i {
-    color: var(--lux-gold);
-    font-size: 0.8rem;
-  }
-  [data-theme="light"] .classic-separator i {
-    color: #b08d3a;
-  }
-
-  /* Meta Tags */
-  .meta-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .meta-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    font-size: 0.9rem;
-    font-family: var(--lux-font-serif);
-    color: var(--lux-text-primary);
-    position: relative;
-  }
-  
-  [data-theme="light"] .meta-tag {
-    border-color: #e5e0d8;
-    color: #2a241c;
-  }
-
-  .meta-tag i {
-    color: var(--lux-gold);
-  }
-  [data-theme="light"] .meta-tag i {
-    color: #b08d3a;
-  }
-
-  /* Ext Info Grid */
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-
-  .info-item {
-    padding: 1rem;
-    border-right: 1px solid var(--lux-border);
-  }
-  [data-theme="light"] .info-item {
-    border-color: #e5e0d8;
-  }
-  .info-item:last-child {
-    border-right: none;
-  }
-
-  .info-label {
-    font-size: 0.75rem;
-    color: var(--lux-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 0.5rem;
-    display: block;
-    font-family: var(--lux-font-sans);
-  }
-  [data-theme="light"] .info-label {
-    color: #8b7355;
-  }
-
-  .info-value {
-    font-size: 1.1rem;
-    color: var(--lux-text-primary);
-    font-family: var(--lux-font-serif);
-  }
-  [data-theme="light"] .info-value {
-    color: #2a241c;
-  }
-
-  /* Quotes / Synopsis Section */
-  .quote-card {
-    background: rgba(15, 12, 8, 0.4);
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    position: relative;
-  }
-  [data-theme="light"] .quote-card {
-    background: #fbfaf8;
-    border-color: #e5e0d8;
-  }
-  
-  .quote-text {
-    font-family: var(--lux-font-serif);
-    font-size: 1.25rem;
-    line-height: 1.8;
-    color: var(--lux-text-primary);
-    text-align: justify;
-    margin-bottom: 0.5rem;
-  }
-  [data-theme="light"] .quote-text {
-    color: #2a241c;
-  }
-  .quote-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-    color: var(--lux-text-muted);
-    border-top: 1px solid var(--lux-border);
-    padding-top: 1rem;
-    margin-top: 1rem;
-  }
-  [data-theme="light"] .quote-meta {
-    border-color: #e5e0d8;
-    color: #8b7355;
-  }
-
-  /* AI Section */
-  .ai-section-title {
-    font-family: var(--lux-font-display);
-    font-size: 1.8rem;
-    color: var(--lux-gold);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  [data-theme="light"] .ai-section-title {
-    color: #b08d3a;
-  }
-
-  .ai-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .ai-card {
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    padding: 2rem 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    position: relative;
-  }
-  [data-theme="light"] .ai-card {
-    border-color: #e5e0d8;
-  }
-
-  .ai-card::before {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border: 1px solid transparent;
-    transition: all 0.4s ease;
-  }
-
-  .ai-card:hover {
-    border-color: var(--lux-gold);
-    transform: translateY(-5px);
-  }
-  .ai-card:hover::before {
-    border-color: rgba(201, 168, 76, 0.3);
-  }
-
-  .ai-icon {
-    font-size: 2.5rem;
-    color: var(--lux-gold);
-    margin-bottom: 1rem;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-  }
-  [data-theme="light"] .ai-icon {
-    color: #b08d3a;
-  }
-
-  .ai-card h4 {
-    font-family: var(--lux-font-serif);
-    font-size: 1.2rem;
-    color: var(--lux-text-primary);
-    margin-bottom: 0.5rem;
-  }
-  [data-theme="light"] .ai-card h4 {
-    color: #2a241c;
-  }
-
-  .ai-card p {
-    font-size: 0.9rem;
-    color: var(--lux-text-secondary);
-    font-family: var(--lux-font-sans);
-  }
-  [data-theme="light"] .ai-card p {
-    color: #665c50;
-  }
-
-  /* Progress Card */
-  .progress-card {
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    text-align: center;
-    border-radius: 2px;
-  }
-  [data-theme="light"] .progress-card {
-    border-color: #e5e0d8;
-  }
-
-  /* Share Buttons */
-  .share-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--lux-border);
-    color: var(--lux-text-secondary);
-    transition: all 0.3s ease;
-    background: transparent;
-  }
-  [data-theme="light"] .share-btn {
-    border-color: #e5e0d8;
-    color: #665c50;
-  }
-  .share-btn:hover {
-    border-color: var(--lux-gold);
-    color: var(--lux-gold);
-    transform: scale(1.1);
-  }
-
-  /* Horizontal Scroll Items */
-  .horizontal-section {
-    margin-top: 4rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--lux-border);
-  }
-  [data-theme="light"] .horizontal-section {
-    border-color: #e5e0d8;
-  }
-
-  .hs-container {
-    display: flex;
-    gap: 1.5rem;
-    overflow-x: auto;
-    padding: 1rem 0 2rem;
-    scrollbar-width: none;
-  }
-  .hs-container::-webkit-scrollbar { display: none; }
-
-  .hs-item {
-    min-width: 140px;
-    width: 140px;
-    transition: transform 0.3s ease;
-  }
-  .hs-item:hover {
-    transform: translateY(-5px);
-  }
-
-  .hs-img {
-    border-radius: 2px;
-    border: 1px solid var(--lux-border);
-    aspect-ratio: 2/3;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    width: 100%; object-fit: cover;
-  }
-  [data-theme="light"] .hs-img {
-    border-color: #e5e0d8;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  }
-
-  /* Button / Input Styles */
-  .notes-area {
-    width: 100%;
-    min-height: 150px;
-    background: rgba(15, 12, 8, 0.4);
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    padding: 1.5rem;
-    color: var(--lux-text-primary);
-    font-family: var(--lux-font-serif);
-    font-size: 1.1rem;
-    resize: vertical;
-    transition: border-color 0.3s;
-  }
-  .notes-area:focus {
-    outline: none;
-    border-color: var(--lux-gold);
-  }
-  [data-theme="light"] .notes-area {
-    background: #fbfaf8;
-    border-color: #e5e0d8;
-    color: #2a241c;
-  }
-
-  .primary-btn {
-    background: var(--lux-gold);
-    color: #000;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    font-family: var(--lux-font-serif);
-    font-weight: 600;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  .primary-btn:hover {
-    filter: brightness(1.1);
-  }
-
-  .ghost-btn {
-    background: transparent;
-    color: var(--lux-gold);
-    border: 1px solid var(--lux-gold);
-    padding: 0.5rem 1rem;
-    font-family: var(--lux-font-serif);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  .ghost-btn:hover {
-    background: rgba(201, 168, 76, 0.1);
-  }
-
-  .danger-btn {
-    width: 100%;
-    margin-top: 1.5rem;
-    padding: 0.75rem;
-    background: transparent;
-    border: 1px solid #ef4444;
-    color: #ef4444;
-    font-family: var(--lux-font-serif);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border-radius: 2px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .danger-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-  }
-
-  .circular-chart {
-    display: block;
-    margin: 0 auto;
-    max-width: 120px;
-    max-height: 250px;
-  }
-  .circle-bg {
-    fill: none;
-    stroke: var(--lux-border);
-    stroke-width: 2.5;
-  }
-  .circle {
-    fill: none;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    animation: progress 1s ease-out forwards;
-    stroke: var(--lux-gold);
-    transition: stroke-dasharray 0.5s ease;
-  }
-  .percentage {
-    fill: var(--lux-text-primary);
-    font-family: var(--lux-font-serif);
-    font-weight: bold;
-    font-size: 0.5em;
-    text-anchor: middle;
-  }
-  [data-theme="light"] .circle-bg { stroke: #e5e0d8; }
-  [data-theme="light"] .percentage { fill: #2a241c; }
-
-  @keyframes progress {
-    0% { stroke-dasharray: 0, 100; }
-  }
-  .relative { position: relative; }
-  .animate-up {
-    animation: fadeInUp 0.6s ease forwards;
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  .delay-1 { animation-delay: 0.1s; }
-  .delay-2 { animation-delay: 0.2s; }
-  .delay-3 { animation-delay: 0.3s; }
-
-  @keyframes fadeInUp {
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Timeline */
-  .timeline-badge {
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    padding: 1rem 1.5rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    font-family: var(--lux-font-serif);
-  }
-  [data-theme="light"] .timeline-badge {
-    border-color: #e5e0d8;
-  }
-  .timeline-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    color: var(--lux-text-secondary);
-  }
-  [data-theme="light"] .timeline-item {
-    color: #665c50;
-  }
-  .section-heading {
-    font-family: var(--lux-font-display);
-    font-size: 1.5rem;
-    color: var(--lux-gold);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  [data-theme="light"] .section-heading {
-    color: #b08d3a;
-  }
-
-</style>
-{% endblock %}
+{% block title %}{{ book.title }} | The Digital Curator{% endblock %}
 
 {% block content %}
-<!-- Chat Modal -->
-{% include "components/chat_modal.html" ignore missing %}
-
-<div class="book-backdrop">
-  <img src="{{ book.cover_url }}" alt="" onerror="this.style.display='none'">
-</div>
-
-<div class="container pb-5">
-  <div class="detail-layout">
-
-    <!-- LEFT SIDEBAR -->
-    <aside class="cover-section">
-      <div class="cover-wrapper mb-4">
-        {% set main_ai_cover = url_for('public.generate_book_cover', title=book.title, author=book.author or '') %}
-        <img src="{{ book.cover_url or main_ai_cover }}" alt="{{ book.title }}"
-          onerror="this.onerror=null; this.src='{{ main_ai_cover }}';">
-
-        {% if book_status == 'finished' %}
-        <div class="status-ribbon">مقروء ✓</div>
-        {% endif %}
-      </div>
-
-      <!-- AI Generate Button -->
-      {% if book.owner_id == current_user.id %}
-      <form action="{{ url_for('main.generate_book_cover', book_id=book.id) }}" method="POST" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="status-btn"
-          style="width:100%; flex-direction: row; justify-content: center; background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; border: none;">
-          <i class="ph-bold ph-magic-wand"></i>
-          <span>توليد غلاف AI</span>
-        </button>
-      </form>
-      {% endif %}
-
-      <!-- Actions Grid -->
-      <div class="status-grid">
-        <form action="{{ url_for('main.set_book_status', book_id=book.id, status='favorite') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="status-btn {{ 'active-favorite' if book_status == 'favorite' else '' }}" style="width:100%">
-            <i class="{{ 'ph-fill' if book_status == 'favorite' else 'ph-bold' }} ph-heart"></i>
-            <span>تفضيل</span>
-          </button>
-        </form>
-
-        <form action="{{ url_for('main.set_book_status', book_id=book.id, status='later') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="status-btn {{ 'active-later' if book_status == 'later' else '' }}" style="width:100%">
-            <i class="{{ 'ph-fill' if book_status == 'later' else 'ph-bold' }} ph-clock"></i>
-            <span>لاحقاً</span>
-          </button>
-        </form>
-
-        <form action="{{ url_for('main.set_book_status', book_id=book.id, status='reading') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="status-btn {{ 'active-reading' if book_status == 'reading' else '' }}" style="width:100%">
-            <i class="{{ 'ph-fill' if book_status == 'reading' else 'ph-bold' }} ph-book-open"></i>
-            <span>أقرأه</span>
-          </button>
-        </form>
-
-        <form action="{{ url_for('main.set_book_status', book_id=book.id, status='on_hold') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="status-btn {{ 'active-on_hold' if book_status == 'on_hold' else '' }}" style="width:100%">
-            <i class="{{ 'ph-fill' if book_status == 'on_hold' else 'ph-bold' }} ph-pause"></i>
-            <span>معلق</span>
-          </button>
-        </form>
-
-        <!-- Toggle Dropped -->
-        <form action="{{ url_for('main.set_book_status', book_id=book.id, status='dropped') }}" method="POST"
-          style="grid-column: span 2;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="status-btn {{ 'active-dropped' if book_status == 'dropped' else '' }}"
-            style="width:100%; flex-direction: row; justify-content: center;">
-            <i class="{{ 'ph-fill' if book_status == 'dropped' else 'ph-bold' }} ph-x-circle"></i>
-            <span>توقف عن القراءة</span>
-          </button>
-        </form>
-
-        <!-- Mark Finished -->
-        <form action="{{ url_for('main.set_book_status', book_id=book.id, status='finished') }}" method="POST"
-          style="grid-column: span 2;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="status-btn btn-finish {{ 'is-finished' if book_status == 'finished' else '' }}"
-            style="width:100%">
-            <i class="ph-bold ph-check-circle"></i>
-            <span>{{ 'أتممت القراءة' if book_status == 'finished' else 'تحديد كمقروء' }}</span>
-          </button>
-        </form>
-      </div>
-
-      <!-- Reading Progress -->
-      {% if book_status == 'reading' %}
-      <div class="progress-card">
-        <h5 class="mb-3" style="font-size: 0.9rem; color: var(--text-muted);">تقدم القراءة</h5>
-        <div class="relative mb-3">
-          <svg viewBox="0 0 36 36" class="circular-chart">
-            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            <path class="circle" stroke-dasharray="{{ status_entry.reading_progress or 0 }}, 100"
-              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            <text x="18" y="20.35" class="percentage">{{ status_entry.reading_progress or 0 }}%</text>
-          </svg>
-        </div>
-        <form action="{{ url_for('main.update_reading_progress', book_id=book.id) }}" method="POST"
-          class="d-flex gap-2 justify-content-center">
-          <input type="number" name="progress"
-            class="form-control form-control-sm text-center bg-transparent text-white border-secondary"
-            value="{{ status_entry.reading_progress or 0 }}" min="0" max="100" style="width: 70px;">
-          <button class="btn btn-sm btn-outline-primary"><i class="ph-bold ph-check"></i></button>
-        </form>
-      </div>
-      {% endif %}
-
-      {% if book.file_url %}
-      <a href="{{ url_for('main.book_read', book_id=book.id) }}" class="btn btn-primary mt-3 w-100"
-        style="padding: 0.8rem; border-radius: 12px; gap: 0.5rem; display: flex; align-items: center; justify-content: center;">
-        <i class="ph-bold ph-book-open-text" style="font-size: 1.2rem;"></i>
-        قراءة الكتاب
-      </a>
-      {% endif %}
-
-      <!-- Delete -->
-      <form method="post" action="{{ url_for('main.delete_book', book_id=book.id) }}"
-        onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب من مكتبتك؟');">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="danger-btn">
-          <i class="ph ph-trash"></i>
-          حذف من المكتبة
-        </button>
-      </form>
-
-      <!-- Share Buttons -->
-      <div class="d-flex justify-content-center gap-3 mt-4">
-        <a href="https://twitter.com/intent/tweet?text=أقرأ كتاب {{ book.title }} حالياً!&url={{ request.url }}"
-          target="_blank" class="share-btn share-twitter"><i class="ph-fill ph-twitter-logo"></i></a>
-        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" target="_blank"
-          class="share-btn share-facebook"><i class="ph-fill ph-facebook-logo"></i></a>
-        <a href="whatsapp://send?text=أنصحك بقراءة كتاب {{ book.title }} {{ request.url }}"
-          class="share-btn share-whatsapp"><i class="ph-fill ph-whatsapp-logo"></i></a>
-        <button onclick="navigator.clipboard.writeText(window.location.href); alert('تم نسخ الرابط!')"
-          class="share-btn share-copy"><i class="ph-bold ph-link"></i></button>
-      </div>
-    </aside>
-
-    <!-- RIGHT CONTENT -->
-    <div class="content-side">
-
-      <div class="animate-up">
-        <!-- Meta Tags -->
-        <div class="meta-tags d-flex flex-wrap gap-3 mb-4">
-          <span class="meta-tag fw-bold" style="color: var(--lux-cream); background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.3);">
-            <i class="ph-fill ph-book-open"></i> كتاب
-          </span>
-          {% if book.rating %}
-          <span class="meta-tag fw-bold" style="color: var(--lux-gold); border-color: rgba(201,168,76,0.3);">
-            <i class="ph-fill ph-star"></i> {{ book.rating }}
-          </span>
-          {% endif %}
-          {% if book.published_date %}
-          <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
-            <i class="ph-fill ph-calendar text-muted"></i> {{ book.published_date.split('-')[0] if '-' in book.published_date else book.published_date }}
-          </span>
-          {% endif %}
-          {% if book.page_count %}
-          <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
-            <i class="ph ph-file-text text-muted"></i> {{ book.page_count }} صفحة
-          </span>
-          {% endif %}
+<main class="pt-32 min-h-screen bg-surface">
+    <div class="max-w-screen-2xl mx-auto px-8 lg:px-24 pb-24">
+        
+        <!-- Breadcrumb / Return Path -->
+        <div class="mb-16">
+            <a href="javascript:history.back()" class="group inline-flex items-center gap-4 text-on-surface/40 hover:text-primary transition-all font-label text-xs uppercase tracking-widest font-black">
+                <span class="material-symbols-outlined text-sm group-hover:-translate-x-2 transition-transform">arrow_back</span>
+                Return to Archives
+            </a>
         </div>
 
-        <!-- Title & Author -->
-        <h1 class="book-title mb-2" style="font-size: clamp(3rem, 6vw, 4.5rem); letter-spacing: -0.02em;">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
-        {% if book.rating %}
-        <div class="d-flex align-center gap-2 mb-3">
-          <div class="stars-display" style="color: var(--lux-gold); font-size: 1.2rem;">
-            {% for i in range(1, 6) %}
-            <i class="ph-fill ph-star"
-              style="opacity: {{ 1 if i <= book.rating|round else 0.3 }}"></i>
-            {% endfor %}
-          </div>
-          <span style="font-weight: 700; color: var(--lux-cream); font-size: 1.2rem;">{{ book.rating }}</span>
-          <span class="text-muted small" style="opacity: 0.7;">تقييم عالمي</span>
-        </div>
-        {% endif %}
-        <div class="book-author" style="font-size: 1.8rem; letter-spacing: 0.02em;">
-          بقلم <strong style="color: var(--lux-gold);">{{ book.author or 'مؤلف غير معروف' }}</strong>
-          {% if book.published_date %}
-          <span class="text-muted small ms-2" style="font-size: 1rem;">({{ book.published_date.split('-')[0] if '-' in book.published_date else book.published_date }})</span>
-          {% endif %}
-        </div>
-
-        <div class="classic-separator animate-up delay-1">
-          <i class="ph-fill ph-diamonds-four"></i>
-        </div>
-
-        <!-- Extended Info - بطاقة معلومات الكتاب -->
-        <div class="glass-panel mb-5 p-4 animate-up delay-1" style="background: rgba(15, 12, 8, 0.6); border: 1px solid rgba(201, 168, 76, 0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-          <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.4rem; border-color: rgba(201,168,76,0.2) !important;">
-            <i class="ph-fill ph-info text-primary" style="color: var(--lux-gold) !important;"></i> بيانات الإصدار
-          </h3>
-          <div class="info-grid">
-            {% if book.categories %}
-            <div class="info-item">
-              <span class="info-label"><i class="ph-fill ph-books mb-1"></i> التصنيف</span>
-              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.categories.split(',')[0] if book.categories else 'عام' }}</span>
-            </div>
-            {% endif %}
-            {% if book.language %}
-            <div class="info-item">
-              <span class="info-label"><i class="ph-fill ph-translate mb-1"></i> اللغة</span>
-              <span class="info-value text-uppercase" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.language|upper }}</span>
-            </div>
-            {% endif %}
-            {% if book.publisher %}
-            <div class="info-item">
-              <span class="info-label"><i class="ph-fill ph-buildings mb-1"></i> الناشر</span>
-              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.publisher }}</span>
-            </div>
-            {% endif %}
-            {% if book.page_count %}
-            <div class="info-item">
-              <span class="info-label"><i class="ph-fill ph-files mb-1"></i> الصفحات</span>
-              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.page_count }}</span>
-            </div>
-            {% endif %}
-            {% if book.published_date %}
-            <div class="info-item">
-              <span class="info-label"><i class="ph-fill ph-calendar-blank mb-1"></i> تاريخ النشر</span>
-              <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.published_date }}</span>
-            </div>
-            {% endif %}
-            {% if book.isbn %}
-            <div class="info-item">
-              <span class="info-label"><i class="ph-fill ph-barcode mb-1"></i> ردمك (ISBN)</span>
-              <span class="info-value" style="font-family: monospace; font-size: 1rem; color: var(--lux-text-muted);">{{ book.isbn }}</span>
-            </div>
-            {% endif %}
-            <div class="info-item" style="border-right: none;">
-              <span class="info-label"><i class="ph-fill ph-clock mb-1"></i> تاريخ الإضافة</span>
-              <span class="info-value" style="font-family: monospace; font-size: 1rem; color: var(--lux-text-muted);">{{ book.created_at.strftime('%Y-%m-%d') }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Description Card -->
-        <div class="quote-card mb-5 p-5 animate-up delay-1" style="background: rgba(15, 12, 8, 0.4); border-radius: 8px;">
-          <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.5rem; color: var(--lux-gold); border-color: rgba(201,168,76,0.1) !important;">
-            <i class="ph-fill ph-text-align-right" style="color: var(--lux-gold);"></i> نبذة عن الكتاب
-            {% if book.ai_generated_desc %}
-            <span class="badge ms-2" style="font-size: 0.75rem; background: rgba(201,168,76,0.1); border: 1px solid var(--lux-gold); color: var(--lux-gold); font-weight: 500;">✨ ملخص ذكي</span>
-            {% endif %}
-          </h3>
-          <div class="book-description-content" style="line-height: 2.2; font-size: 1.25rem; color: var(--lux-cream); text-align: justify; text-justify: inter-word; opacity: 0.95;">
-            {{ book.description | safe if book.description else 'لا يوجد وصف متاح لهذا الكتاب.' }}
-          </div>
-        </div>
-
-        <!-- Timeline -->
-        {% if status_entry and (status_entry.started_at or status_entry.finished_at) %}
-        <div class="timeline-badge">
-          {% if status_entry.started_at %}
-          <div class="timeline-item">
-            <i class="ph-fill ph-calendar-plus" style="color: var(--primary-400);"></i>
-            <span>بدأت: <strong>{{ status_entry.started_at.strftime('%Y-%m-%d') }}</strong></span>
-          </div>
-          {% endif %}
-
-          {% if status_entry.finished_at %}
-          <div class="timeline-item">
-            <i class="ph-fill ph-check-circle" style="color: #10b981;"></i>
-            <span>أنهيت: <strong>{{ status_entry.finished_at.strftime('%Y-%m-%d') }}</strong></span>
-          </div>
-          {% endif %}
-        </div>
-        {% endif %}
-      </div>
-
-      <!-- AI Section -->
-      <section class="glass-panel animate-up delay-1 mb-4">
-        <h3 class="section-heading">
-          <i class="ph-fill ph-sparkle text-primary"></i>
-          قدرات الذكاء الاصطناعي
-        </h3>
-
-        <div class="ai-grid">
-          <div class="ai-card" onclick="openChatModal()">
-            <div class="ai-icon">
-              <i class="ph-fill ph-chat-circle-text"></i>
-            </div>
-            <h4 class="font-bold mb-2">محادثة الكتاب</h4>
-            <p class="text-sm text-muted">ناقش المحتوى واطرح الأسئلة</p>
-          </div>
-
-          <div class="ai-card" onclick="startAiSummary()">
-            <div class="ai-icon">
-              <i class="ph-fill ph-magic-wand"></i>
-            </div>
-            <h4 class="font-bold mb-2">التلخيص الذكي</h4>
-            <p class="text-sm text-muted">احصل على أهم النقاط فوراً</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Rating Section -->
-      <section class="glass-panel animate-up delay-1 mb-4">
-        <h3 class="section-heading">
-          <i class="ph-fill ph-star text-warning"></i>
-          تقييمي للكتاب
-        </h3>
-        <form action="{{ url_for('main.rate_book', book_id=book.id) }}" method="POST" class="flex flex-col gap-3">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="flex flex-row-reverse justify-end gap-2 star-rating-input">
-            {% set user_r = user_rating.rating|int if user_rating else 0 %}
-            {% for i in range(5, 0, -1) %}
-            <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" {{ 'checked' if user_r==i else '' }}
-              onchange="this.form.submit()" class="hidden peer">
-            <label for="star{{ i }}"
-              class="cursor-pointer text-2xl text-white/20 peer-checked:text-yellow-400 hover:text-yellow-400 hover:scale-110 transition-transform">
-              <i class="ph-fill ph-star"></i>
-            </label>
-            {% endfor %}
-          </div>
-          <p class="text-xs text-muted">اضغط على النجوم للتقييم</p>
-        </form>
-        <style>
-          .star-rating-input:hover label {
-            color: #fbbf24;
-          }
-
-          .star-rating-input label:hover~label {
-            color: #fbbf24;
-          }
-
-          .star-rating-input label:hover {
-            color: #fbbf24;
-          }
-        </style>
-      </section>
-
-      <!-- Notes Section -->
-      <section class="glass-panel animate-up delay-2">
-        <h3 class="section-heading">
-          <i class="ph-fill ph-notebook text-primary"></i>
-          ملاحظاتي الشخصية
-        </h3>
-
-        <form action="{{ url_for('main.save_notes', book_id=book.id) }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <textarea name="notes" class="notes-area mb-4"
-            placeholder="سجل أفكارك، اقتباساتك، وما تعلمته من الكتاب هنا...">{{ book.notes or '' }}</textarea>
-
-          <div class="text-left mt-3">
-            <button type="submit" class="primary-btn flex items-center gap-2">
-              <i class="ph-bold ph-floppy-disk"></i>
-              حفظ الملاحظات
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <!-- Quotes Section -->
-      <section class="glass-panel animate-up delay-2 mt-4">
-        <div class="d-flex justify-between align-items-center mb-4">
-          <h3 class="section-heading mb-0">
-            <i class="ph-fill ph-quotes text-primary"></i> اقتباسات
-          </h3>
-          <button onclick="document.getElementById('addQuoteForm').classList.toggle('d-none')"
-            class="btn btn-sm btn-outline-primary">
-            <i class="ph-bold ph-plus"></i> إضافة
-          </button>
-        </div>
-
-        <!-- Add Form -->
-        <form id="addQuoteForm" class="d-none mb-4 p-3 bg-white-5 rounded" style="background: rgba(255,255,255,0.05);"
-          onsubmit="submitQuote(event)">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <textarea name="quote_text" id="quoteText" class="form-control mb-2 bg-transparent text-white" rows="3"
-            placeholder="نص الاقتباس..." required></textarea>
-          <div class="d-flex gap-2">
-            <input type="number" id="quotePage" class="form-control form-control-sm bg-transparent text-white"
-              placeholder="صفحة" style="max-width: 100px;">
-            <button class="btn btn-primary btn-sm">حفظ</button>
-          </div>
-        </form>
-
-        <!-- List -->
-        <div id="quotesList" class="quotes-list">
-          {% if quotes %}
-          {% for q in quotes %}
-          <div class="quote-card" id="quote-{{ q.id }}">
-            <div class="quote-text">{{ q.quote_text }}</div>
-            <div class="quote-meta">
-              <span>{% if q.page_number %}صـ {{ q.page_number }}{% endif %}</span>
-              <div class="d-flex gap-2">
-                <button class="btn-icon text-muted hover-text-danger" onclick="deleteQuote({{ q.id }})"><i
-                    class="ph-bold ph-trash"></i></button>
-                <button class="btn-icon text-muted hover-text-primary"
-                  onclick="copyQuote(this, {{ q.quote_text|tojson|safe }})"><i
-                    class="ph-bold ph-copy"></i></button>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-          {% else %}
-          <p class="text-muted text-center py-4" id="noQuotesMsg">لا توجد اقتباسات محفوظة.</p>
-          {% endif %}
-        </div>
-      </section>
-
-      <!-- Author Books -->
-      {% if author_books %}
-      {{ render_carousel_section('المزيد من أعمال ' ~ (book.author.split(',')[0] if book.author else 'المؤلف'), 'ph-fill ph-books', author_books, 'author-books', [], '#') }}
-      {% endif %}
-
-    </div>
-  </div>
-</div>
-
-<!-- Re-using chat modal script but inline if needed or keep existing include logic -->
-<!-- Note: The chat modal HTML structure we included at the top might need its own CSS/JS if not globally available. 
-     For now I will duplicate the minimal JS needed for the chat modal if it's not in base. -->
-
-<div class="chat-modal-overlay" id="chatModal">
-  <div class="glass-panel"
-    style="width: 90%; max-width: 600px; height: 80vh; padding: 0; display: flex; flex-direction: column;">
-    <div class="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-      <h5 class="font-bold flex items-center gap-2">
-        <i class="ph-fill ph-chat-circle-text text-primary"></i>
-        {{ book.title }}
-      </h5>
-      <button onclick="closeChatModal()"
-        class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center">
-        <i class="ph ph-x"></i>
-      </button>
-    </div>
-
-    <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatMessages">
-      <div class="bg-white/5 p-3 rounded-2xl rounded-tr-none w-fit max-w-[85%] border border-white/10">
-        مرحباً! 👋 أنا مساعدك الذكي. اسألني أي شيء عن هذا الكتاب.
-      </div>
-    </div>
-
-    <div class="p-4 border-t border-white/10 bg-white/5 flex gap-2">
-      <input type="text" id="chatInput"
-        class="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-500 transition"
-        placeholder="اكتب سؤالك هنا..." onkeypress="if(event.key==='Enter') sendChatMessage()">
-      <button onclick="sendChatMessage()"
-        class="w-12 h-12 bg-primary-600 rounded-xl hover:bg-primary-500 flex items-center justify-center text-white transition">
-        <i class="ph-fill ph-paper-plane-right"></i>
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-  function copyQuote(btn, text) {
-    navigator.clipboard.writeText(text);
-    const icon = btn.querySelector('i');
-    const originalClass = icon.className;
-    icon.className = 'ph-bold ph-check text-success';
-    setTimeout(() => { icon.className = originalClass; }, 2000);
-  }
-
-  function openChatModal() {
-    document.getElementById('chatModal').classList.add('active');
-    document.getElementById('chatInput').focus();
-  }
-
-  function closeChatModal() {
-    document.getElementById('chatModal').classList.remove('active');
-  }
-
-  function startAiSummary() {
-    openChatModal();
-    setTimeout(() => {
-      const input = document.getElementById('chatInput');
-      input.value = "لخص لي أهم النقاط في هذا الكتاب";
-      sendChatMessage();
-    }, 300);
-  }
-
-  // Style the modal overlay with JS to match if not in CSS
-  // The CSS in head handles .chat-modal-overlay
-
-  async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
-    if (!msg) return;
-
-    const container = document.getElementById('chatMessages');
-
-    // User Msg
-    container.innerHTML += `
-        <div class="flex justify-end">
-            <div class="bg-primary-600 text-white p-3 rounded-2xl rounded-tl-none w-fit max-w-[85%]">
-                ${msg}
-            </div>
-        </div>
-    `;
-    input.value = '';
-    container.scrollTop = container.scrollHeight;
-
-    // Loading indicator
-    const loadingId = 'loading-' + Date.now();
-    container.innerHTML += `
-        <div id="${loadingId}" class="bg-white/5 p-3 rounded-2xl rounded-tr-none w-fit max-w-[85%] border border-white/10 animate-pulse text-sm">
-            جاري التفكير...
-        </div>
-    `;
-    container.scrollTop = container.scrollHeight;
-
-    try {
-      const response = await fetch("{{ url_for('main.ai_chat') }}", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ message: msg + " (Context: Book Title: {{ book.title }})" })
-      });
-
-      const data = await response.json();
-
-      // Remove loading
-      const loadingEl = document.getElementById(loadingId);
-      if (loadingEl) loadingEl.remove();
-
-      // AI Reply
-      const aiReply = data.reply || "عذراً، لم أستطع فهم ذلك.";
-
-      container.innerHTML += `
-            <div class="bg-white/5 p-3 rounded-2xl rounded-tr-none w-fit max-w-[85%] border border-white/10">
-                ${aiReply}
-            </div>
-        `;
-
-      // If there are recommended books in reply
-      if (data.books && data.books.length > 0) {
-        let booksHtml = '<div class="mt-2 grid gap-2">';
-        data.books.forEach(b => {
-          booksHtml += `<div class="p-2 border border-white/10 rounded flex items-center gap-2">
-                    <i class="ph-bold ph-book"></i> <span>${b.title}</span>
-                 </div>`;
-        });
-        booksHtml += '</div>';
-        container.innerHTML += `
-                <div class="bg-white/5 p-3 rounded-2xl rounded-tr-none w-fit max-w-[85%] border border-white/10 mt-1">
-                    أرشح لك أيضاً:
-                    ${booksHtml}
+        <div class="flex flex-col lg:flex-row gap-24 items-start">
+            
+            <!-- Structural Book Pillar -->
+            <div class="w-full lg:w-[450px] shrink-0 sticky top-32">
+                <div class="relative group shadow-[0_50px_100px_-20px_rgba(115,92,0,0.15)] bg-surface-container-highest">
+                    <img src="{{ book.cover_url or 'https://placehold.co/800x1200/fbfbe2/a04100?text=Aurelian+Folio' }}" 
+                         alt="{{ book.title }}" 
+                         class="w-full aspect-[2/3] object-cover group-hover:scale-[1.02] transition-transform duration-700">
+                    
+                    <!-- Architectural Framing Overlay -->
+                    <div class="absolute inset-0 border-[24px] border-white/10 pointer-events-none transition-all group-hover:border-white/20"></div>
                 </div>
-             `;
-      }
 
-    } catch (err) {
-      console.error(err);
-      const loadingEl = document.getElementById(loadingId);
-      if (loadingEl) loadingEl.innerText = "حدث خطأ في الاتصال.";
-    }
+                <!-- Quick Metadata Blocks -->
+                <div class="mt-12 grid grid-cols-2 gap-px bg-on-surface/5 border border-on-surface/5">
+                    <div class="bg-surface p-6">
+                        <span class="font-label text-[10px] uppercase font-black text-secondary block mb-1">Curation Grade</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-headline text-2xl font-black text-primary">{{ book.average_rating or '4.8' }}</span>
+                            <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                        </div>
+                    </div>
+                    <div class="bg-surface p-6">
+                        <span class="font-label text-[10px] uppercase font-black text-secondary block mb-1">Volume Status</span>
+                        <span class="font-headline text-xl font-bold text-on-surface">Authenticated</span>
+                    </div>
+                </div>
+            </div>
 
-    container.scrollTop = container.scrollHeight;
-  }
+            <!-- Curatorial Analysis Area -->
+            <div class="flex-1 space-y-24">
+                
+                <!-- Core Description -->
+                <div class="space-y-8">
+                    <div class="space-y-4">
+                        <span class="font-label text-xs uppercase tracking-[0.6em] text-primary">Folio Entry No. {{ book.id }}</span>
+                        <h1 class="font-headline text-7xl font-black tracking-tighter leading-[1.1] text-on-surface">{{ book.title }}</h1>
+                        <p class="font-headline text-2xl font-bold text-secondary">{{ book.authors|join(' & ') if book.authors else (book.author or 'Anonymous Contributor') }}</p>
+                    </div>
 
-  /* ═══ Quotes Logic ═══ */
-  async function submitQuote(e) {
-    e.preventDefault();
-    const form = e.target;
-    // Convert form data to JSON object
-    const formData = new FormData(form);
-    const data = {};
-    formData.forEach((value, key) => data[key] = value);
+                    <div class="prose prose-stone max-w-none">
+                        <p class="font-body text-xl text-on-surface-variant leading-relaxed first-letter:text-5xl first-letter:font-headline first-letter:font-black first-letter:text-primary first-letter:mr-3 first-letter:float-left pt-6">
+                            {{ book.description or 'The text contained within this volume awaits comprehensive digital analysis. Its architectural significance and semantic structure are currently being cataloged by our recommendation algorithms. Initial scans suggest a work of profound intellectual value.' }}
+                        </p>
+                    </div>
+                </div>
 
-    try {
-      const res = await fetch(form.action, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      const result = await res.json();
+                <!-- Review Section / The Public Inquiry -->
+                <section class="space-y-12">
+                    <div class="flex flex-col md:flex-row justify-between items-end gap-8 pb-8 border-b border-on-surface/10">
+                        <div class="space-y-4">
+                            <h2 class="font-headline text-4xl font-black tracking-tight">Public Inquiry</h2>
+                            <p class="font-body text-sm text-on-surface-variant">Observations and annotations from fellow curators across the network.</p>
+                        </div>
+                        <button onclick="document.getElementById('reviewModal').showModal()" 
+                                class="bg-on-surface text-white font-headline font-black px-10 py-5 hover:bg-primary transition-all active:scale-[0.98] shadow-2xl flex items-center gap-3">
+                            <span class="material-symbols-outlined">add_comment</span>
+                            Submit Annotation
+                        </button>
+                    </div>
 
-      if (result.success) {
-        const q = result.quote;
-        const html = `
-           <div class="quote-card animate-up" id="quote-${q.id}">
-              <div class="quote-text">${q.text}</div>
-              <div class="quote-meta">
-                 <span>${q.page ? 'صـ ' + q.page : ''}</span>
-                 <div class="d-flex gap-2">
-                    <button class="btn-icon text-muted hover-text-danger" onclick="deleteQuote(${q.id})"><i class="ph-bold ph-trash"></i></button>
-                    <button class="btn-icon text-muted hover-text-primary" onclick="navigator.clipboard.writeText(\`${q.text}\`); alert('تم النسخ')"><i class="ph-bold ph-copy"></i></button>
-                 </div>
-              </div>
-           </div>`;
+                    <div class="space-y-12">
+                        {% if reviews %}
+                            {% for review in reviews %}
+                            <div class="flex gap-8 group">
+                                <div class="w-16 h-16 shrink-0 bg-surface-container-high overflow-hidden border border-on-surface/5 flex items-center justify-center font-headline font-black text-xl text-primary">
+                                    {{ review.user.username[0]|upper }}
+                                </div>
+                                <div class="flex-1 space-y-4">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-headline font-black text-lg">{{ review.user.username }}</h4>
+                                            <span class="font-label text-[10px] uppercase font-bold text-on-surface/30">{{ review.created_at.strftime('%d %B %Y') }}</span>
+                                        </div>
+                                        <div class="flex text-primary text-xs" dir="ltr">
+                                            {% for i in range(5) %}
+                                                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' {{ 1 if i < (review.rating or 5) else 0 }};">star</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="font-body text-on-surface-variant leading-relaxed italic">"{{ review.content }}"</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Informative Placeholder -->
+                            <div class="py-24 text-center space-y-6 bg-surface-container-low border border-dashed border-on-surface/10">
+                                <span class="material-symbols-outlined text-4xl text-on-surface/10">history_edu</span>
+                                <p class="font-body italic text-on-surface/30">No official annotations have been committed for this volume yet.</p>
+                                <button onclick="document.getElementById('reviewModal').showModal()" class="text-primary font-headline font-bold border-b border-primary hover:text-on-surface hover:border-on-surface transition-all">Be the first to analyze</button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
 
-        const list = document.getElementById('quotesList');
-        const noMsg = document.getElementById('noQuotesMsg');
-        if (noMsg) noMsg.remove();
-        list.insertAdjacentHTML('afterbegin', html);
+    <!-- Annotation Modal -->
+    <dialog id="reviewModal" class="bg-surface border border-on-surface/10 p-12 shadow-2xl w-full max-w-xl backdrop:bg-on-background/80 backdrop:backdrop-blur-xl">
+        <div class="space-y-12">
+            <div class="flex justify-between items-start">
+                <div class="space-y-4">
+                    <span class="font-label text-xs uppercase tracking-[0.4em] text-primary">Annotation</span>
+                    <h3 class="font-headline text-4xl font-black">Commit Inquiry</h3>
+                </div>
+                <button onclick="document.getElementById('reviewModal').close()" class="text-on-surface/40 hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-3xl">close</span>
+                </button>
+            </div>
+            
+            <form action="{{ url_for('main.add_review', book_id=book.id) }}" method="POST" class="space-y-12">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="space-y-8">
+                    <!-- Star Rating -->
+                    <div class="space-y-4">
+                        <label class="font-label text-[10px] uppercase font-bold text-secondary text-center block">Quality Assessment</label>
+                        <div class="flex justify-center items-center gap-4" dir="ltr">
+                            <input type="hidden" name="rating" id="ratingValue" value="5">
+                            {% for i in range(1, 6) %}
+                            <span class="material-symbols-outlined text-4xl text-on-surface/10 cursor-pointer hover:scale-125 hover:text-primary transition-all star-btn" 
+                                  data-val="{{ i }}" 
+                                  style="font-variation-settings: 'FILL' 1; color: #a04100;">star</span>
+                            {% endfor %}
+                        </div>
+                    </div>
 
-        form.reset();
-        document.getElementById('addQuoteForm').classList.add('d-none');
-      } else {
-        alert(result.error || 'حدث خطأ');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('فشل الاتصال');
-    }
-  }
+                    <div class="space-y-4">
+                        <label class="font-label text-[10px] uppercase font-bold text-secondary">Critical Notes</label>
+                        <textarea name="content" rows="5" required 
+                                  class="w-full bg-transparent border-2 border-on-surface/10 p-6 font-body text-lg focus:border-primary outline-none transition-all placeholder:text-on-surface/20" 
+                                  placeholder="Document your findings here..."></textarea>
+                    </div>
+                </div>
 
-  async function deleteQuote(id) {
-    if (!confirm('حذف الاقتباس؟')) return;
-    try {
-      const res = await fetch(`/quotes/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        const el = document.getElementById(`quote-${id}`);
-        if (el) {
-          el.style.opacity = '0';
-          setTimeout(() => el.remove(), 300);
-        }
-      } else {
-        alert(data.error);
-      }
-    } catch (e) {
-      alert('حدث خطأ');
-    }
-  }
+                <div class="pt-8">
+                    <button type="submit" class="w-full bg-primary text-white font-headline font-black py-6 text-xl hover:bg-on-surface transition-all active:scale-[0.98] shadow-2xl">
+                        Archive Annotation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const stars = document.querySelectorAll('.star-btn');
+    const ratingInput = document.getElementById('ratingValue');
+    const primaryColor = '#a04100';
+    const mutedColor = 'rgba(0,0,0,0.1)';
+
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const val = parseInt(star.getAttribute('data-val'));
+            ratingInput.value = val;
+            
+            stars.forEach(s => {
+                const sVal = parseInt(s.getAttribute('data-val'));
+                if (sVal <= val) {
+                    s.style.fontVariationSettings = "'FILL' 1";
+                    s.style.color = primaryColor;
+                } else {
+                    s.style.fontVariationSettings = "'FILL' 0";
+                    s.style.color = mutedColor;
+                }
+            });
+        });
+    });
+
+    // Initialize state
+    window.addEventListener('DOMContentLoaded', () => {
+        const val = parseInt(ratingInput.value);
+        stars.forEach(s => {
+            const sVal = parseInt(s.getAttribute('data-val'));
+            if (sVal <= val) {
+                s.style.fontVariationSettings = "'FILL' 1";
+                s.style.color = primaryColor;
+            }
+        });
+    });
 </script>
-
-<style>
-  /* Extra modal styles just in case */
-  .chat-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s;
-  }
-
-  .chat-modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-  }
-</style>
-
 {% endblock %}

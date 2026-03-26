@@ -1,336 +1,92 @@
 {% extends "base.html" %}
 
-{% block title %}اختر اهتماماتك | مكتبة الإلهام{% endblock %}
-
-{% block head %}
-<style>
-    .onboarding-page {
-        min-height: 100vh;
-        padding: 2rem 0;
-        display: flex;
-        align-items: center;
-    }
-
-    .onboarding-card {
-        background: var(--bg-card);
-        backdrop-filter: blur(30px);
-        border: var(--border-glass);
-        border-radius: var(--radius-2xl);
-        padding: 2.5rem;
-        max-width: 800px;
-        margin: 0 auto;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .onboarding-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--gradient-primary);
-    }
-
-    .onboarding-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    .onboarding-icon {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: var(--gradient-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        font-size: 2.5rem;
-        color: white;
-        box-shadow: 0 8px 30px var(--primary-glow);
-        animation: pulse-glow 2s infinite;
-    }
-
-    @keyframes pulse-glow {
-
-        0%,
-        100% {
-            box-shadow: 0 8px 30px var(--primary-glow);
-        }
-
-        50% {
-            box-shadow: 0 8px 50px var(--primary-glow), 0 0 60px var(--primary-glow);
-        }
-    }
-
-    .onboarding-title {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-    }
-
-    .onboarding-subtitle {
-        color: var(--text-secondary);
-        font-size: 1.1rem;
-    }
-
-    .interests-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .interest-item {
-        position: relative;
-        background: rgba(255, 255, 255, 0.03);
-        border: 2px solid rgba(255, 255, 255, 0.08);
-        border-radius: var(--radius-xl);
-        padding: 1.25rem 1rem;
-        text-align: center;
-        cursor: pointer;
-        transition: all var(--transition-base);
-    }
-
-    .interest-item:hover {
-        transform: translateY(-4px);
-        border-color: rgba(249, 115, 22, 0.3);
-        background: rgba(249, 115, 22, 0.05);
-    }
-
-    .interest-item.selected {
-        background: rgba(249, 115, 22, 0.1);
-        border-color: var(--primary);
-        box-shadow: 0 4px 20px var(--primary-glow);
-    }
-
-    .interest-item.selected::after {
-        content: "✓";
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        width: 28px;
-        height: 28px;
-        background: var(--gradient-primary);
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 0.9rem;
-        box-shadow: 0 2px 10px var(--primary-glow);
-    }
-
-    .interest-icon {
-        width: 54px;
-        height: 54px;
-        border-radius: var(--radius-lg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 0.75rem;
-        font-size: 1.5rem;
-        color: white;
-    }
-
-    .interest-name {
-        font-weight: 600;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-    }
-
-    .interest-checkbox {
-        display: none;
-    }
-
-    .selection-hint {
-        text-align: center;
-        color: var(--text-muted);
-        margin-bottom: 1.5rem;
-    }
-
-    .selection-count {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: rgba(249, 115, 22, 0.1);
-        border: 1px solid rgba(249, 115, 22, 0.2);
-        padding: 0.625rem 1.25rem;
-        border-radius: var(--radius-full);
-        font-weight: 600;
-        color: var(--primary-light);
-    }
-
-    .btn-start {
-        width: 100%;
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
-        font-weight: 700;
-        background: var(--gradient-primary);
-        border: none;
-        border-radius: var(--radius-lg);
-        color: white;
-        cursor: pointer;
-        transition: all var(--transition-base);
-        box-shadow: 0 4px 20px var(--primary-glow);
-    }
-
-    .btn-start:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px var(--primary-glow);
-    }
-
-    .btn-start:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .skip-link {
-        display: block;
-        text-align: center;
-        margin-top: 1.25rem;
-        color: var(--text-muted);
-        text-decoration: none;
-        font-size: 0.9rem;
-        transition: color var(--transition-fast);
-    }
-
-    .skip-link:hover {
-        color: var(--text-secondary);
-    }
-
-    .progress-bar-custom {
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-full);
-        margin-top: 1.5rem;
-        overflow: hidden;
-    }
-
-    .progress-bar-custom .progress-fill {
-        height: 100%;
-        background: var(--gradient-primary);
-        border-radius: inherit;
-        transition: width var(--transition-base);
-    }
-</style>
-{% endblock %}
+{% block title %}Acquisition Protocol | The Digital Curator{% endblock %}
 
 {% block content %}
-<div class="onboarding-page">
-    <div class="container">
-        <div class="onboarding-card animate-on-scroll scale-in is-visible">
-            <div class="onboarding-header">
-                <div class="onboarding-icon">
-                    <i class="ph ph-sparkle"></i>
+<main class="min-h-screen bg-surface flex items-center justify-center px-8 py-24 relative overflow-hidden">
+    <!-- Architectural Watermark -->
+    <div class="absolute -bottom-48 -left-48 font-headline text-[30rem] font-black text-on-surface/[0.02] select-none pointer-events-none rotate-12">LUMINA</div>
+    
+    <div class="w-full max-w-4xl space-y-16 relative z-10">
+        
+        <!-- Welcome Sequence -->
+        <div class="text-center space-y-8">
+            <div class="w-24 h-24 bg-on-surface text-white mx-auto flex items-center justify-center shadow-[0_50px_100px_-20px_rgba(160,65,0,0.5)] relative group">
+                <div class="absolute inset-0 border-[8px] border-primary/20 animate-ping"></div>
+                <span class="material-symbols-outlined text-4xl group-hover:rotate-12 transition-transform">architecture</span>
+            </div>
+            
+            <div class="space-y-4">
+                <span class="font-label text-[10px] uppercase tracking-[0.8em] text-primary font-black">Initialization Sequence Active</span>
+                <h1 class="font-headline text-6xl lg:text-7xl font-black text-on-surface tracking-tighter leading-none">
+                    Welcome to the <span class="italic text-primary border-b-[8px] border-on-surface/5">Digital Archive.</span>
+                </h1>
+                <p class="font-body text-xl lg:text-2xl text-on-surface-variant max-w-2xl mx-auto italic">
+                    Your curatorial journey commences here. We are calibrating our neural networks to align with your acquisition preferences.
+                </p>
+            </div>
+        </div>
+
+        <!-- Progress Metrics -->
+        <div class="flex items-center gap-4 max-w-md mx-auto">
+            <div class="h-1 flex-1 bg-primary relative shadow-[0_0_15px_rgba(160,65,0,0.4)]">
+                <div class="absolute -top-3 -right-3 w-8 h-8 bg-on-surface text-white font-headline font-black text-[10px] flex items-center justify-center shadow-2xl">01</div>
+            </div>
+            <div class="h-1 flex-1 bg-on-surface/5 relative">
+                <div class="absolute -top-3 -right-3 w-8 h-8 bg-surface-container-high text-on-surface/20 border border-on-surface/10 font-headline font-black text-[10px] flex items-center justify-center">02</div>
+            </div>
+            <div class="h-1 flex-1 bg-on-surface/5 relative">
+                <div class="absolute -top-3 -right-3 w-8 h-8 bg-surface-container-high text-on-surface/20 border border-on-surface/10 font-headline font-black text-[10px] flex items-center justify-center">03</div>
+            </div>
+        </div>
+
+        <!-- Capability Matrix -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-surface-container-high p-12 border border-on-surface/5 space-y-8 group hover:bg-on-surface transition-all duration-700 shadow-2xl">
+                <div class="w-16 h-16 bg-surface flex items-center justify-center text-primary shadow-2xl group-hover:bg-primary group-hover:text-white transition-all">
+                    <span class="material-symbols-outlined text-3xl">analytics</span>
                 </div>
-                <h1 class="onboarding-title">مرحباً {{ current_user.name }}! 👋</h1>
-                <p class="onboarding-subtitle">اختر اهتماماتك لنقدم لك أفضل التوصيات</p>
+                <div class="space-y-2">
+                    <h3 class="font-headline font-black text-lg uppercase tracking-wider text-on-surface group-hover:text-white transition-colors">Neural Sync</h3>
+                    <p class="font-label text-[9px] uppercase tracking-widest text-on-surface/40 group-hover:text-white/40 transition-colors">Behavioral Recommendation Scaling</p>
+                </div>
             </div>
 
-            <form method="POST" id="interestsForm">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                <div class="selection-hint">
-                    <span class="selection-count">
-                        <i class="ph ph-check-circle"></i>
-                        <span id="selectedCount">0</span> / 3 على الأقل
-                    </span>
-                    <div class="progress-bar-custom mt-3">
-                        <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
-                    </div>
+            <div class="bg-surface-container-high p-12 border border-on-surface/5 space-y-8 group hover:bg-on-surface transition-all duration-700 shadow-2xl">
+                <div class="w-16 h-16 bg-surface flex items-center justify-center text-secondary shadow-2xl group-hover:bg-primary group-hover:text-white transition-all">
+                    <span class="material-symbols-outlined text-3xl">psychology</span>
                 </div>
-
-                <div class="interests-grid">
-                    {% set interests = [
-                    {"id": "programming", "name": "البرمجة", "icon": "code", "color": "#3b82f6"},
-                    {"id": "artificial-intelligence", "name": "الذكاء الاصطناعي", "icon": "robot", "color": "#8b5cf6"},
-                    {"id": "novels", "name": "الروايات", "icon": "book-open", "color": "#ec4899"},
-                    {"id": "history", "name": "التاريخ", "icon": "clock-counter-clockwise", "color": "#78350f"},
-                    {"id": "science", "name": "العلوم", "icon": "atom", "color": "#06b6d4"},
-                    {"id": "psychology", "name": "علم النفس", "icon": "brain", "color": "#a855f7"},
-                    {"id": "business", "name": "الأعمال", "icon": "chart-line", "color": "#22c55e"},
-                    {"id": "philosophy", "name": "الفلسفة", "icon": "lightbulb", "color": "#f97316"},
-                    {"id": "religion", "name": "الدين", "icon": "star", "color": "#64748b"},
-                    {"id": "health", "name": "الصحة", "icon": "heart-pulse", "color": "#ef4444"},
-                    {"id": "art", "name": "الفن والتصميم", "icon": "paint-brush", "color": "#f43f5e"},
-                    {"id": "travel", "name": "السفر", "icon": "airplane", "color": "#0ea5e9"}
-                    ] %}
-
-                    {% for interest in interests %}
-                    <label class="interest-item" data-interest="{{ interest.id }}">
-                        <input type="checkbox" name="interests" value="{{ interest.id }}" class="interest-checkbox">
-                        <div class="interest-icon" style="background: {{ interest.color }};">
-                            <i class="ph ph-{{ interest.icon }}"></i>
-                        </div>
-                        <div class="interest-name">{{ interest.name }}</div>
-                    </label>
-                    {% endfor %}
+                <div class="space-y-2">
+                    <h3 class="font-headline font-black text-lg uppercase tracking-wider text-on-surface group-hover:text-white transition-colors">Semantic Hub</h3>
+                    <p class="font-label text-[9px] uppercase tracking-widest text-on-surface/40 group-hover:text-white/40 transition-colors">Intellectual Dialogue Integration</p>
                 </div>
+            </div>
 
-                <button type="submit" class="btn-start" id="startBtn" disabled>
-                    <i class="ph ph-rocket-launch me-2"></i>
-                    ابدأ الاستكشاف
-                </button>
-            </form>
+            <div class="bg-surface-container-high p-12 border border-on-surface/5 space-y-8 group hover:bg-on-surface transition-all duration-700 shadow-2xl">
+                <div class="w-16 h-16 bg-surface flex items-center justify-center text-on-surface/20 shadow-2xl group-hover:bg-primary group-hover:text-white transition-all">
+                    <span class="material-symbols-outlined text-3xl">inventory_2</span>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-headline font-black text-lg uppercase tracking-wider text-on-surface group-hover:text-white transition-colors">Deep Archive</h3>
+                    <p class="font-label text-[9px] uppercase tracking-widest text-on-surface/40 group-hover:text-white/40 transition-colors">Universal Volume Integration Engine</p>
+                </div>
+            </div>
+        </div>
 
-            <a href="{{ url_for('explore.index') }}?skip_onboarding=1" class="skip-link">
-                <i class="ph ph-arrow-left me-1"></i>
-                تخطي الآن
+        <!-- Terminal Actions -->
+        <div class="flex flex-col md:flex-row items-center justify-center gap-8 pt-12">
+            <a href="{{ url_for('prefs.form') }}" class="w-full md:w-auto bg-on-surface text-white px-16 py-8 font-headline font-black text-xs uppercase tracking-[0.3em] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.4)] hover:bg-primary transition-all flex items-center justify-center gap-8 group">
+                Commence Calibration
+                <span class="material-symbols-outlined transform rotate-180 group-hover:translate-x-4 transition-transform">arrow_forward</span>
+            </a>
+            <a href="{{ url_for('main.home') }}" class="font-headline font-black text-[10px] uppercase tracking-[0.4em] text-on-surface/20 hover:text-primary transition-colors">
+                Bypass Protocol
             </a>
         </div>
+
+        <footer class="pt-24 text-center">
+            <p class="font-label text-[8px] uppercase tracking-[0.8em] font-black text-on-surface/10 italic">Archivist Onboarding Sequence v4.0.2 // Digital Curator</p>
+        </footer>
     </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const checkboxes = document.querySelectorAll('.interest-checkbox');
-        const countDisplay = document.getElementById('selectedCount');
-        const startBtn = document.getElementById('startBtn');
-        const progressBar = document.getElementById('progressBar');
-        const minRequired = 3;
-
-        // Function to update UI based on current state
-        function updateUI() {
-            const checkedBoxes = document.querySelectorAll('.interest-checkbox:checked');
-            const count = checkedBoxes.length;
-
-            // Update counter
-            countDisplay.textContent = count;
-
-            // Update progress bar
-            const progress = Math.min((count / minRequired) * 100, 100);
-            progressBar.style.width = progress + '%';
-
-            // Enable/disable button
-            startBtn.disabled = count < minRequired;
-        }
-
-        checkboxes.forEach(checkbox => {
-            // Listen for CHANGE event on the checkbox itself
-            checkbox.addEventListener('change', function () {
-                const parentLabel = this.closest('.interest-item');
-                if (this.checked) {
-                    parentLabel.classList.add('selected');
-                } else {
-                    parentLabel.classList.remove('selected');
-                }
-                updateUI();
-            });
-
-            // Initialize state (in case browser remembers selection on reload)
-            if (checkbox.checked) {
-                checkbox.closest('.interest-item').classList.add('selected');
-            }
-        });
-
-        // Initial UI update
-        updateUI();
-    });
-</script>
+</main>
 {% endblock %}

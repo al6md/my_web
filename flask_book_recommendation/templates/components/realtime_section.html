@@ -1,63 +1,40 @@
-{% from "components/macros.html" import render_book_card, render_carousel_section %}
+{% from "components/macros.html" import render_carousel_section %}
 
 {# ═══════════════════════════════════════════════════════════════════════
-   🔄 Real-time "Updated for You" Section
-   Injected dynamically via /api/realtime_feed
-═══════════════════════════════════════════════════════════════════════ #}
+   LIVE SIGNAL — Adaptive Synchronization
+   ═══════════════════════════════════════════════════════════════════════ #}
 
 {% if realtime_books and realtime_books|length > 0 %}
-<div class="realtime-section-wrapper" data-aos="fade-up">
-    <style>
-        .realtime-section-wrapper {
-            animation: realtimeFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        @keyframes realtimeFadeIn {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .realtime-badge-pulse {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.3rem 0.75rem;
-            background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(184,115,51,0.15));
-            border: 1px solid rgba(201,168,76,0.3);
-            border-radius: 20px;
-            font-size: 0.7rem;
-            color: var(--lux-gold, #d4a853);
-            letter-spacing: 0.08em;
-            animation: badgePulse 2s ease-in-out infinite;
-        }
-        @keyframes badgePulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.3); }
-            50%      { box-shadow: 0 0 0 8px rgba(201,168,76,0); }
-        }
-    </style>
+<section class="space-y-12">
+    <div id="section-realtime_adaptive">
+        {{ render_carousel_section(
+            title='In Flux',
+            icon='bolt',
+            books=realtime_books,
+            id_prefix='realtime_adaptive',
+            view_all_url='#'
+        ) }}
+    </div>
 
-    {{ render_carousel_section(
-        title='🔄 مُحدّث لك',
-        icon='ph-fill ph-arrows-clockwise',
-        books=realtime_books,
-        id_prefix='realtime_adaptive',
-        badges=[],
-        view_all_url='#',
-        color='gold'
-    ) }}
-
-    {# Pulsing "Live" badge overlaid on section header #}
     <script>
         (function() {
-            var sec = document.getElementById('section-realtime_adaptive');
+            const sec = document.getElementById('section-realtime_adaptive');
             if (sec) {
-                var header = sec.querySelector('.lux-section-title-row');
+                const header = sec.querySelector('header');
                 if (header) {
-                    var badge = document.createElement('span');
-                    badge.className = 'realtime-badge-pulse';
-                    badge.innerHTML = '<i class="ph-fill ph-lightning"></i> مباشر';
-                    header.appendChild(badge);
+                    const badgeContainer = header.querySelector('.flex.items-center.gap-6');
+                    if (badgeContainer) {
+                        const badgeOuter = document.createElement('div');
+                        badgeOuter.className = 'ml-8 flex items-center gap-3 bg-primary/10 px-4 py-2 border border-primary/20 shadow-2xl';
+                        badgeOuter.innerHTML = `
+                            <span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+                            <span class="font-label text-[10px] uppercase font-black text-primary tracking-widest">Live Matrix</span>
+                        `;
+                        badgeContainer.appendChild(badgeOuter);
+                    }
                 }
             }
         })();
     </script>
-</div>
+</section>
 {% endif %}

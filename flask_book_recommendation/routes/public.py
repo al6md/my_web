@@ -428,6 +428,15 @@ def book_detail(gid):
         book_data = fetch_archive_detail(gid)
     elif gid.startswith("ol_"):
         book_data = fetch_openlib_detail(gid)
+    elif gid.startswith("local_"):
+        try:
+            local_id = int(gid.replace("local_", ""))
+            from ..recommender.helpers import _book_to_dict
+            book = Book.query.get(local_id)
+            if book:
+                book_data = _book_to_dict(book)
+        except Exception as e:
+            print(f"Error fetching local book {gid}: {e}")
     elif gid.isdigit() and len(gid) == 13:
         book_data = fetch_itbook_detail(gid)
         if book_data is None:
@@ -437,30 +446,38 @@ def book_detail(gid):
                 "preview": f"https://itbook.store/search/{gid}", "source": "itbook",
             }
     else:
-        d = fetch_book_details(gid)
-        if d:
-            # fetch_book_details returns flat dict with title, author, etc.
-            # Not nested volumeInfo like the raw API
-            cover = d.get("cover") or ""
-            if cover and cover.startswith("http://"):
-                cover = "https://" + cover[7:]
-
-            book_data = {
-                "id": gid, 
-                "title": d.get("title") or "عنوان غير متوفر",
-                "author": d.get("author") or "مؤلف غير معروف",
-                "desc": d.get("description") or "لا يوجد وصف متاح لهذا الكتاب.", 
-                "cover": cover,
-                "preview": d.get("preview"),
-                "source": d.get("source", "google"),
-                "publishedDate": d.get("publishedDate"),
-                "pageCount": d.get("pageCount"),
-                "categories": d.get("categories") or [],
-                "rating": d.get("rating"),
-                "publisher": d.get("publisher"),
-                "language": d.get("language"),
-                "isbn": d.get("isbn"),
-            }
+        # 1. أولاً: البحث في قاعدة البيانات المحلية (سريع وموثوق)
+        from ..recommender.helpers import _book_to_dict
+        book = Book.query.filter_by(google_id=gid).first()
+        if book:
+            book_data = _book_to_dict(book)
+        
+        # 2. ثانياً: إذا لم يوجد محلياً، جلب من Google Books API
+        if not book_data:
+            d = fetch_book_details(gid)
+            if d:
+                # fetch_book_details returns flat dict with title, author, etc.
+                # Not nested volumeInfo like the raw API
+                cover = d.get("cover") or ""
+                if cover and cover.startswith("http://"):
+                    cover = "https://" + cover[7:]
+    
+                book_data = {
+                    "id": gid, 
+                    "title": d.get("title") or "عنوان غير متوفر",
+                    "author": d.get("author") or "مؤلف غير معروف",
+                    "desc": d.get("description") or "لا يوجد وصف متاح لهذا الكتاب.", 
+                    "cover": cover,
+                    "preview": d.get("preview"),
+                    "source": d.get("source", "google"),
+                    "publishedDate": d.get("publishedDate"),
+                    "pageCount": d.get("pageCount"),
+                    "categories": d.get("categories") or [],
+                    "rating": d.get("rating"),
+                    "publisher": d.get("publisher"),
+                    "language": d.get("language"),
+                    "isbn": d.get("isbn"),
+                }
 
     if not book_data: abort(404)
     book_data.setdefault("google_id", gid)
@@ -792,6 +809,18 @@ def book_detail(gid):
     except Exception as e:
         print(f"Error calculating views: {e}")
 
+    # -------------------------------------------------
+    #   💬 جلب المراجعات والتقييمات
+    # -------------------------------------------------
+    reviews = BookReview.query.filter_by(google_id=gid).order_by(BookReview.created_at.desc()).all()
+    user_review = None
+    if current_user.is_authenticated:
+        user_review = BookReview.query.filter_by(user_id=current_user.id, google_id=gid).first()
+    
+    avg_rating = 0
+    if reviews:
+        avg_rating = sum(r.rating for r in reviews) / len(reviews)
+
     return render_template(
         "public_book_detail.html",
         book=book_data,
@@ -801,6 +830,9 @@ def book_detail(gid):
         current_status=current_status,
         total_views=total_views,  # 🆕 إجمالي المشاهدات
         unique_viewers=unique_viewers,  # 🆕 عدد القراء الفريدين
+        reviews=reviews,
+        user_review=user_review,
+        avg_rating=round(avg_rating, 1)
     )
 
 

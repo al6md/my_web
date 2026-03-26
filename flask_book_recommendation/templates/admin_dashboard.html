@@ -1,65 +1,160 @@
 {% extends "base.html" %}
 
+{% block title %}Curatorial Oversight | The Digital Curator{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h1>🤖 AI Engine Dashboard</h1>
-    <hr>
+<main class="min-h-screen pt-32 bg-surface">
+    <div class="max-w-screen-2xl mx-auto px-8 lg:px-24 pb-24 space-y-24">
+        
+        <!-- Oversight Header -->
+        <header class="flex flex-col md:flex-row justify-between items-end gap-8 pb-12 border-b border-on-surface/10">
+            <div class="space-y-4">
+                <span class="font-label text-xs uppercase tracking-[0.6em] text-primary">System Administration</span>
+                <h1 class="font-headline text-7xl font-black tracking-tighter text-on-surface leading-none">Oversight</h1>
+                <p class="font-body text-on-surface-variant max-w-lg">Technical parameters and network activity monitoring for the digital archives.</p>
+            </div>
+            
+            <div class="flex gap-4">
+                <a href="{{ url_for('public.list_books') }}" class="group inline-flex items-center gap-4 bg-surface-container-high px-8 py-4 font-headline font-black text-sm uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
+                    <span class="material-symbols-outlined text-sm">menu_book</span>
+                    Access Library
+                </a>
+            </div>
+        </header>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Service Status</h5>
-                </div>
-                <div class="card-body">
-                    {% if health.status == 'ok' %}
-                    <h2 class="text-success"><i class="fas fa-check-circle"></i> Online</h2>
-                    <p>Model Loaded: <strong>{{ health.model_loaded }}</strong></p>
-                    {% else %}
-                    <h2 class="text-danger"><i class="fas fa-times-circle"></i> Offline</h2>
-                    <p>Reason: {{ health.get('status', 'Unknown error') }}</p>
-                    <div class="alert alert-warning">
-                        Please start the AI Service using <code>start_ai_service.bat</code>
+        <!-- Structural Navigation Grid -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-px bg-on-surface/5 border border-on-surface/5">
+            <a href="{{ url_for('admin.metrics') }}" class="bg-surface p-12 group hover:bg-surface-container-high transition-all">
+                <div class="space-y-6">
+                    <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">analytics</span>
+                    <div>
+                        <h3 class="font-headline font-black text-xl">Metrics</h3>
+                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Network Vitals</p>
                     </div>
-                    {% endif %}
+                </div>
+            </a>
+            <a href="{{ url_for('main.books') }}" class="bg-surface p-12 group hover:bg-surface-container-high transition-all">
+                <div class="space-y-6">
+                    <span class="material-symbols-outlined text-4xl text-secondary group-hover:scale-110 transition-transform">inventory_2</span>
+                    <div>
+                        <h3 class="font-headline font-black text-xl">Inventory</h3>
+                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Personal Folios</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{{ url_for('auth.profile') }}" class="bg-surface p-12 group hover:bg-surface-container-high transition-all">
+                <div class="space-y-6">
+                    <span class="material-symbols-outlined text-4xl text-on-surface/40 group-hover:scale-110 transition-transform">fingerprint</span>
+                    <div>
+                        <h3 class="font-headline font-black text-xl">Identity</h3>
+                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Curator Profile</p>
+                    </div>
+                </div>
+            </a>
+            <a href="{{ url_for('main.home') }}" class="bg-surface p-12 group hover:bg-surface-container-high transition-all">
+                <div class="space-y-6">
+                    <span class="material-symbols-outlined text-4xl text-on-surface/40 group-hover:scale-110 transition-transform">architecture</span>
+                    <div>
+                        <h3 class="font-headline font-black text-xl">Frontier</h3>
+                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Return Home</p>
+                    </div>
+                </div>
+            </a>
+        </section>
+
+        <!-- Network Vitals (Stats) -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <!-- Global Users -->
+            <div class="bg-surface-container-low p-12 shadow-2xl space-y-8 relative overflow-hidden group">
+                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">NODES</div>
+                <div class="flex justify-between items-start">
+                    <span class="font-label text-[10px] uppercase font-black text-primary tracking-widest leading-none">Active Nodes</span>
+                    <span class="material-symbols-outlined text-primary/20">hub</span>
+                </div>
+                <h3 class="font-headline text-6xl font-black text-on-surface">{{ stats.total_users if stats else 0 }}</h3>
+                <div class="pt-4 border-t border-on-surface/5 flex items-center gap-2 text-[10px] font-black uppercase text-secondary">
+                    <span class="w-1.5 h-1.5 bg-secondary rounded-full animate-pulse"></span>
+                    Verified Identities
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Vector Index Stats</h5>
+            <!-- Global Volumes -->
+            <div class="bg-surface-container-low p-12 shadow-2xl space-y-8 relative overflow-hidden group">
+                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">FOLIOS</div>
+                <div class="flex justify-between items-start">
+                    <span class="font-label text-[10px] uppercase font-black text-secondary tracking-widest leading-none">Cataloged Volumes</span>
+                    <span class="material-symbols-outlined text-secondary/20">menu_book</span>
                 </div>
-                <div class="card-body">
-                    <ul class="list-group">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Indexed Books
-                            <span class="badge bg-primary rounded-pill">{{ stats.get('index_size', 0) }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Embedding Model
-                            <span>{{ stats.get('embedding_model', 'N/A') }}</span>
-                        </li>
-                    </ul>
-                </div>
+                <h3 class="font-headline text-6xl font-black text-on-surface">{{ stats.total_books if stats else 0 }}</h3>
+                <div class="pt-4 border-t border-on-surface/5 text-[10px] font-black uppercase text-on-surface/40">Architectural Complexity Scaled</div>
             </div>
-        </div>
-    </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h5>Actions</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ url_for('admin.trigger_index') }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-warning">
-                    <i class="fas fa-hammer"></i> Rebuild Vector Index
-                </button>
-                <small class="text-muted ms-2">Use this after adding new books to update the AI search engine.</small>
-            </form>
-        </div>
+            <!-- Global Reviews -->
+            <div class="bg-surface-container-low p-12 shadow-2xl space-y-8 relative overflow-hidden group">
+                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">LOGS</div>
+                <div class="flex justify-between items-start">
+                    <span class="font-label text-[10px] uppercase font-black text-on-surface/40 tracking-widest leading-none">Curatorial Annotations</span>
+                    <span class="material-symbols-outlined text-on-surface/10" style="font-variation-settings: 'FILL' 1;">star</span>
+                </div>
+                <h3 class="font-headline text-6xl font-black text-on-surface">{{ stats.total_reviews if stats else 0 }}</h3>
+                <div class="pt-4 border-t border-on-surface/5 text-[10px] font-black uppercase text-on-surface/40">Network Intelligence Density</div>
+            </div>
+        </section>
+
+        <!-- Historical Ledger (Activity) -->
+        <section class="space-y-12">
+            <div class="flex items-center justify-between pb-8 border-b border-on-surface/10">
+                <h2 class="font-headline text-4xl font-black tracking-tight text-on-surface">Historical Ledger</h2>
+                <span class="font-label text-[10px] uppercase font-bold text-on-surface/30">Sequential Action Tracking</span>
+            </div>
+            
+            <div class="bg-surface border border-on-surface/5 overflow-hidden">
+                <table class="w-full text-left font-body">
+                    <thead>
+                        <tr class="bg-surface-container-high border-b border-on-surface/10">
+                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface">Originating Node</th>
+                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface">Action Signature</th>
+                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface text-right">Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-on-surface/5">
+                        {% if recent_activity %}
+                            {% for activity in recent_activity[:10] %}
+                            <tr class="hover:bg-surface-container-low transition-colors group">
+                                <td class="px-12 py-8">
+                                    <div class="flex items-center gap-6">
+                                        <div class="w-12 h-12 bg-surface-container-highest flex items-center justify-center font-headline font-black text-xl text-primary border border-on-surface/5 group-hover:bg-primary group-hover:text-white transition-all">
+                                            {{ (activity.user_name or 'U')[0]|upper }}
+                                        </div>
+                                        <div>
+                                            <span class="font-headline font-black text-on-surface block">{{ activity.user_name or 'Unidentified Node' }}</span>
+                                            <span class="font-label text-[10px] uppercase font-bold text-on-surface/30">Authenticated Unit</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-12 py-8 italic text-on-surface-variant font-body">
+                                    {{ activity.action or 'System task executed' }}
+                                </td>
+                                <td class="px-12 py-8 text-right">
+                                    <span class="inline-flex items-center gap-2 px-6 py-2 bg-on-surface/5 text-on-surface/60 font-label text-[10px] uppercase font-black group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                        <span class="w-1.5 h-1.5 bg-primary/40 rounded-full"></span>
+                                        Committed
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="px-12 py-32 text-center text-on-surface/20 space-y-6">
+                                    <span class="material-symbols-outlined text-6xl block">history</span>
+                                    <p class="font-headline font-bold text-xl">No ledger entries detected in the current epoch.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
-</div>
+</main>
 {% endblock %}

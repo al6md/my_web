@@ -27,5 +27,11 @@ PORT = int(os.environ.get("PORT", 5000))
 if __name__ == "__main__":
     print(f"Starting Server on http://localhost:{PORT}")
     
-    # Run using Uvicorn
-    uvicorn.run(root_app, host="0.0.0.0", port=PORT)
+    # Run using Uvicorn with auto-reload enabled for code, templates, and static files
+    uvicorn.run(
+        "unified_server:root_app", 
+        host="0.0.0.0", 
+        port=PORT, 
+        reload=True,
+        reload_includes=["*.html", "*.css", "*.js", "*.yaml"]
+    )

@@ -273,7 +273,7 @@ def fetch_openlib_books(query, limit=12, offset=0, **kwargs):
                 
                 # صورة افتراضية إذا لم يوجد غلاف
                 if not cover:
-                    cover = "https://via.placeholder.com/150x200/DB4437/ffffff?text=📚+OpenLibrary"
+                    cover = "https://placehold.co/300x450/stone/white?text=OpenLibrary"
                 
                 # ⭐️ محاولة قراءة التقييم من نتيجة البحث
                 rating = doc.get("ratings_average")

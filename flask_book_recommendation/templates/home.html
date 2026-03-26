@@ -1,732 +1,295 @@
 {% extends "base.html" %}
-{% from "components/macros.html" import render_book_card, render_carousel_section, render_stars %}
 
-{% block title %}الرئيسية | إلهام — عالمك القرائي{% endblock %}
-
-{% block body_class %}lux-page{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='styles/nextgen-ai.css') }}?v=2.1">
-<link rel="stylesheet" href="{{ url_for('static', filename='styles/luxury-theme.css') }}?v=1.3">
-<style>
-  /* ═══════════════════════════════════════════════════════
-     🌌 HERO — IMMERSIVE COSMOS DESIGN
-     ═══════════════════════════════════════════════════════ */
-  :root {
-    --hero-accent: #c9a84c;
-    --hero-accent-glow: rgba(201, 168, 76, 0.35);
-    --hero-cyan: #22d3ee;
-    --hero-blue: #3b82f6;
-    --hero-surface: rgba(15, 12, 8, 0.6);
-  }
-
-  .hero-cosmos {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #060504;
-  }
-
-  /* Floating Geometric Shapes */
-  .hero-shapes {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  .hero-shape {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.3;
-    animation: shapeFloat 20s infinite ease-in-out;
-  }
-
-  .hero-shape-1 {
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(201, 168, 76, 0.25), transparent 70%);
-    top: -10%;
-    right: -5%;
-    animation-delay: 0s;
-  }
-
-  .hero-shape-2 {
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(184, 115, 51, 0.2), transparent 70%);
-    bottom: -15%;
-    left: -5%;
-    animation-delay: -7s;
-    animation-duration: 25s;
-  }
-
-  .hero-shape-3 {
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, rgba(34, 211, 238, 0.1), transparent 70%);
-    top: 40%;
-    left: 30%;
-    animation-delay: -12s;
-    animation-duration: 18s;
-  }
-
-  @keyframes shapeFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    25% { transform: translate(30px, -20px) scale(1.05); }
-    50% { transform: translate(-20px, 30px) scale(0.95); }
-    75% { transform: translate(15px, 15px) scale(1.03); }
-  }
-
-  /* Subtle Grid Overlay */
-  .hero-grid-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    background-image:
-      linear-gradient(rgba(201, 168, 76, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(201, 168, 76, 0.03) 1px, transparent 1px);
-    background-size: 80px 80px;
-    mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 50%, black 20%, transparent 70%);
-  }
-
-  .hero-glass-panel {
-    position: relative;
-    z-index: 10;
-    text-align: center;
-    padding: 4.5rem 3rem 4rem;
-    max-width: 1050px;
-    width: 100%;
-    background: linear-gradient(135deg, rgba(8, 6, 4, 0.85), rgba(15, 12, 8, 0.5));
-    backdrop-filter: blur(50px) saturate(200%);
-    -webkit-backdrop-filter: blur(50px) saturate(200%);
-    border: 1px solid rgba(201, 168, 76, 0.3);
-    border-top: 2px solid rgba(224, 185, 106, 0.5);
-    border-radius: 40px;
-    box-shadow:
-      0 40px 80px rgba(0, 0, 0, 0.9),
-      0 0 50px rgba(201, 168, 76, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    margin: 2rem auto;
-    animation: heroPanelReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-    transform-style: preserve-3d;
-  }
-
-  @keyframes heroPanelReveal {
-    from {
-      opacity: 0;
-      transform: translateY(40px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  /* Top accent line */
-  .hero-glass-panel::before {
-    content: "";
-    position: absolute;
-    top: -1px;
-    left: 15%;
-    right: 15%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--hero-accent), transparent);
-    opacity: 0.5;
-  }
-
-  /* Eyebrow Label */
-  .hero-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 1.2rem;
-    background: rgba(201, 168, 76, 0.08);
-    border: 1px solid rgba(201, 168, 76, 0.15);
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--hero-accent);
-    margin-bottom: 2rem;
-    animation: lux-fade-up 0.8s ease 0.3s both;
-  }
-
-  .hero-eyebrow i {
-    font-size: 0.9rem;
-  }
-
-  /* Title */
-  .hero-main-title {
-    font-family: 'Outfit', 'Cairo', sans-serif !important;
-    font-size: clamp(2.2rem, 7vw, 4.5rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
-    color: #fff;
-    margin-bottom: 1rem;
-    animation: lux-fade-up 1s ease 0.4s both;
-  }
-
-  .hero-gold-word {
-    background: linear-gradient(135deg, #c9a84c, #f2cc7e, #c9a84c);
-    background-size: 200% 200%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: goldShimmer 4s ease-in-out infinite;
-  }
-
-  @keyframes goldShimmer {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-
-  .hero-subtitle {
-    font-family: 'Cairo', 'Inter', sans-serif;
-    font-size: 1.15rem;
-    color: rgba(255, 255, 255, 0.55);
-    margin-bottom: 0.5rem;
-    line-height: 1.8;
-    max-width: 550px;
-    margin-left: auto;
-    margin-right: auto;
-    animation: lux-fade-up 1s ease 0.5s both;
-  }
-
-  /* Typed Text Area */
-  .hero-typed-area {
-    min-height: 2rem;
-    margin-bottom: 2.5rem;
-    animation: lux-fade-up 1s ease 0.55s both;
-  }
-
-  #typed-hero {
-    font-size: 1.05rem;
-    font-weight: 500;
-    color: var(--hero-accent);
-    font-style: italic;
-  }
-
-  .typed-cursor {
-    color: var(--hero-accent) !important;
-    font-weight: 300;
-  }
-
-  /* Search Capsule */
-  .hero-search-capsule {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(201, 168, 76, 0.15);
-    border-radius: 16px;
-    padding: 0.5rem 0.5rem 0.5rem 1.5rem;
-    display: flex;
-    align-items: center;
-    max-width: 600px;
-    margin: 0 auto 3rem;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: lux-fade-up 1s ease 0.6s both;
-  }
-
-  .hero-search-capsule:focus-within {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(201, 168, 76, 0.4);
-    box-shadow: 0 0 30px rgba(201, 168, 76, 0.12),
-                0 0 0 3px rgba(201, 168, 76, 0.06);
-  }
-
-  .hero-search-capsule input {
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 1rem;
-    width: 100%;
-    padding: 0.65rem 0;
-    outline: none;
-    font-family: 'Cairo', 'Inter', sans-serif;
-  }
-
-  .hero-search-capsule input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
-    font-style: italic;
-  }
-
-  .hero-search-btn {
-    background: linear-gradient(135deg, var(--hero-accent) 0%, #b87333 100%);
-    color: #0d0b10;
-    border: none;
-    border-radius: 12px;
-    padding: 0.75rem 1.8rem;
-    font-weight: 700;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    white-space: nowrap;
-    letter-spacing: 0.05em;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero-search-btn::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transition: left 0.5s ease;
-  }
-
-  .hero-search-btn:hover::after {
-    left: 100%;
-  }
-
-  .hero-search-btn:hover {
-    transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 10px 30px rgba(201, 168, 76, 0.4);
-  }
-
-  /* Stats Grid */
-  .hero-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    border-top: 1px solid rgba(201, 168, 76, 0.08);
-    padding-top: 2.5rem;
-    animation: lux-fade-up 1s ease 0.8s both;
-  }
-
-  .hero-stat-card {
-    text-align: center;
-    padding: 1rem;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    transition: all 0.3s ease;
-  }
-
-  .hero-stat-card:hover {
-    background: rgba(201, 168, 76, 0.05);
-    border-color: rgba(201, 168, 76, 0.15);
-    transform: translateY(-3px);
-  }
-
-  .stat-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    margin: 0 auto 0.75rem;
-    border-radius: 12px;
-    background: rgba(201, 168, 76, 0.1);
-    color: var(--hero-accent);
-    font-size: 1.2rem;
-  }
-
-  .stat-number {
-    display: block;
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #fff;
-    line-height: 1.2;
-    font-family: 'Outfit', sans-serif;
-  }
-
-  .stat-label {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 0.05em;
-    margin-top: 0.25rem;
-  }
-
-  /* Scroll Indicator */
-  .hero-scroll-cue {
-    position: absolute;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    animation: lux-fade-up 1s ease 1.5s both;
-    text-decoration: none;
-  }
-
-  .hero-scroll-cue span {
-    color: rgba(255, 255, 255, 0.35);
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-
-  .scroll-mouse {
-    width: 26px;
-    height: 42px;
-    border: 2px solid rgba(201, 168, 76, 0.25);
-    border-radius: 14px;
-    display: flex;
-    justify-content: center;
-    padding-top: 6px;
-  }
-
-  .scroll-dot {
-    width: 3px;
-    height: 8px;
-    background: var(--hero-accent);
-    border-radius: 3px;
-    animation: lux-float 2s ease-in-out infinite;
-  }
-
-  /* ═══════════════════════════════════════════════════════
-     📈 FEED CONTAINER
-     ═══════════════════════════════════════════════════════ */
-  .feed-section-wrap {
-    background: #0b0b0e;
-    padding-bottom: 3rem;
-  }
-
-  .skeleton-pulse {
-    background: linear-gradient(90deg,
-      rgba(201, 168, 76, 0.05) 25%,
-      rgba(201, 168, 76, 0.1) 50%,
-      rgba(201, 168, 76, 0.05) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s ease-in-out infinite;
-    border-radius: 12px;
-  }
-
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .hero-glass-panel {
-      padding: 3rem 1.5rem 2.5rem;
-      border-radius: 24px;
-      margin: 1rem;
-    }
-    .hero-stats-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-    .hero-eyebrow {
-      font-size: 0.65rem;
-      padding: 0.3rem 0.8rem;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .hero-glass-panel {
-      padding: 2rem 1rem 2rem;
-    }
-    .hero-search-capsule {
-      flex-direction: column;
-      padding: 0.75rem;
-      gap: 0.5rem;
-    }
-    .hero-search-btn {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-</style>
-{% endblock %}
+{% block title %}Home | Elham{% endblock %}
 
 {% block content %}
-<div class="home-content-wrapper p-0 m-0" style="background: #0b0b0e;">
-
-  {# ═══════════════════════════════════════════════════════════════════════
-  [1] HERO COSMOS — Immersive Glass Panel
-  ═══════════════════════════════════════════════════════════════════════ #}
-  <section class="hero-cosmos">
-    {# Floating Background Shapes #}
-    <div class="hero-shapes">
-      <div class="hero-shape hero-shape-1"></div>
-      <div class="hero-shape hero-shape-2"></div>
-      <div class="hero-shape hero-shape-3"></div>
-    </div>
-
-    {# Subtle Grid Pattern #}
-    <div class="hero-grid-overlay"></div>
-
-    <div class="container">
-      <div class="hero-glass-panel" data-tilt data-tilt-max="3" data-tilt-speed="400" data-tilt-glare data-tilt-max-glare="0.1">
-
-        {# Eyebrow Badge #}
-        <div class="hero-eyebrow">
-          <i class="ph-fill ph-sparkle"></i>
-          منصة مدعومة بالذكاء الاصطناعي
-        </div>
-
-        {# Main Title #}
-        <h1 class="hero-main-title" style="transform: translateZ(50px);">
-          بوابتك لعالم<br>
-          <span class="hero-gold-word">المعرفة</span>
+<!-- Welcome & Featured Hero -->
+<section class="max-w-[1440px] mx-auto px-8 pt-10 pb-20">
+    {% set hero_book = featured_book if featured_book else (featured_books[0] if featured_books else None) %}
+    
+    <div class="mb-12">
+        <h1 class="text-5xl md:text-7xl font-black text-on-surface tracking-tight leading-[1.1] max-w-4xl font-headline">
+            Curate your intellect.<br>
+            <span class="text-outline-variant font-medium italic">One brilliant idea</span> at a time.
         </h1>
-
-        {# Subtitle #}
-        <p class="hero-subtitle">
-          اكتشف كتبك القادمة بدقة فائقة من خلال توصيات ذكية مصممة لذوقك
+        <p class="mt-6 text-on-surface-variant text-lg font-medium max-w-2xl leading-relaxed">
+            Welcome back to your sanctuary of thought. Here is a hand-picked selection blending architectural discipline with boundless creativity.
         </p>
-
-        {# Typed Text #}
-        <div class="hero-typed-area">
-          <span id="typed-hero"></span>
-        </div>
-
-        {# Search Bar #}
-        <form class="hero-search-capsule" action="{{ url_for('public.list_books') }}" method="GET" style="transform: translateZ(30px);">
-          <i class="ph-bold ph-magnifying-glass" style="color: rgba(201,168,76,0.5); margin-left: 0.5rem; font-size: 1.2rem;"></i>
-          <input type="text" name="q" placeholder="ابحث عن كتاب، مؤلف، أو موضوع...">
-          <button type="submit" class="hero-search-btn">
-            <i class="ph-bold ph-magnifying-glass"></i>
-            بحث
-          </button>
-        </form>
-
-        {# Stats Grid #}
-        <div class="hero-stats-grid">
-          <div class="hero-stat-card">
-            <div class="stat-icon"><i class="ph-fill ph-books"></i></div>
-            <span class="stat-number">150K+</span>
-            <span class="stat-label">كتاب في المكتبة</span>
-          </div>
-          <div class="hero-stat-card">
-            <div class="stat-icon"><i class="ph-fill ph-brain"></i></div>
-            <span class="stat-number">2M+</span>
-            <span class="stat-label">توصية ذكية</span>
-          </div>
-          <div class="hero-stat-card">
-            <div class="stat-icon"><i class="ph-fill ph-heart"></i></div>
-            <span class="stat-number">98%</span>
-            <span class="stat-label">رضا القرّاء</span>
-          </div>
-        </div>
-      </div>
     </div>
 
-    {# Scroll Down Indicator #}
-    <div class="hero-scroll-cue" onclick="document.getElementById('home-feed-container').scrollIntoView({behavior:'smooth'})">
-      <span>استكشف المزيد</span>
-      <div class="scroll-mouse">
-        <div class="scroll-dot"></div>
-      </div>
-    </div>
-  </section>
+    <!-- Featured Editor's Pick -->
+    {% if hero_book %}
+    <div class="relative bg-primary rounded-3xl overflow-hidden p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center gap-12 group cursor-pointer shadow-2xl shadow-primary/20" onclick="window.location.href='{{ url_for('public.book_detail', gid=hero_book.id) }}';">
+        <div class="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
+        
+        <div class="w-full md:w-1/3 max-w-[320px] shrink-0 relative z-10">
+            <div class="aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black/40 group-hover:-translate-y-2 group-hover:rotate-2 transition-all duration-500 bg-surface-container-highest border-4 border-white/10">
+                <img src="{{ hero_book.cover_url or hero_book.cover or 'https://placehold.co/400x600/f8fafc/ea580c?text=كتاب' }}" alt="{{ hero_book.title }}" class="w-full h-full object-cover">
+            </div>
+            <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-secondary rounded-full flex items-center justify-center text-on-secondary font-black text-xs uppercase tracking-widest -rotate-12 shadow-lg group-hover:scale-110 transition-transform font-headline">
+                Editor's<br>Pick
+            </div>
+        </div>
 
-  {# ═══════════════════════════════════════════════════════════════════════
-  [2] DYNAMIC FEED — Loaded via AJAX
-  ═══════════════════════════════════════════════════════════════════════ #}
-  <div class="container pb-5 feed-section-wrap">
-    <div id="home-feed-container">
-      <!-- SKELETON LOADER -->
-      <div class="skeleton-feed" style="padding-top: 2rem;">
-        {% for i in range(3) %}
-        <div class="mb-5" data-aos="fade-up" data-aos-delay="{{ i * 100 }}">
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="skeleton-pulse" style="width: 250px; height: 40px;"></div>
-            <div class="skeleton-pulse" style="width: 100px; height: 35px; border-radius: 20px;"></div>
-          </div>
-          <div class="d-flex gap-4 overflow-hidden" style="padding: 10px 0;">
-            {% for j in range(5) %}
-            <div class="skeleton-pulse" style="min-width: 200px; height: 320px; flex-shrink: 0;"></div>
-            {% endfor %}
-          </div>
+        <div class="flex-1 relative z-10 flex flex-col justify-center">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="px-4 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold tracking-widest uppercase backdrop-blur-md border border-white/30">Featured Read</span>
+                <span class="text-white/80 text-sm font-semibold flex items-center bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm"><span class="material-symbols-outlined text-sm mr-1" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span> {{ hero_book.rating or '4.8' }}</span>
+            </div>
+            
+            <h2 class="text-4xl lg:text-6xl font-black text-white mb-6 leading-[1.1] transition-colors font-headline">
+                {{ hero_book.title }}
+            </h2>
+            
+            <p class="text-white/80 leading-relaxed max-w-xl mb-10 line-clamp-3 text-lg">
+                {{ hero_book.description if hero_book.description else "Step into a world where words breathe. Explore this month's masterpiece about the intersection of forgotten history and modern inspiration." }}
+            </p>
+            
+            <div class="flex items-center gap-4">
+                <button class="px-8 py-4 bg-white text-primary rounded-full font-bold hover:shadow-xl hover:bg-gray-50 hover:-translate-y-1 transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-xl" data-icon="menu_book">menu_book</span>
+                    Start Reading
+                </button>
+                <button class="px-6 py-4 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-all flex justify-center items-center backdrop-blur-sm">
+                    View Details
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Intentional Separation - No Line, Just Tone -->
+<div class="w-full h-32 bg-gradient-to-b from-surface to-surface-container-lowest"></div>
+
+<!-- Recommended For You (AI & Algorithms representation) -->
+{% if ai_algo_books and ai_algo_books|length >= 4 %}
+<section class="bg-surface-container-lowest py-20 border-b border-surface-container">
+    <div class="max-w-[1440px] mx-auto px-8">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div>
+                <span class="text-[#7c3aed] text-sm font-bold tracking-widest uppercase mb-3 block">Curated For Your Profile</span>
+                <h2 class="text-4xl font-black text-on-surface font-headline">Algorithms & Architecture</h2>
+            </div>
+            <a href="{{ url_for('public.list_books', cat='Artificial Intelligence') }}" class="flex items-center text-primary font-bold hover:gap-2 transition-all">
+                <span>View Full Collection</span>
+                <span class="material-symbols-outlined text-sm ml-1" data-icon="arrow_forward">arrow_forward</span>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-10">
+            <!-- Featured Recommendation -->
+            {% set feat_reco = ai_algo_books[0] %}
+            <div class="md:col-span-5 lg:col-span-4 cursor-pointer group" onclick="window.location.href='{{ url_for('public.book_detail', gid=feat_reco.id) }}';">
+                <div class="bg-[#f4ede2] rounded-3xl p-10 aspect-[4/5] flex flex-col items-center justify-center relative overflow-hidden mb-6 transition-all group-hover:bg-[#ebe2cf] border border-[#eadaaf]">
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                    <img src="{{ feat_reco.cover_url or feat_reco.cover or 'https://placehold.co/300x450/f8fafc/ea580c?text=كتاب' }}" alt="{{ feat_reco.title }}" class="w-2/3 shadow-2xl rounded-md z-10 group-hover:scale-105 transition-transform duration-500">
+                    <div class="absolute top-6 left-6 bg-white px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-on-surface shadow-sm z-10">{{ feat_reco.algorithm_tag or "Collection" }}</div>
+                </div>
+                <h3 class="text-2xl font-black text-on-surface mb-2 font-headline group-hover:text-primary transition-colors">{{ feat_reco.title }}</h3>
+                <p class="text-on-surface-variant font-semibold mb-4">{{ feat_reco.author }}</p>
+                <div class="flex gap-2">
+                    {% for tag in (feat_reco.categories[:2] if feat_reco.categories else []) %}
+                        <span class="px-3 py-1 bg-surface-container text-on-surface-variant text-[11px] font-bold rounded-full uppercase tracking-wider">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Supporting Recommendations List -->
+            <div class="md:col-span-7 lg:col-span-5 flex flex-col py-2 overflow-y-auto h-[500px] pr-4 no-scrollbar gap-2">
+                {% for reco in ai_algo_books[1:100] %}
+                <div class="flex gap-6 group cursor-pointer p-4 -mx-4 rounded-xl hover:bg-surface-container transition-colors mb-2" onclick="window.location.href='{{ url_for('public.book_detail', gid=reco.id) }}';">
+                    <div class="w-24 shrink-0 aspect-[2/3] rounded-md overflow-hidden bg-surface-container-highest shadow-md">
+                        <img src="{{ reco.cover_url or reco.cover or 'https://placehold.co/200x300/f8fafc/ea580c?text=كتاب' }}" alt="{{ reco.title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <h4 class="text-xl font-bold text-on-surface mb-1 group-hover:text-primary transition-colors line-clamp-2 font-headline">{{ reco.title }}</h4>
+                        <p class="text-on-surface-variant text-sm font-semibold mb-3">{{ reco.author }}</p>
+                        <div class="flex items-center gap-4 mt-auto">
+                            <span class="flex items-center text-xs font-bold text-outline">
+                                <span class="material-symbols-outlined text-[14px] mr-1" data-icon="schedule" style="font-variation-settings: 'opsz' 14">schedule</span>
+                                4h 20m read
+                            </span>
+                            <button class="text-[#7c3aed] text-[10px] font-black uppercase tracking-widest hover:underline">{{ reco.algorithm_tag or "Add to Library" }}</button>
+                        </div>
+                    </div>
+                </div>
+                {% if not loop.last %}
+                <hr class="border-surface-container-highest my-2">
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Stat Block -->
+            <div class="hidden lg:flex lg:col-span-3 flex-col justify-end bg-[#eee7db] rounded-3xl p-10 relative overflow-hidden border border-[#e6d8c4]">
+                <div class="absolute -top-10 -right-10 text-[#7c3aed] opacity-5"><span class="material-symbols-outlined text-[200px]" data-icon="psychology">psychology</span></div>
+                <p class="bg-[#7c3aed]/10 text-[#7c3aed] text-[10px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-md self-start">Your Mind Metrics</p>
+                <h4 class="text-6xl font-black text-on-surface font-headline mb-4">{{ mind_metrics_percentage }}%</h4>
+                <div class="bg-white/40 backdrop-blur-sm p-4 rounded-xl mb-8">
+                    <p class="text-on-surface text-sm font-semibold leading-relaxed">
+                        <span class="text-[#7c3aed]">of your recent reading</span> aligns with analytical thinking and systemic design.
+                    </p>
+                </div>
+                <div class="w-full bg-white/50 rounded-full h-2.5 mb-2 overflow-hidden shadow-inner">
+                    <div class="bg-[#7c3aed] h-full rounded-full shadow-lg" style="width: {{ mind_metrics_percentage }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Trending Now (Horizontal Scroll) -->
+{% if most_viewed_books %}
+<section class="py-24 bg-surface max-w-[1440px] mx-auto">
+    <div class="px-8 flex justify-between items-end mb-12">
+        <h2 class="text-3xl font-black text-on-surface font-headline uppercase tracking-tight">Community Pulse</h2>
+        <div class="flex gap-2">
+            <button class="w-10 h-10 rounded-full border border-surface-container-highest flex items-center justify-center hover:border-primary hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="arrow_back_ios">arrow_back_ios</span></button>
+            <button class="w-10 h-10 rounded-full border border-surface-container-highest flex items-center justify-center hover:border-primary hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm pl-1" data-icon="arrow_forward_ios">arrow_forward_ios</span></button>
+        </div>
+    </div>
+    
+    <div class="flex overflow-x-auto gap-8 px-8 pb-12 pt-4 no-scrollbar snap-x">
+        {% for book in most_viewed_books[:10] %}
+        <div class="shrink-0 w-[220px] snap-start group cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+            <div class="aspect-[2/3] rounded-xl overflow-hidden bg-surface-container shadow-lg mb-5 relative">
+                <img src="{{ book.cover_url or book.cover or 'https://placehold.co/300x450/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center text-primary backdrop-blur-sm"><span class="material-symbols-outlined" data-icon="menu_book">menu_book</span></span>
+                </div>
+            </div>
+            <h4 class="font-bold text-on-surface text-lg leading-tight mb-1 group-hover:text-primary transition-colors font-headline line-clamp-2">{{ book.title }}</h4>
+            <p class="text-on-surface-variant text-sm font-semibold mb-2 truncate">
+                {{ book.author if book.author else (book.authors[0] if book.authors else "Collection") }}
+            </p>
+            <div class="flex justify-between items-center">
+                <span class="text-outline-variant text-xs font-bold">{{ ((book.id|string|length) * 142) }} views</span>
+                <span class="text-xs font-black uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-opacity">Read</span>
+            </div>
         </div>
         {% endfor %}
-      </div>
     </div>
-  </div>
+</section>
+{% endif %}
 
-  {# SVG Gradient Definitions for AI Score Rings #}
-  <svg style="position:absolute;width:0;height:0">
-    <defs>
-      <linearGradient id="gradient-high" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" style="stop-color:#c9a84c" />
-        <stop offset="100%" style="stop-color:#e0b96a" />
-      </linearGradient>
-      <linearGradient id="gradient-medium" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" style="stop-color:#c9a84c" />
-        <stop offset="100%" style="stop-color:#b87333" />
-      </linearGradient>
-      <linearGradient id="gradient-low" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" style="stop-color:#f87171" />
-        <stop offset="100%" style="stop-color:#ef4444" />
-      </linearGradient>
-      <linearGradient id="gradient-ai" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" style="stop-color:#c9a84c" />
-        <stop offset="100%" style="stop-color:#b87333" />
-      </linearGradient>
-    </defs>
-  </svg>
-</div>
+<!-- Because You Searched -->
+{% if top_rated_books_sorted and top_rated_books_sorted|length >= 4 %}
+<section class="bg-surface-container-low py-24 border-y border-surface-container">
+    <div id="trending-now-section" class="max-w-[1440px] mx-auto px-8">
+        <div class="text-center mb-16">
+            <span class="text-secondary font-black text-[10px] tracking-[0.2em] uppercase mb-4 block">Viral across community</span>
+            <h2 class="text-4xl font-black text-on-surface font-headline uppercase">Trending Now</h2>
+        </div>
+        
+        <div id="trending-slider" class="flex overflow-x-auto gap-8 pb-12 pt-4 no-scrollbar snap-x">
+            {% for book in top_rated_books_sorted[:100] %}
+            <div class="shrink-0 w-[300px] snap-start flex flex-col group cursor-pointer h-full transition-opacity duration-500 {% if loop.index > 10 %}hidden trending-item-hidden opacity-0{% endif %}" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-transparent hover:border-primary/20 h-full flex flex-col">
+                    <div class="w-full aspect-[4/3] bg-surface-container rounded-lg overflow-hidden mb-6 relative">
+                        <!-- Rank Badge -->
+                        <div class="absolute top-0 left-0 z-20 bg-primary text-white font-black text-xl px-5 py-3 rounded-br-3xl shadow-2xl border-r border-b border-white/20 flex items-center justify-center">
+                            <span class="text-xs opacity-70 mr-1">#</span>{{ loop.index }}
+                        </div>
+                        <img src="{{ book.cover_url or book.cover or 'https://placehold.co/400x300/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute top-3 right-3 bg-secondary/90 backdrop-blur-md text-white text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-full shadow-sm">Top Rated</div>
+                    </div>
+                    <h4 class="font-bold text-xl text-on-surface mb-2 font-headline leading-tight line-clamp-2">{{ book.title }}</h4>
+                    <p class="text-on-surface-variant text-sm mb-4">
+                        {{ book.author if book.author else (book.authors[0] if book.authors else "Anonymous") }}
+                    </p>
+                    <div class="mt-auto flex justify-between items-center pt-4 border-t border-surface-container-highest">
+                        <div class="flex gap-1 text-tertiary">
+                            <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;" data-icon="star">star</span>
+                            <span class="text-sm font-bold text-on-surface">{{ book.rating or '5.0' }}</span>
+                        </div>
+                        <button class="text-primary bg-primary/10 w-8 h-8 rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
 
-{# ═══════════════════════════════════════════════════════════════════════
-SCRIPTS — Typed.js + AJAX Feed
-═══════════════════════════════════════════════════════════════════════ #}
+        {% if top_rated_books_sorted|length > 10 %}
+        <div class="mt-12 text-center" id="trending-btn-container">
+            <button id="show-more-trending" class="px-10 py-3.5 bg-on-surface text-surface rounded-full font-black text-sm uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1">
+                Show 100 TRENDING MASTERPIECES
+            </button>
+        </div>
+
+        <script>
+            document.getElementById('show-more-trending').addEventListener('click', function() {
+                const btn = this;
+                const hiddenItems = document.querySelectorAll('.trending-item-hidden');
+                const isExpanded = btn.innerText.toUpperCase().includes('LESS');
+                
+                if (isExpanded) {
+                    // Collapse
+                    hiddenItems.forEach((item) => {
+                        item.classList.add('opacity-0');
+                        setTimeout(() => item.classList.add('hidden'), 500);
+                    });
+                    btn.innerText = 'Show 100 TRENDING MASTERPIECES';
+                    
+                    // Smoothly scroll back to the start of the trending section
+                    document.getElementById('trending-slider').scrollTo({ left: 0, behavior: 'smooth' });
+                    document.getElementById('trending-now-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // Expand
+                    hiddenItems.forEach((item, index) => {
+                        item.classList.remove('hidden');
+                        setTimeout(() => item.classList.remove('opacity-0'), index * 10);
+                    });
+                    btn.innerText = 'Show Less';
+                    
+                    // Optional: nudge to show more items
+                    setTimeout(() => {
+                        document.getElementById('trending-slider').scrollBy({ left: 100, behavior: 'smooth' });
+                    }, 100);
+                }
+            });
+        </script>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Quote Block -->
+<section class="max-w-[1440px] mx-auto px-8 py-32 relative">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-surface-container-highest opacity-50 z-0 pointer-events-none">
+        <span class="font-headline font-black text-[300px] leading-none">"</span>
+    </div>
+    <div class="relative z-10 text-center max-w-4xl mx-auto">
+        <blockquote class="text-3xl md:text-5xl font-bold text-on-surface leading-tight font-headline italic mb-10">
+            A book is a structural entity, a space where thought is architectural and narrative is material.
+        </blockquote>
+        <div class="flex flex-col items-center">
+            <span class="w-12 h-1 bg-primary mb-6 block rounded-full"></span>
+            <cite class="text-on-surface-variant font-black uppercase tracking-widest text-sm not-italic">The Curator's Manifesto</cite>
+        </div>
+    </div>
+</section>
+
+<!-- Dynamic Feed Container -->
+<div id="home-feed-container" class="bg-surface max-w-[1440px] mx-auto px-8 pb-20 space-y-20"></div>
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-  // ────────────────────────────────────────────────
-  // ⌨️ TYPED.JS INITIALIZATION
-  // ────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function () {
-    if (typeof Typed !== 'undefined') {
-      new Typed('#typed-hero', {
-        strings: [
-          'ابحث عن كتابك القادم بذكاء اصطناعي فائق',
-          'توصيات مبنية على تحليل عميق لاهتماماتك',
-          'اكتشف عوالم جديدة في عالم المعرفة',
-          'قراءتك القادمة على بعد نقرة واحدة',
-          'AI-Powered Discovery for Modern Readers'
-        ],
-        typeSpeed: 45,
-        backSpeed: 25,
-        backDelay: 3000,
-        loop: true,
-        showCursor: true,
-        cursorChar: '|'
-      });
-    }
-
-    // ────────────────────────────────────────────────
-    // 🎞️ LOAD DYNAMIC FEED
-    // ────────────────────────────────────────────────
-    loadHomeFeed();
-
-    // Hook Search Button
-    const searchBtn = document.querySelector('.hero-search-btn');
-    if (searchBtn) {
-      searchBtn.addEventListener('click', () => {
-        setTimeout(updateRecommendations, 1000);
-      });
-    }
-
-    // Event Delegation for Book Card Actions
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('.action-btn-glass.secondary')) {
-        setTimeout(updateRecommendations, 800);
-      }
+    document.addEventListener('DOMContentLoaded', () => {
+        // Load dynamic feed sections
+        fetch('{{ url_for("main.home_feed") }}')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.html) {
+                    const container = document.getElementById('home-feed-container');
+                    container.innerHTML = data.html;
+                }
+            })
+            .catch(e => console.error("Error loading feed:", e));
     });
-  });
-
-  // ────────────────────────────────────────────────
-  // 📡 INTERSECTION OBSERVER FOR CARDS
-  // ────────────────────────────────────────────────
-  function initCardObserver() {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-
-    document.querySelectorAll('.glass-book-card, .museum-book-card').forEach((card, index) => {
-      card.style.transitionDelay = `${(index % 5) * 0.1}s`;
-      observer.observe(card);
-    });
-  }
-
-  // Card Animations Style
-  if (!document.getElementById('card-animations')) {
-    const style = document.createElement('style');
-    style.id = 'card-animations';
-    style.textContent = `
-      .glass-book-card, .museum-book-card {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95);
-        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      .glass-book-card.visible, .museum-book-card.visible {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .glass-book-card, .museum-book-card { opacity: 1 !important; transform: none !important; transition: none !important; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // ────────────────────────────────────────────────
-  // 🔄 REAL-TIME RECOMMENDATIONS REFRESH
-  // ────────────────────────────────────────────────
-  async function updateRecommendations() {
-    const toast = document.createElement('div');
-    toast.className = 'ai-toast';
-    toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:rgba(15,12,8,0.92); color:#fff; padding:15px 25px; border-radius:16px; border:1px solid rgba(201,168,76,0.3); z-index:9999; backdrop-filter:blur(20px); display:flex; gap:10px; align-items:center; box-shadow:0 15px 40px rgba(0,0,0,0.5); animation: lux-fade-up 0.3s ease;';
-    toast.innerHTML = '<i class="ph-bold ph-spinner ph-spin" style="color:var(--lux-gold);"></i> <span style="font-weight:600;">جاري تحديث التوصيات...</span>';
-    document.body.appendChild(toast);
-
-    await loadHomeFeed();
-    
-    toast.innerHTML = '<i class="ph-fill ph-check-circle" style="color:#4ade80;"></i> <span style="font-weight:600;">تم التحديث بنجاح</span>';
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(20px)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 1500);
-  }
-
-  // ────────────────────────────────────────────────
-  // 📥 FETCH HOME FEED (AJAX)
-  // ────────────────────────────────────────────────
-  async function loadHomeFeed() {
-    const feedContainer = document.getElementById('home-feed-container');
-    if (!feedContainer) return;
-
-    try {
-      const res = await fetch('/feed/home');
-      const data = await res.json();
-      if (data.html) {
-        // Smooth transition
-        feedContainer.style.opacity = '0';
-        setTimeout(() => {
-            feedContainer.innerHTML = data.html;
-            initCardObserver();
-            
-            if (typeof AOS !== 'undefined') { AOS.refresh(); }
-            
-            if (window.bootstrap) {
-              var tooltipTriggerList = [].slice.call(feedContainer.querySelectorAll('[data-bs-toggle="tooltip"]'));
-              tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
-            }
-            
-            if (typeof VanillaTilt !== 'undefined') {
-                VanillaTilt.init(feedContainer.querySelectorAll(".museum-book-card"), {
-                    max: 8,
-                    speed: 400,
-                    glare: true,
-                    "max-glare": 0.15,
-                });
-            }
-            
-            feedContainer.style.transition = 'opacity 0.6s ease';
-            feedContainer.style.opacity = '1';
-        }, 300);
-      }
-    } catch (err) {
-      console.error('Failed to load home feed:', err);
-      feedContainer.innerHTML = '<div class="text-center" style="margin:3rem 0;color:rgba(255,255,255,0.5); background: rgba(201,168,76,0.05); border: 1px solid rgba(201,168,76,0.15); border-radius: 16px; padding: 30px;"><i class="ph-fill ph-warning" style="font-size:2rem; color: var(--lux-gold); display:block; margin-bottom:1rem;"></i>فشل في تحميل التوصيات. يرجى تحديث الصفحة.</div>';
-    }
-  }
 </script>
 {% endblock %}

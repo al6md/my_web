@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Elham (إلهام) - Inspired Reading</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed": "#fed07f",
+              "primary": "#6f26f6",
+              "on-surface-variant": "#635f54",
+              "inverse-surface": "#100e09",
+              "primary-fixed-dim": "#bea5ff",
+              "inverse-on-surface": "#a19c95",
+              "secondary": "#a14200",
+              "on-error-container": "#68001f",
+              "secondary-fixed": "#ffdbcb",
+              "on-background": "#353229",
+              "on-tertiary-fixed-variant": "#6e4f07",
+              "surface-tint": "#6f26f6",
+              "on-primary-container": "#4800b1",
+              "error-container": "#f76a80",
+              "on-tertiary-fixed": "#4b3400",
+              "surface-container": "#f4ede2",
+              "surface-container-highest": "#e9e2d4",
+              "surface": "#fff9f0",
+              "on-surface": "#353229",
+              "error-dim": "#770326",
+              "surface-bright": "#fff9f0",
+              "surface-container-lowest": "#ffffff",
+              "outline": "#7f7a6f",
+              "primary-dim": "#6302ea",
+              "on-secondary-fixed-variant": "#9b3f00",
+              "tertiary": "#7b5913",
+              "surface-variant": "#e9e2d4",
+              "on-secondary-container": "#8b3800",
+              "surface-dim": "#e0d9ca",
+              "tertiary-fixed-dim": "#efc373",
+              "secondary-container": "#ffdbcb",
+              "outline-variant": "#b7b1a4",
+              "error": "#ac3149",
+              "primary-container": "#cab6ff",
+              "on-primary-fixed-variant": "#5300c8",
+              "surface-container-low": "#f9f3e9",
+              "secondary-fixed-dim": "#ffc9b0",
+              "tertiary-container": "#fed07f",
+              "on-secondary": "#fff7f5",
+              "on-secondary-fixed": "#6e2b00",
+              "surface-container-high": "#eee7db",
+              "on-primary-fixed": "#30007c",
+              "background": "#fff9f0",
+              "on-primary": "#fdf7ff",
+              "on-tertiary": "#fff8f1",
+              "secondary-dim": "#8d3900",
+              "on-error": "#fff7f7",
+              "primary-fixed": "#cab6ff",
+              "inverse-primary": "#9e79ff",
+              "on-tertiary-container": "#634500"
+            },
+            fontFamily: {
+              "headline": ["Be Vietnam Pro"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "1.5rem", "xl": "2.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        h1, h2, h3 { font-family: 'Be Vietnam Pro', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background selection:bg-primary-container selection:text-on-primary-container antialiased">
+<!-- TopNavBar -->
+<nav class="fixed top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-surface-container-highest">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-[1440px] mx-auto">
+<div class="flex items-center gap-10">
+<span class="text-2xl font-black tracking-tighter text-primary">Elham</span>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="#">Discover</a>
+<a class="text-on-surface-variant font-semibold hover:text-primary transition-colors" href="#">Categories</a>
+<a class="text-on-surface-variant font-semibold hover:text-primary transition-colors" href="#">My Library</a>
+<a class="text-on-surface-variant font-semibold hover:text-primary transition-colors" href="#">Series</a>
+</div>
+</div>
+<div class="flex items-center gap-5">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl" data-icon="search">search</span>
+<input class="bg-surface-container border-none rounded-full pl-10 pr-4 py-2 w-72 focus:ring-2 focus:ring-primary focus:bg-white transition-all text-sm font-medium" placeholder="Search for your next soul-read..." type="text"/>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-2.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+</button>
+<button class="ml-2 px-6 py-2.5 bg-primary text-on-primary rounded-full font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all">
+                        Subscribe
+                    </button>
+<div class="w-10 h-10 rounded-full overflow-hidden ml-3 ring-2 ring-surface-container">
+<img alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9XPBoD2_XFp8KYDizVZola6osDSTHbWVQMrFRPBQecr8sst7ZV_ZkwOkrtBBOQozOc6bITSTp8UAojsqlz2Yu6a7EYId0iOCs06cQeKbdrdtf9Us0vncdXun4yDE1By-wLbNqfQtFiagsZjUMCVc5Z90mWDzoDFwPZEInTpI8gWF5lgPOUxNMShaPFJmKEmxO0v1gNKWac7GhDwdVhpd16E-YTsoomKvUCgkJMCUPxKnu7HPYXUkN-84StPQn1614VWOXftOIrFE"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<main class="pt-24 space-y-24 pb-24">
+<!-- Hero Section -->
+<section class="px-8 max-w-[1440px] mx-auto pt-8">
+<div class="relative bg-primary rounded-xl overflow-hidden min-h-[520px] flex items-center shadow-xl">
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB8yUDRoueIkVUuadfvvapsLqM1g1OdcaO89qVAtaiG4HCiZEuEJH0t_CnPAeiD_fZ8TQsJRabJES2_698QVksXvGvdj_eO0bbatk-YWjeARjDdnTzf6A-aV9JUsWBCMSg-BYC9GLArE6KJfB1chwMVY3pTsfgZlXbtPPv9XlthEyMuXuc_OOX_c6HHV6j_8c3VyIgTVAadvJAiXtPQfDD5Pa4izsWYewNDLJwZtFgPWkEBCljH0gCTdJ94oj0Us4lj0R8fy5HCUpU'); background-size: cover;"></div>
+<div class="grid md:grid-cols-2 gap-12 p-12 lg:p-24 relative z-10 items-center">
+<div class="text-on-primary">
+<span class="bg-tertiary-container text-on-tertiary-container px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase mb-6 inline-block">Editor's Pick</span>
+<h1 class="text-5xl lg:text-7xl font-black mb-8 leading-[1.1] tracking-tight">The Echoes of <br/><span class="text-tertiary-fixed">Elham.</span></h1>
+<p class="text-lg lg:text-xl mb-10 opacity-90 max-w-lg leading-relaxed font-body">
+                            Step into a world where words breathe. Explore this month's masterpiece about the intersection of forgotten history and modern inspiration.
+                        </p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-white text-primary px-8 py-4 rounded-xl font-bold flex items-center gap-2 hover:bg-surface-container transition-all">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+                                Start Reading
+                            </button>
+<button class="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-xl font-bold hover:bg-white/20 transition-all">
+                                View Details
+                            </button>
+</div>
+</div>
+<div class="hidden md:flex justify-center lg:justify-end">
+<div class="relative group">
+<div class="absolute -inset-10 bg-white/20 rounded-full blur-3xl"></div>
+<img alt="Featured Book Cover" class="w-72 lg:w-96 rounded-lg shadow-2xl transform -rotate-3 hover:rotate-0 transition-transform duration-700 relative z-10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAo19ztvjpZjI1kVtZ1Qz5W6x_bh4Sj5W21MC8sGkvVMTEA6xU4-tBamsDgBg6_1zdRg8Z_VAMGmgm8tkKSpMUNoDQlO8TjS64f0BgMNCOonfuIEXaeePV7Y-wjzZ49KP9SsWVlIjmyeF8JgRKJOyILSMaSKmNZVomnSyxPFNUgqktY_CuqJzgMZ5Z89Gaze8qvBJ0IfV3vJiKDDv53MAg7CDEg3Znc7axAcvOIplpBC9AiLTkUBH2j1UjtziwaMNomyuaxUlWIpBE"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommended for You -->
+<section class="px-8 max-w-[1440px] mx-auto">
+<div class="flex items-end justify-between mb-10">
+<div>
+<h2 class="text-3xl font-black text-on-surface tracking-tight">Recommended for you</h2>
+<p class="text-on-surface-variant mt-2">Curated based on your reading soul.</p>
+</div>
+<button class="text-primary font-bold text-sm flex items-center gap-1 hover:underline underline-offset-4">
+                    See All Recommendations
+                    <span class="material-symbols-outlined text-base" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[580px]">
+<!-- Main Feature -->
+<div class="lg:col-span-7 bg-surface-container-lowest rounded-2xl overflow-hidden group shadow-sm border border-surface-container-highest flex flex-col relative">
+<img alt="Collection" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2b1Fq3RB4YABa5TD8n6FA1xvXLswfOfYHT7mtYnnsEz16WfuSJzddtcq_Ruj8lqpUXhhkOI_1jonj9BXIR7mU-Qbd6aOHCfiVt6RVdrmFWHIpujoxIZBMmJIvkkmJDa3AGHbOekLVuPHpXdPhUQ80VIovM7f97OfNxIdFCJD-rUzPYBshxt4nouWjdsVOs3fTIC_wYv_6AAbqOdYoLFeH7ZbVL8BDCH9dc0XR-GMeoIlf_OqIshqtoYFMgxbtq_UdiLgqXxuACDE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-10 text-white">
+<span class="text-tertiary-fixed text-[10px] font-black tracking-widest uppercase mb-3">Collection of the Week</span>
+<h3 class="text-4xl font-black mb-4">Philosophy of Silence</h3>
+<p class="text-base opacity-80 mb-8 max-w-md leading-relaxed">A deep dive into the thinkers who found everything in nothingness.</p>
+<button class="w-fit px-8 py-3 bg-white text-primary rounded-xl font-bold text-sm hover:scale-105 transition-transform">Explore Collection</button>
+</div>
+</div>
+<!-- Side Grid -->
+<div class="lg:col-span-5 grid grid-rows-2 gap-6">
+<div class="bg-surface-container-low rounded-2xl p-8 flex items-center gap-8 border border-surface-container-highest hover:bg-surface-container transition-colors">
+<div class="w-32 shrink-0">
+<img alt="Book Cover" class="w-full h-40 object-cover rounded-lg shadow-xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWX-zBAu8_y34o-iTXEOtemHVS9VOdFI8VokRgwfjFgHzGBN7qFo0PK7o6EfZAKBt1AwoDu3o83XpFw7RE6Wzl5GIfQsLcfXDssSQckT-mQh8J-4xRoVBEhGzvngQuTJjDgZbLxt3ZMnNXvGNeApYOF6APT5c-uHMiPCEiDjNvQVEkZXIKq7Sx4mZP0f0trfrsJj-b43sCMmmnh-uiEPy8VtoJG4mQic5E4cQ9bQcUGu5VZN5WxpSptWlbM4kFFDJDjkek6UbXR84"/>
+</div>
+<div>
+<span class="text-secondary font-black text-[10px] uppercase tracking-widest mb-2 block">Fiction</span>
+<h3 class="text-2xl font-black text-on-surface mb-3 leading-tight">The Midnight Library</h3>
+<p class="text-sm text-on-surface-variant mb-6 line-clamp-2 leading-relaxed">Between life and death there is a library, and within that library, the shelves go on forever.</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-lg" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-sm font-black text-on-surface">4.8</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="bg-surface-container-high rounded-2xl p-6 flex flex-col justify-between border border-surface-container-highest group">
+<div>
+<h3 class="font-black text-on-surface text-lg">Atomic Habits</h3>
+<p class="text-xs text-on-surface-variant mt-1 font-semibold">James Clear</p>
+</div>
+<img alt="Book Mockup" class="h-28 object-contain my-4 group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3B6GHoykNFzyGeLZxD1PJdUatzspD8uJON1Zhgtkpy1h83cvc4TTbiCXbYaCf2OKzE1yUL40RzT81OrrPBzE5itntcoqm_ArPKZR00sZU5-NJ7nddM7HMskPrG_ene8mfRELC6S5wpbWaMq-JDQIG_ebXVrN6Xn4mdnwkgdMbJk9n-hDFjSq57OyFDVFlpMLAqPWFKdHlA4C-hlBLQ0LiR0tLJZoOm6Omx_1DMtMM_pFscIgdDIjI6Wjq2mW7WQedF47m6UqVLw4"/>
+<button class="w-full py-2.5 bg-on-surface text-surface rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-colors">Read Preview</button>
+</div>
+<div class="bg-secondary-container/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center border border-secondary-container/60">
+<span class="material-symbols-outlined text-secondary text-5xl mb-4" data-icon="psychology">psychology</span>
+<h3 class="font-black text-on-secondary-container text-lg leading-tight">Mind &amp; Soul</h3>
+<p class="text-xs text-on-secondary-container/80 mt-2 font-medium">12 new titles</p>
+<div class="mt-6 flex -space-x-3">
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtlyWJPMrdPx0xibz1PIJm84yRfSqQxGuMiHpev8QPBgbLzJBRP2Zyi-3XdywB2r42vePegX9mTv4bPJYANQb_X-AuiqMNCsf7Sn2aGcnrG0vqwKTwXt4ndxbquDXTb14Sb5mmYzfZKgquYISjkFyU-kjt_46jGc03HHl8-DQ9p_WjO9D9FuDmyoD2-_tvisc-1GJoJ2g7spfi2YMzTYv44XKQpC7_Ybk0ym-eEs9DAUPETpYvbzgKBz6P8Om3dIeyiRizX9VL6SU"/>
+<img alt="User" class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-nl7-BiDvL7FtpaK8CY2oHlrs7qZmKatBr6o-x0vGqocy6LW2lGX8gH8Y2Uf6jQIHgfdR5KmKA_xoDGrIS9X0rDwKvBbPGoBJkQoBFTKSA8h8Y5uHeUwjUb96vzyf2Ko_9HKsudKOT1Mgbwi42TpfVT_i0OpIM8ZwM2H9Sf9eiKkEos6R1nCMu2joG5Mx1rA8GHY81xKn45KuaYZKo2aFZXGH4e9xjJY46BcxS1_Y-x6z-Bz6_-0hTKHW827WvitNBSx61BhGPmA"/>
+<div class="w-10 h-10 rounded-full bg-primary-container text-primary flex items-center justify-center text-[10px] font-black border-2 border-white">+40</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Trending Now -->
+<section class="py-24 bg-surface-container-low/50">
+<div class="px-8 max-w-[1440px] mx-auto">
+<div class="flex items-end justify-between mb-12">
+<div>
+<h2 class="text-3xl font-black text-on-surface tracking-tight">Trending Now</h2>
+<p class="text-on-surface-variant mt-2 font-medium">The books everyone is talking about this week.</p>
+</div>
+<div class="flex gap-3">
+<button class="p-3 bg-white border border-surface-container-highest rounded-full shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all group">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="p-3 bg-white border border-surface-container-highest rounded-full shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all group">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="flex gap-8 overflow-x-auto pb-8 snap-x no-scrollbar">
+<!-- Book Card 1 -->
+<div class="min-w-[280px] snap-start group cursor-pointer">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/4.2] mb-5 shadow-sm group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
+<img alt="The Alchemist" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7A96gKyM-6Et-_-By9iVEQBaRCwgtKAHgn7_M6VIKV38E1r5_Va2VBM5GYjdBi8h8L-cfVlKkiMvk1Ra9nFBWA-6-ajdlBpXGBqZpBy-HBF4ZG_7r68647BpmYNT5qEVJv21g3K126_Rqv_TQOj8ZGCehF64DEq8kMv5AdgFLordAgZuiAmicEeCfc9gTVHpuGVVJBoZajwiy6LSht4OFpnhNXRzjUcCrApyIK77ucpaoBnXVI8ya8LnUUe76fKXQMlv5TlXlu0I"/>
+<div class="absolute top-4 left-4 bg-primary text-on-primary px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">#1 Trending</div>
+</div>
+<h4 class="text-lg font-black text-on-surface">The Alchemist</h4>
+<p class="text-on-surface-variant text-sm font-medium mt-1">Paulo Coelho</p>
+</div>
+<!-- Book Card 2 -->
+<div class="min-w-[280px] snap-start group cursor-pointer lg:mt-12">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/4.2] mb-5 shadow-sm group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
+<img alt="Ikigai" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKy2bkVrjqT6resPDlk7n65cgKocuNT1Z2zGW4vdJTcRYGY2sxAxr8pKUF_Zt5CZ6pQLPMcgz0W2eefUQyv8cDy1YW8f-XZP6v1jqvmPTKmJb4_fVPyw5M0BiF6v5TTHRR6YW-KnqqGUsn87Ma3F-xoX8evAEv5pa2dVxgQ5CjdK7x_s8IFTBRx_kOrgads-wvJ2WCMyFpIpWKcvMIFf6To8NiofcMp5Y6-istDBR9vUdlRAv2-BdImX2B36Nbp1IpKiV3HjcYqx4"/>
+</div>
+<h4 class="text-lg font-black text-on-surface">Ikigai</h4>
+<p class="text-on-surface-variant text-sm font-medium mt-1">Hector Garcia</p>
+</div>
+<!-- Book Card 3 -->
+<div class="min-w-[280px] snap-start group cursor-pointer">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/4.2] mb-5 shadow-sm group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
+<img alt="Quiet" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtyvYhio-FNCO6O45j2G28SuRMg8QljcA1hMAtsbmFA4LiiTukG9JLQv35y6dBplh9Oc4jhen7pTUNzRVadW9Pms77v7WIw7Vp5ePUCbn2P6QqfWdDQpO_1wHIYKyewUifjgDlNu8F_TtzJ3C8u6MA_vt0rWM7Pl9pzHnjd_9CWmJFog45ZxDbCZMJPazdP2GY1Zol8tKMBetDHAgd6bm0l0TITRr_ip2ix-5jJS0uvp8KvERA67c7VvCcdArnFk0m0Ebbul8fkco"/>
+</div>
+<h4 class="text-lg font-black text-on-surface">Quiet</h4>
+<p class="text-on-surface-variant text-sm font-medium mt-1">Susan Cain</p>
+</div>
+<!-- Book Card 4 -->
+<div class="min-w-[280px] snap-start group cursor-pointer lg:mt-12">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/4.2] mb-5 shadow-sm group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
+<img alt="Meditation" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsDfH94sL_y7Yvhx9nS5oKeN8idG_zxKcmH7oqqxcCaz6fmouetb1f3ARFQaAUaRa6rqBpenZ9LPSgNeL62iixKYksrA3attkLSdGEg_O82pK1wq-8gEqVGBYhotBvG5gInigTAC1Cd_4pWaDeXj0qY5HQPiXzpRqT4eikvy604oBP4csSQHYcZfuwubYaeGUn55IXsXY9wfLKz9YpNcfafxOOchvwOVpvrJyPggLgd15QaNXfiJn9ZfRagsLZs3TP3Me5OKntfxQ"/>
+</div>
+<h4 class="text-lg font-black text-on-surface">Meditation</h4>
+<p class="text-on-surface-variant text-sm font-medium mt-1">Marcus Aurelius</p>
+</div>
+<!-- Book Card 5 -->
+<div class="min-w-[280px] snap-start group cursor-pointer">
+<div class="relative rounded-2xl overflow-hidden aspect-[3/4.2] mb-5 shadow-sm group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
+<img alt="Sapiens" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3Q4SStk0TMBpEgcAuh-upbSgxfydEmvp_Za2BmHuLDQtGqcZDR8jTtsJGtvSOepDnbpcX1OG59KdD5OGk3ouW7uzpOLXQRkFnCnXAopPv4Hpj3mZTJeXDxF5dOrTY8upkcXKUcuBc0HR5zWVq607-BXUzMpqP9pdMm1TI245kkb6UzrYCrhWHqA3IM5WJXyKIr_vI3EALSUcwg4ed1GjMtMS1jHsGQsmGAygbWgPPtCqkx47dEMMRSH1E6HgWiV7uJvevodD2eV0"/>
+</div>
+<h4 class="text-lg font-black text-on-surface">Sapiens</h4>
+<p class="text-on-surface-variant text-sm font-medium mt-1">Yuval Noah Harari</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Because you searched -->
+<section class="px-8 max-w-[1440px] mx-auto">
+<div class="bg-tertiary-container/30 rounded-[3rem] p-12 lg:p-16 flex flex-col lg:flex-row gap-16 items-center">
+<div class="lg:w-2/5 text-center lg:text-left">
+<h2 class="text-4xl font-black text-on-tertiary-container mb-6 leading-tight">Because you searched for <br/><span class="text-secondary italic">"Self Growth"</span></h2>
+<p class="text-on-surface-variant mb-10 leading-relaxed font-medium">We noticed you're on a journey of improvement. These hand-picked titles might be the next step in your evolution.</p>
+<button class="px-10 py-4 bg-tertiary text-on-tertiary rounded-2xl font-black text-sm hover:shadow-xl hover:shadow-tertiary/20 transition-all">Refine My Journey</button>
+</div>
+<div class="lg:w-3/5 grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+<!-- Recommended Item -->
+<div class="bg-white p-5 rounded-2xl flex gap-5 border border-white/50 shadow-sm hover:shadow-md transition-shadow">
+<img alt="Book" class="w-20 h-28 object-cover rounded-lg shadow-md shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCi8FkZn2uPYZRBDf-orx-Mtg89SAHuzQQCphawiVcQa3iG1T5Ji7O1ScFRur2vZo3twma1J1zzFbTbRF1iIb0WSTmOR7xwVGZyki3BQ7S05D71oNQjr-F26shjsHfZQ65K7h0cqnMPnnZ7bCbNfUlgVXQERJU_vewPNOZEmBi0d-sCRoly-wpAQAyqtRul3eO99haH-HnbUKyCr_zW13EyKvV0gHshjdAWAIvs1zFntawFeR9_J7pdiED6BphC1V6Qt4KQZHNvSDs"/>
+<div class="flex flex-col justify-center">
+<h4 class="font-black text-on-surface mb-1">Deep Work</h4>
+<p class="text-xs text-on-surface-variant font-bold mb-3">Cal Newport</p>
+<span class="text-[10px] bg-primary-container/30 text-primary px-3 py-1 rounded-full font-black w-fit uppercase">94% Match</span>
+</div>
+</div>
+<div class="bg-white p-5 rounded-2xl flex gap-5 border border-white/50 shadow-sm hover:shadow-md transition-shadow">
+<img alt="Book" class="w-20 h-28 object-cover rounded-lg shadow-md shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8--1KJnKlKNT_f_Sr-t3ZH3tEg9Bbun9e03wFP1tkiGOn0QYKmENrSqfJ3eZZiD-tzQQKp-w5FVV9Enzj2w_XcJy0yURWkb2qbz3szATrgxavvCqrEwnvssiiZSugDiZsdYJY5Az1nf1_Vhxa-R5Sjpnv2hE954FSVag6F-V-4yKrOkgutwzuXJdNzQW3cDjiSEGT_WRXxNfZ1vxYyuzSsve8vzSxlN41CIwzGlX4tpPtu3xejNByD-vxZ6G5v8GBKvyPzZou9ug"/>
+<div class="flex flex-col justify-center">
+<h4 class="font-black text-on-surface mb-1">Think Again</h4>
+<p class="text-xs text-on-surface-variant font-bold mb-3">Adam Grant</p>
+<span class="text-[10px] bg-primary-container/30 text-primary px-3 py-1 rounded-full font-black w-fit uppercase">88% Match</span>
+</div>
+</div>
+<div class="bg-white p-5 rounded-2xl flex gap-5 border border-white/50 shadow-sm hover:shadow-md transition-shadow">
+<img alt="Book" class="w-20 h-28 object-cover rounded-lg shadow-md shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxvPjv7d7Zog1v50On2ck7xkaXLfN_4NsxUFOpzKv_JaJtugTWj7q8XqipYasECjej4M-bQuitqQB_yzF26fe3uZlcUlI7Mw2-G0UN3vy06HdSVceSnbRag13baiEWkopnn7vZ2VnPp-QYJWESMbYJQ5akbJgtxE0wHXawR-RAwO44hAF7EbZ7OKM8skN-36bzmf5a3GcvwHeZoa_MIr_o68ykEpwiPlxCWXuWcz3YK7W0lrBjy0VZggc_VnJs1flVBNXjvHdAMNY"/>
+<div class="flex flex-col justify-center">
+<h4 class="font-black text-on-surface mb-1">Mindset</h4>
+<p class="text-xs text-on-surface-variant font-bold mb-3">Carol Dweck</p>
+<span class="text-[10px] bg-primary-container/30 text-primary px-3 py-1 rounded-full font-black w-fit uppercase">82% Match</span>
+</div>
+</div>
+<div class="bg-white p-5 rounded-2xl flex gap-5 border border-white/50 shadow-sm hover:shadow-md transition-shadow">
+<img alt="Book" class="w-20 h-28 object-cover rounded-lg shadow-md shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4n2_udQVvPCP5T9OY35IdFm7O-KiN-at5le9J6gbEAbB5x2mlP2ZeGfZ0x3MLMLlWS5-f_EK5LNESCKfRDVWRZaQrLbPhAYU1GEhE32qtv6tX-Nf8G9Xe_94q7rB27MR5thxT1ouZnl38gu2X2--QyKFQOQC5ot7rzCJEplvV8_l8037tH-f5LqPiPyiRMNKE8hMa_MobAn_jQVx-JDn82TJSPvBajpIJ0BYxDh4QXza_KqNWIg-hqzB1XKKppLsabBrXAaeSBD4"/>
+<div class="flex flex-col justify-center">
+<h4 class="font-black text-on-surface mb-1">Grit</h4>
+<p class="text-xs text-on-surface-variant font-bold mb-3">Angela Duckworth</p>
+<span class="text-[10px] bg-primary-container/30 text-primary px-3 py-1 rounded-full font-black w-fit uppercase">79% Match</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Quote Block -->
+<section class="px-8 max-w-[1440px] mx-auto py-12">
+<div class="bg-surface-container-highest/40 p-16 lg:p-24 rounded-3xl flex flex-col items-center text-center relative overflow-hidden border border-surface-container-highest">
+<span class="material-symbols-outlined text-secondary/10 text-[180px] absolute -top-10 -left-10 select-none" data-icon="format_quote">format_quote</span>
+<p class="text-3xl lg:text-5xl font-black text-secondary leading-[1.3] max-w-4xl relative z-10 italic">
+                    "A reader lives a thousand lives before he dies. The man who never reads lives only one."
+                </p>
+<div class="mt-12 flex items-center gap-6 relative z-10">
+<div class="w-16 h-px bg-secondary/30"></div>
+<span class="font-black text-lg text-on-surface tracking-wide uppercase">George R.R. Martin</span>
+<div class="w-16 h-px bg-secondary/30"></div>
+</div>
+</div>
+</section>
+<!-- Binge-Worthy Series -->
+<section class="px-8 max-w-[1440px] mx-auto">
+<div class="flex items-end justify-between mb-16">
+<div>
+<h2 class="text-3xl font-black text-on-surface tracking-tight">Binge-Worthy Series</h2>
+<p class="text-on-surface-variant mt-2 font-medium">Immerse yourself in worlds that don't end on the last page.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+<!-- Series Card 1 -->
+<div class="group cursor-pointer">
+<div class="flex items-end justify-center h-72 mb-8 relative rounded-2xl bg-primary/5 group-hover:bg-primary/10 transition-colors">
+<img alt="Series 1" class="h-56 rounded-lg shadow-2xl relative z-30 translate-x-12 translate-y-4 group-hover:translate-y-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBN5f0uqRleaNm0IrLCAt-yNP8hAipaavib7SXVNAvTRWZroIqDEsrdQXejQV1aXIhxpLN5e3hIm3p8WHgsFH0zTUReh3kbtAcH3tpxeQ3zvqNvticyO0V4xuS_ygKUx86866PYmc_IVL8FJJCSb1wbbFmDAtxCFw-jJItvoQ4Yc-yDpO6lLn-69vGmL02_cElb1j-LI4uQgLAGtMTYSpspd1ak-LXx9yE-ydaUinGPa3DYZVM0xHQYFvvRM6s5-SCv5CGHCnEeSIo"/>
+<img alt="Series 2" class="h-52 rounded-lg shadow-xl relative z-20 translate-x-4 opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6j9ho5sHZSclmBynw8XcKfAXDcGW3GbX74BYjpUG4xrbEKeqEMMGaHSXybZt4piQ2CurmvBeUxHjz4y2q-1ivzSPyrwwtGauwosGOovz1P5JP3V37QwlcEVliU15H2plx0AmaPwrpYwgpkNQJtX5bPaNjxIo3Ysz4mWjG8nb7VkxYZTumAP2YNfCl5syBdMMniiRZoM2lGwm3JQVhWlO828MQp-zeZPwX89YABTwS7_f1bQuZLy0XoJV_I5-K524BZnPbmNeWrWE"/>
+<img alt="Series 3" class="h-48 rounded-lg shadow-lg relative z-10 -translate-x-4 opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfGm8m4utYPKlWELVCTbG-Un6MdmrImTp69eIwtW5BEz5UbUZLanrvDcRz4B1Evi0O7x2yppklqy1CHw5OCkhPMNbY87opcLczioyMNH0I47soz_b_he312KV2b5asN_QAKrgH77Y2yf6vHyNJJxqL0_pI1KarIPyE9OFuFjhk9vTimrC1f78dAZqtKyLvoSanmvOqyrpU_JvYbbskPEoprJ7K6iTMCM2hPf8B2JGf704QK6GQvfLqd5jKlkpfqnzpubWqh87ijIM"/>
+</div>
+<h3 class="text-2xl font-black text-on-surface mb-2">The Chronicles of Now</h3>
+<p class="text-on-surface-variant font-bold text-sm">5 Books • Epic Fantasy</p>
+</div>
+<!-- Series Card 2 -->
+<div class="group cursor-pointer">
+<div class="flex items-end justify-center h-72 mb-8 relative rounded-2xl bg-secondary/5 group-hover:bg-secondary/10 transition-colors">
+<img alt="Series 1" class="h-56 rounded-lg shadow-2xl relative z-30 translate-x-12 translate-y-4 group-hover:translate-y-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5ufmiUIcQUUpQV54ZCqph-XATJ7yNgnmQibjQ4PuPEJZ_3cSeffnsYStmkGdnjQrVMoVZ-YVhoGAmZPSp-NT3URNF78phgLo7TPycXTm_VM41pCHSjJGVkbVOyyetIV1cjchq2DN_RGOJLqjVi332DBWAHQvcEP0AvSpU_kW--q5CE_tSb7fZKkIxLFmFMImPZbFVvL8Tu2jdn--0F3iZ-aMLLhqLHnKshWFLX573g2MbWNNjQIeaq5eLulsgy4BfeopdUh0VGwM"/>
+<img alt="Series 2" class="h-52 rounded-lg shadow-xl relative z-20 translate-x-4 opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDua2FNFB244VF9efB1dTyW2sDpsODpCQwXQ1iRLfpn8XCI3GAz3Jo9BfXQAo47l78DWyXnPfJnz_02Fs9EnJhOFQCs1XAuMwigleMgumStdBDWS6jGKKWf6EzsCKiZLUgqtmI65e01pYFB90j6tYnkC1m5OL09ebYaZ2E0Yz2h2oMKZCsnwHeNzlW6SouPMCZ5IExtUjTCfuJEtXC1QzXXq7sQiD9RQIMF-tQliBMoxLSUIavQT_SAN994O_BACrL09N-DiTkoW7s"/>
+<img alt="Series 3" class="h-48 rounded-lg shadow-lg relative z-10 -translate-x-4 opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIdrHQWwIsjF2yOXhlBYHtUY6nkMGa9QXEFVmDPbfA6NgY4AYz5w0ENP5P_v-zDuxx-XOaRbnlEQBzME4cnjRfwutcJ_IGxEoIL_4wtSDujJZweEqcMoIujqSvQkqtEcrw-qaPOsx1p9EZFzrNB3Q8wwPY9ci-rJ-DyOrOcvn22Cog4H-crfn-1wNTP3GsHs8BpkCKnIJnlefYNAzcOj8haaVnhmI9rBpRp4P4vWUXGZCnGKH8tbdqcFVvBAGgw1J6mzzHjV5383c"/>
+</div>
+<h3 class="text-2xl font-black text-on-surface mb-2">Modern Legends</h3>
+<p class="text-on-surface-variant font-bold text-sm">3 Books • Mythology Retelling</p>
+</div>
+<!-- Series Card 3 -->
+<div class="group cursor-pointer">
+<div class="flex items-end justify-center h-72 mb-8 relative rounded-2xl bg-tertiary/5 group-hover:bg-tertiary/10 transition-colors">
+<img alt="Series 1" class="h-56 rounded-lg shadow-2xl relative z-30 translate-x-12 translate-y-4 group-hover:translate-y-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEwX2QdAbfWck3O4KeZrybeJojtMrN48BhbRHp_xAvYTOBnc-YM3vSIIQa9HuKi5vx_qUUz4-ZVLGV-VYpJ82mByti1OKHIcC8YJTT9vtHBklP6PGlJrhCaCooZkxh6mFFjeF1Zk9K0crky-yo-Z8xxFLgWZm33Sgiv1PTx3zWlkbzGb-ON-DD7QEwVohT-LLuEwqk4r5wFkZO24Epgx-lvyfKZmQqgW5QqV1CvL66Gtir5X6h4JUL4MVx-OK-hWRrEJwKT0ExjdY"/>
+<img alt="Series 2" class="h-52 rounded-lg shadow-xl relative z-20 translate-x-4 opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO7MNUmELWZSQevB-0x7MLnyh_wXHHT30i4wUhs7hXGzBRKRmN8fa86zuJ8qydOzmEqnUnVtmwT4Unr58nlEYvoxZUARhkPLEpGxlvaz3iliT_guKUx3TGAOzYUWN_amrPcqilKKyJVnUEmhG-46JZBskYFQmPhDFzKiIml9g44AvVqAvh_jfAFG_QniEm407trRdL1G-IgGcUZ1KVMWciqULbDreowpGEEw38LpO9oX5WvENI11e5MyBzspUnPQBil5YP9X8FL04"/>
+<img alt="Series 3" class="h-48 rounded-lg shadow-lg relative z-10 -translate-x-4 opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5V8PERaycsy75QJeHc1i7ZwGjzEM1SkG6538S-lc9pzJIdj7aNKMuDAzKYK2jEBwArf_6bEYCDLQj1U7vrTQFBs4TRA9xur23vTr1Y_fDeLB2SJ-0Z1x01zqGclHHZcezOCZLc6ifckwQmaIouVJBNi4IYvXR07niN3m9Mue5BsuEDpubp3o4uSBFkPNKRxVamHvgDYskRvGsdrNVkr8hSkaiyzlz3UN1TQmkoZj0axJ3ytXa3WpMNSyQ6U0-QAdjB9DKaDzCjAo"/>
+</div>
+<h3 class="text-2xl font-black text-on-surface mb-2">Silicon Dreams</h3>
+<p class="text-on-surface-variant font-bold text-sm">4 Books • Sci-Fi Thriller</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-white border-t border-surface-container-highest pt-20 pb-12">
+<div class="max-w-[1440px] mx-auto px-8">
+<div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-16 mb-16">
+<div class="lg:col-span-2">
+<span class="text-2xl font-black text-primary mb-8 block">Elham</span>
+<p class="text-on-surface-variant text-sm font-medium leading-relaxed max-w-sm">
+                        Connecting curious minds with transformative stories. Your next inspiration starts with a single page. Join our community of readers today.
+                    </p>
+<div class="flex gap-4 mt-8">
+<a class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container text-on-surface-variant hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-xl">public</span></a>
+<a class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container text-on-surface-variant hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-xl">language</span></a>
+<a class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container text-on-surface-variant hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined text-xl">mail</span></a>
+</div>
+</div>
+<div>
+<h4 class="font-black text-on-surface mb-8 uppercase tracking-widest text-xs">Explore</h4>
+<ul class="space-y-4 text-sm font-semibold">
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Browse Genres</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Gift Cards</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Book Clubs</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Authors Portal</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-black text-on-surface mb-8 uppercase tracking-widest text-xs">Company</h4>
+<ul class="space-y-4 text-sm font-semibold">
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">About Us</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Contact Support</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Careers</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Press Kit</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-black text-on-surface mb-8 uppercase tracking-widest text-xs">Legal</h4>
+<ul class="space-y-4 text-sm font-semibold">
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Cookie Settings</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-10 border-t border-surface-container flex flex-col md:flex-row justify-between items-center gap-6">
+<p class="text-on-surface-variant text-[13px] font-medium">
+                    © 2024 Elham (إلهام). Crafted with intention for the inspired reader.
+                </p>
+<div class="flex items-center gap-2 text-on-surface-variant text-[13px] font-medium">
+<span>Designed with</span>
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="favorite" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span>for book lovers worldwide.</span>
+</div>
+</div>
+</div>
+</footer>
+<!-- FAB -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-white rounded-full shadow-xl shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 group">
+<span class="material-symbols-outlined text-2xl group-hover:rotate-12 transition-transform" data-icon="auto_awesome">auto_awesome</span>
+</button>
+</body></html>

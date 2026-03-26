@@ -52,8 +52,11 @@ def _book_to_dict(book, source="Local", reason=None, extra_meta=None):
         return None
 
     cover_url = getattr(book, "cover_url", None)
-    if cover_url and 'books.google.com' in cover_url and '&edge=curl' in cover_url:
-        cover_url = cover_url.replace('&edge=curl', '').replace('&edge=curl&', '&')
+    if cover_url:
+        if 'books.google.com' in cover_url and '&edge=curl' in cover_url:
+            cover_url = cover_url.replace('&edge=curl', '').replace('&edge=curl&', '&')
+        if 'via.placeholder.com' in cover_url:
+            cover_url = cover_url.replace('via.placeholder.com', 'placehold.co')
 
     data = {
         "id": getattr(book, "google_id", None) or f"local_{book.id}",

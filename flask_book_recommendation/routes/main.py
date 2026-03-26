@@ -27,7 +27,16 @@ from ..utils import (
     translate_to_english_with_gemini,
     chat_with_ai  # مساعد AI للكتب
 )
-from ..recommender import log_user_view, get_deep_learning_recommendations
+from ..recommender import (
+    log_user_view, 
+    get_deep_learning_recommendations,
+    get_trending,
+    get_top_rated,
+    get_cf_similar,
+    get_view_based_recommendations,
+    get_behavior_based_recommendations
+)
+from ai_book_recommender.unified_pipeline import get_unified_engine
 
 
 
@@ -38,20 +47,174 @@ main_bp = Blueprint("main", __name__)
 @main_bp.route("/")
 def home():
     """
-    الصفحة الرئيسية — تحميل الهيكل (Skeleton) فوراً، ثم جلب البيانات عبر API.
+    الصفحة الرئيسية — جلب البيانات الأساسية فوراً لضمان تجربة Stitch Premium.
     """
     from flask import make_response
-    import time
+    
+    # جلب كتب متنوعة للأقسام المختلفة
+    user_id = current_user.id if current_user.is_authenticated else None
+    
+    if user_id:
+        featured = get_deep_learning_recommendations(user_id, limit=100)
+    else:
+        featured = get_trending(limit=100)
+        
+    top_rated = get_top_rated(limit=100)
+    
+    # Ensure 100 books by merging with trending if needed
+    if len(top_rated) < 100:
+        trending_fallback = get_trending(limit=100)
+        seen_gids = set()
+        for b in top_rated:
+            bid = b.get('id') if isinstance(b, dict) else getattr(b, 'google_id', getattr(b, 'id', None))
+            if bid: seen_gids.add(bid)
+            
+        for b in trending_fallback:
+            if len(top_rated) >= 100: break
+            bid = b.get('id') if isinstance(b, dict) else getattr(b, 'google_id', getattr(b, 'id', None))
+            if bid and bid not in seen_gids:
+                if isinstance(b, dict):
+                    top_rated.append(b)
+                else:
+                    top_rated.append({
+                        "id": bid,
+                        "title": getattr(b, 'title', 'Unknown'),
+                        "author": getattr(b, 'author', 'Unknown'),
+                        "cover": getattr(b, 'cover_url', None),
+                        "source": "Trending",
+                        "rating": 4.5
+                    })
+                seen_gids.add(bid)
+    
+    most_viewed = get_trending(limit=100)
+    
+    if not featured or len(featured) < 3:
+        # Emergency fetch from Google Books if local data is sparse
+        items, _ = fetch_google_books("featured books architecture", max_results=12)
+        featured = []
+        for it in items:
+            vi = it.get("volumeInfo", {})
+            featured.append({
+                "id": it.get("id"),
+                "title": vi.get("title"),
+                "author": ", ".join(vi.get("authors", ["Unknown"])),
+                "cover": (vi.get("imageLinks", {})).get("thumbnail"),
+                "rating": vi.get("averageRating", 4.5)
+            })
+            
+    if not most_viewed or len(most_viewed) < 3:
+        # Use featured as fallback for most viewed
+        most_viewed = featured[:10]
 
-    # We return the template immediately without data.
+    # قائمة التصنيفات الأساسية
+    categories = [
+        "Programming", "Artificial Intelligence", "Science", 
+        "History", "Philosophy", "Art", "Fiction"
+    ]
+
+    # Fetch real project algorithm recommendations for the showcase
+    ai_algo_books = []
+    mind_metrics_percentage = 68
+    try:
+        # 1. Get Neural Hybrid (Featured)
+        engine = get_unified_engine()
+        ctx = {"page": "home_showcase", "time": time.time()}
+        neural_recs = engine.recommend_full_stack(user_id=user_id, top_k=5, context=ctx)
+        
+        # 2. Get DL and CF candidates
+        dl_recs = get_deep_learning_recommendations(user_id, limit=50)
+        cf_recs = get_cf_similar(user_id, top_n=50) if user_id else []
+        
+        # Calculate Dynamic Mind Metrics
+        if user_id:
+            mind_metrics_percentage = min(50 + len(dl_recs) + len(cf_recs), 98)
+        else:
+            import time as _time
+            mind_metrics_percentage = 65 + (int(_time.time() / 3600) % 30)
+            
+        # Combine into ai_algo_books with tags
+        seen_ids = set()
+        
+        # Featured (Neural)
+        if neural_recs:
+            b = neural_recs[0]
+            bid = b.get('id') or b.get('google_id')
+            if bid:
+                seen_ids.add(bid)
+                ai_algo_books.append({
+                    "id": bid,
+                    "title": b.get('title'),
+                    "author": b.get('author') or b.get('authors', ["Unknown"])[0],
+                    "cover_url": b.get('cover_url') or b.get('cover'),
+                    "categories": b.get('categories', []),
+                    "algorithm_tag": "NEURAL HYBRID",
+                    "rating": b.get('rating', 4.8)
+                })
+
+        # Supporters (DL, CF, etc.)
+        candidates = []
+        for b in dl_recs: candidates.append((b, "DEEP LEARNING"))
+        for b in cf_recs: candidates.append((b, "COLLECTIVE"))
+        
+        # Fallback if sparse
+        if len(ai_algo_books) + len(candidates) < 100:
+            trending = get_trending(limit=100)
+            for b in trending: candidates.append((b, "TRENDING"))
+
+        for b, tag in candidates:
+            if len(ai_algo_books) >= 100: break
+            bid = b.get('id') if isinstance(b, dict) else (b.google_id or b.id)
+            if bid and bid not in seen_ids:
+                seen_ids.add(bid)
+                if isinstance(b, dict):
+                    ai_algo_books.append({
+                        "id": bid,
+                        "title": b.get('title'),
+                        "author": b.get('author') or b.get('authors', ["Unknown"])[0],
+                        "cover_url": b.get('cover_url') or b.get('cover'),
+                        "categories": b.get('categories', []),
+                        "algorithm_tag": tag,
+                        "rating": b.get('rating', 4.5)
+                    })
+                else:
+                    ai_algo_books.append({
+                        "id": bid,
+                        "title": b.title,
+                        "author": b.author or "Unknown",
+                        "cover_url": b.cover_url,
+                        "categories": b.categories.split(",") if b.categories else [],
+                        "algorithm_tag": tag,
+                        "rating": 4.5
+                    })
+
+    except Exception as e:
+        # Fallback logic to ensure we have data even if AI fails
+        if not ai_algo_books:
+            logger.warning("No AI recommendations fetched, falling back to trending for this section")
+            tr = get_trending(limit=4)
+            for b in tr:
+                ai_algo_books.append({
+                    "id": b.get('id') or b.get('google_id'),
+                    "title": b.get('title', "Unknown"),
+                    "author": b.get('author') or (b.get('authors', [None])[0] if b.get('authors') else "Unknown"),
+                    "cover_url": b.get('cover_url') or b.get('cover'),
+                    "categories": b.get('categories') or [],
+                    "algorithm_tag": "TRENDING",
+                    "rating": 4.5
+                })
+
     resp = make_response(render_template(
         "home.html",
+        featured_books=featured,
+        categories=categories,
         unified_recommendations=[],
         algo_buckets={},
-        top_rated_books_sorted=[],
-        most_viewed_books=[],
+        top_rated_books_sorted=top_rated,
+        most_viewed_books=most_viewed,
         trending_by_libraries=[],
-        featured_book=None,
+        featured_book=featured[0] if featured else None,
+        ai_algo_books=ai_algo_books,
+        mind_metrics_percentage=mind_metrics_percentage,
         current_filters={'query': '', 'sort': 'ai_relevance', 'debug_ts': time.time()}
     ))
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
@@ -195,10 +358,51 @@ def home_feed():
     featured_lists = _build_featured_lists()
 
     # ── Render template ──
+    # ── Dynamic "Because You Searched For" Section ──
+    dynamic_search_books = []
+    last_search_term = "Self Growth"
+    try:
+        if user_id:
+            # Use db.session.query because 'query' is a column name in SearchHistory model
+            last_search_obj = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).first()
+            if last_search_obj and last_search_obj.query:
+                last_search_term = last_search_obj.query.title()
+                
+        # Handle cases where search term is too short
+        if not last_search_term or len(last_search_term) < 2:
+            last_search_term = "Self Growth"
+
+        # Search in categories and title
+        dynamic_search_books = Book.query.filter(
+            db.or_(
+                Book.categories.ilike(f'%{last_search_term}%'),
+                Book.title.ilike(f'%{last_search_term}%')
+            )
+        ).limit(4).all()
+        
+        # Fallback if no specific books found or search term was default
+        if not dynamic_search_books or len(dynamic_search_books) < 4:
+            trending = get_trending(limit=10)
+            added_ids = [getattr(b, 'id', b.get('id') if isinstance(b, dict) else None) for b in dynamic_search_books]
+            for tb in trending:
+                tbid = tb.get('id')
+                if tbid not in added_ids:
+                    dynamic_search_books.append(tb)
+                if len(dynamic_search_books) >= 4:
+                    break
+    except Exception as e:
+        current_app.logger.error(f"[Feed] Search section failed: {str(e)}")
+        # Ultimate fallback
+        if not dynamic_search_books:
+            dynamic_search_books = get_trending(limit=4)
+        last_search_term = "Hand-picked for You" if last_search_term == "Self Growth" else last_search_term
+
     html = render_template(
         "components/home_feed.html",
         neural_sections=neural_sections,
         top_interest=top_interest,
+        dynamic_search_books=dynamic_search_books,
+        last_search_term=last_search_term,
         
         # Elite Sections
         deep_learning_books=cat_results.get("deep_learning", []),

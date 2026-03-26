@@ -1,1301 +1,599 @@
 {% extends "base.html" %}
-{% from 'components/macros.html' import render_carousel_section %}
-{% block title %}{{ book.title }} | ALHAM{% endblock %}
-{% block body_class %}royal-detail-page{% endblock %}
 
-{% block head %}
+{% block title %}{{ book.title }} | The Digital Curator{% endblock %}
+
+{% block content %}
+<main class="pt-24 bg-background">
+    <!-- Hero Section -->
+    <section class="relative min-h-[819px] flex items-center overflow-hidden bg-gradient-to-br from-slate-900 via-[#30007c] to-[#6f26f6] text-white py-20 px-8">
+        <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDwgkC_cgKneCJu3L5F51pdugw_Kh-tpsSnvxSO6DiMRKAs0JIBdY2IJG9sKXmG3LtFd5s9daKUe9hO83VJftIB5gj_oiMWvRZyt0J3fAUmTzefj8Sd8LvQg4-nlEjqA8MmnT1H6Bq-Hf5GsBSSz-yFHv-xCCZDIlZ53BXD9sHuYu9kSTfR5A6Wbm-tgqQhhFXLRYuChQyteziY17Q1BCuDmLS_KY38_yDBeTMaCKiZVKziJ4UmDaKhmjHFVMABycHlc-7LooTZ9yI');"></div>
+        <div class="max-w-[1440px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center relative z-10">
+            <!-- Left: Book Cover (Asymmetric Float) -->
+            <div class="lg:col-span-5 relative group">
+                <div class="absolute -inset-4 bg-primary/20 blur-3xl rounded-full"></div>
+                <div class="relative transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+                    {% if book.cover %}
+                    <img alt="{{ book.title }}" class="rounded-lg shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] w-full max-w-md mx-auto aspect-[2/3] object-cover border-4 border-white/10" src="{{ book.cover }}" onerror="this.onerror=null; this.src='{{ url_for('public.generate_book_cover', title=book.title, author=book.author) }}';">
+                    {% else %}
+                    <img alt="{{ book.title }}" class="rounded-lg shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] w-full max-w-md mx-auto aspect-[2/3] object-cover border-4 border-white/10" src="{{ url_for('public.generate_book_cover', title=book.title, author=book.author) }}">
+                    {% endif %}
+                    <div class="absolute bottom-6 right-[-20px] bg-secondary px-6 py-3 rounded-xl shadow-xl animate-bounce">
+                        <p class="text-xs font-bold uppercase tracking-widest text-on-secondary">Digital Edition</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Right: Content -->
+            <div class="lg:col-span-7 space-y-8">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        {% if book.categories %}
+                        {% set cats = book.categories if book.categories is iterable and book.categories is not string else [book.categories] %}
+                        <span class="px-4 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/20">{{ cats[0] }}</span>
+                        {% endif %}
+                        <div class="flex items-center text-tertiary-fixed">
+                            {% set display_rating = avg_rating if reviews else (book.rating or 4.5)|float %}
+                            {% for i in range(5) %}
+                            <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' {{ 1 if display_rating > i else 0 }};">star</span>
+                            {% endfor %}
+                            <span class="ml-2 text-white/80 text-sm">({{ display_rating }} Rating)</span>
+                        </div>
+                    </div>
+                    <h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-none">{{ book.title }}</h1>
+                    <p class="text-2xl text-primary-fixed font-medium">by {{ book.author or 'Unidentified' }}</p>
+                </div>
+                <div class="text-xl text-slate-300 max-w-2xl leading-relaxed line-clamp-3">
+                    {{ book.desc|striptags|truncate(250) if book.desc else 'A curated volume from the Digital Archive.' }}
+                </div>
+                <div class="flex items-center gap-8 py-4">
+                    <div>
+                        <p class="text-sm text-slate-400 uppercase tracking-widest font-bold">Volume</p>
+                        <p class="text-4xl font-black">{{ book.pageCount or '320' }} <span class="text-lg opacity-50">Pgs</span></p>
+                    </div>
+                    <div class="h-12 w-[1px] bg-white/20"></div>
+                    <div>
+                        <p class="text-sm text-slate-400 uppercase tracking-widest font-bold">Release</p>
+                        <p class="text-4xl font-black text-primary-fixed">{{ (book.publishedDate or '2024')[:4] }}</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-4 pt-4">
+                    {% if book.preview %}
+                    <a href="{{ book.preview }}" target="_blank" class="bg-primary text-on-primary px-10 py-5 rounded-xl text-lg font-bold hover:shadow-[0_20px_40px_rgba(111,38,246,0.3)] transition-all active:scale-95 flex items-center gap-3">
+                        <span class="material-symbols-outlined">auto_stories</span>
+                        Inaugurate Session
+                    </a>
+                    {% endif %}
+                    
+                    {% if current_user.is_authenticated %}
+                    <button onclick="updateShelf(this, 'later')" id="btn-later" class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-5 rounded-xl text-lg font-bold hover:bg-white/20 transition-all active:scale-95 flex items-center gap-3">
+                        <span class="material-symbols-outlined">{{ 'check_circle' if current_status == 'later' else 'library_add' }}</span>
+                        {{ 'Archived in Library' if current_status == 'later' else 'Add to Library' }}
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-5 rounded-xl text-lg font-bold hover:bg-white/20 transition-all active:scale-95 flex items-center gap-3">
+                        <span class="material-symbols-outlined">login</span>
+                        Authenticate to Archive
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Section: Bento Meta & Description -->
+    <section class="max-w-[1440px] mx-auto px-8 -mt-16 relative z-10">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Description Card -->
+            <div class="lg:col-span-2 bg-white rounded-xl p-12 shadow-xl border border-outline-variant/10">
+                <h2 class="text-3xl font-bold mb-8 flex items-center gap-4">
+                    <span class="w-12 h-1 bg-primary rounded-full"></span>
+                    Abstract Reconnaissance
+                </h2>
+                <div class="prose prose-lg text-on-surface-variant space-y-6 leading-relaxed selection:bg-primary/10">
+                    {{ book.desc|safe if book.desc else 'The archival record for this volume is currently being synthesized. Full telemetry will be integrated shortly.' }}
+                </div>
+                
+                <!-- AI HUB Interface -->
+                <div class="mt-16 pt-16 border-t border-slate-100">
+                    <h3 class="text-xl font-bold mb-8 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">psychology</span>
+                        Neural Interface Hub
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="openChatModal()" class="flex items-center justify-between p-6 bg-surface-container-low hover:bg-surface-container-high rounded-xl transition-all group">
+                            <div class="text-left">
+                                <p class="font-bold text-on-surface">Semantic Dialogue</p>
+                                <p class="text-xs text-on-surface-variant">Inquire with Neural Engine</p>
+                            </div>
+                            <span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">chat_bubble</span>
+                        </button>
+                        <button onclick="generateSummary()" class="flex items-center justify-between p-6 bg-surface-container-low hover:bg-surface-container-high rounded-xl transition-all group">
+                            <div class="text-left">
+                                <p class="font-bold text-on-surface">Cognitive Synthesis</p>
+                                <p class="text-xs text-on-surface-variant">Condensed Data Extraction</p>
+                            </div>
+                            <span class="material-symbols-outlined text-secondary group-hover:scale-110 transition-transform">summarize</span>
+                        </button>
+                        <button onclick="openCoachModal()" class="md:col-span-2 flex items-center justify-between p-6 bg-primary/5 hover:bg-primary/10 rounded-xl transition-all group border border-primary/10">
+                            <div class="text-left">
+                                <p class="font-bold text-primary">Acquisition Protocol</p>
+                                <p class="text-xs text-primary/60">Strategic Reading Path Generator</p>
+                            </div>
+                            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">auto_graph</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meta Info Side Column -->
+            <div class="space-y-8">
+                <!-- Stats Grid -->
+                <div class="bg-primary text-on-primary rounded-xl p-8 shadow-lg">
+                    <h3 class="text-xl font-bold mb-6">Key Specifications</h3>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Protocol</p>
+                            <p class="text-xl font-bold">Discovery</p>
+                        </div>
+                        <div>
+                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Language</p>
+                            <p class="text-xl font-bold">Global</p>
+                        </div>
+                        <div>
+                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Origin</p>
+                            <p class="text-lg font-bold leading-tight uppercase">{{ book.source or 'Google' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Status</p>
+                            <p class="text-lg font-bold leading-tight">Verified</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Author Spotlight -->
+                <div class="bg-white rounded-xl p-8 border border-outline-variant/10 shadow-lg">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary border border-primary/10">
+                            <span class="material-symbols-outlined text-3xl">person</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold">{{ book.author or 'Unidentified author' }}</h4>
+                            <p class="text-sm text-slate-500">Principal Contributor</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-on-surface-variant leading-relaxed mb-4">
+                        Curated intelligence volume indexed within the Digital Curator framework.
+                    </p>
+                    <a class="text-primary font-bold text-sm flex items-center gap-2 hover:gap-3 transition-all" href="#">
+                        View Author Portal
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </a>
+                </div>
+
+                <!-- Feedback / Reviews -->
+                <!-- Feedback / Reviews -->
+                <div class="bg-surface-container-low rounded-xl p-8 border border-outline-variant/5">
+                    <h3 class="font-bold text-on-surface mb-6 flex items-center justify-between">
+                        Voices of Inspiration
+                        {% if reviews %}
+                        <span class="text-xs font-normal text-on-surface-variant bg-surface-container px-2 py-1 rounded">{{ reviews|length }} Reviews</span>
+                        {% endif %}
+                    </h3>
+                    
+                    <div class="space-y-8 max-h-[400px] overflow-y-auto no-scrollbar pr-2">
+                        {% if reviews %}
+                            {% for review in reviews %}
+                            <div class="space-y-2 border-b border-on-surface/5 pb-6 last:border-0">
+                                <div class="flex text-secondary scale-75 origin-left mb-1">
+                                    {% for i in range(5) %}
+                                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' {{ 1 if review.rating > i else 0 }};">star</span>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-sm italic text-on-surface-variant leading-relaxed">"{{ review.review_text }}"</p>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                                        {{ review.user.name[0]|upper if review.user.name else '?' }}
+                                    </div>
+                                    <p class="text-[10px] font-bold text-slate-400">— {{ review.user.name }}</p>
+                                    <span class="text-[8px] text-slate-300 uppercase ml-auto">{{ review.created_at.strftime('%b %d, %Y') }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-12 opacity-40">
+                                <span class="material-symbols-outlined text-4xl mb-2">rate_review</span>
+                                <p class="text-xs italic">No echoes yet. Be the first to share your perspective.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Review Button / Card -->
+                    <div class="mt-8 pt-8 border-t border-on-surface/10 text-center">
+                        {% if current_user.is_authenticated %}
+                            <button onclick="toggleReviewForm()" class="w-full py-4 bg-on-surface text-surface rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">edit_note</span>
+                                {{ 'Edit Your Perspective' if user_review else 'Contribute a Review' }}
+                            </button>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="text-primary text-xs font-bold hover:underline">Authenticate to contribute a review</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Review Form (Hidden by default) -->
+                <div id="review-form-container" class="hidden bg-white rounded-xl p-8 border-2 border-primary/20 shadow-2xl animate-fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="font-black text-on-surface uppercase tracking-widest text-xs">Your Perspective</h4>
+                        <button onclick="toggleReviewForm()" class="text-slate-400 hover:text-on-surface"><span class="material-symbols-outlined text-sm">close</span></button>
+                    </div>
+                    <form action="{{ url_for('public.submit_review', gid=book.id) }}" method="POST" class="space-y-6">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="flex items-center justify-center gap-4 py-4 bg-surface-container-low rounded-xl">
+                            {% for i in range(1, 6) %}
+                            <label class="cursor-pointer group">
+                                <input type="radio" name="rating" value="{{ i }}" class="hidden rating-input" {{ 'checked' if user_review and user_review.rating == i else '' }} required>
+                                <span class="material-symbols-outlined text-3xl text-slate-300 group-hover:text-secondary transition-colors rating-star" data-rating="{{ i }}" style="font-variation-settings: 'FILL' {{ 1 if user_review and user_review.rating >= i else 0 }}; {{ 'color: #ea580c !important;' if user_review and user_review.rating >= i else '' }}">star</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <textarea name="review_text" rows="4" class="w-full bg-surface-container border-none p-6 rounded-xl font-body text-sm italic focus:ring-2 focus:ring-primary outline-none" placeholder="Share your intellectual findings..." required>{{ user_review.review_text if user_review else '' }}</textarea>
+                        <button type="submit" class="w-full py-5 bg-primary text-on-primary rounded-xl font-black text-xs uppercase tracking-widest hover:shadow-lg transition-all active:scale-95">
+                            Submit Protocol
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Related Books Section -->
+    {% if similar %}
+    <section class="max-w-[1440px] mx-auto px-8 py-24">
+        <div class="flex items-center justify-between mb-12">
+            <div>
+                <h2 class="text-4xl font-black tracking-tight">Expand Your Library</h2>
+                <p class="text-slate-500">Similar Nodes Detected</p>
+            </div>
+            <div class="flex gap-4">
+                <button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all shadow-sm">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </button>
+                <button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all shadow-sm">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </button>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+            {% for b in similar[:5] %}
+            <a href="{{ url_for('public.book_detail', gid=b.id) }}" class="group cursor-pointer">
+                <div class="aspect-[2/3] overflow-hidden rounded-lg mb-4 shadow-md group-hover:shadow-2xl transition-all group-hover:-translate-y-2 duration-300 relative bg-surface-container">
+                    <img alt="{{ b.title }}" class="w-full h-full object-cover" src="{{ b.cover or b.cover_url or 'https://placehold.co/300x450/fbfbe2/a04100?text=Node' }}">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                <h4 class="font-bold group-hover:text-primary transition-colors truncate text-sm">{{ b.title }}</h4>
+                <p class="text-xs text-slate-500 truncate">{{ b.author or 'Unknown' }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</main>
+
+<!-- Unified Modal Container -->
+<div id="modalOverlay" class="fixed inset-0 bg-on-surface/90 backdrop-blur-3xl z-[100] hidden flex items-center justify-center p-8 transition-all duration-700 opacity-0 overflow-hidden">
+    <div id="modalContainer" class="bg-surface w-full max-w-3xl shadow-[0_100px_200px_rgba(0,0,0,0.5)] transform scale-95 transition-all duration-700 relative h-[85vh] md:h-auto md:max-h-[85vh] flex flex-col">
+        <!-- Content will be injected here -->
+    </div>
+</div>
+
 <style>
-  /* ══════════════════════════════════════════════════════════════════════════
-   📖 PUBLIC BOOK DETAIL - ROYAL CLASSIC DESIGN
-   ══════════════════════════════════════════════════════════════════════════ */
-
-  /* ═══ Global Font Override ═══ */
-  .royal-detail-page, 
-  .royal-detail-page body,
-  .royal-detail-page .book-title,
-  .royal-detail-page .section-heading,
-  .royal-detail-page .book-author,
-  .royal-detail-page p,
-  .royal-detail-page span:not(.ph),
-  .royal-detail-page div:not(.ph) {
-    font-family: 'Amiri', 'Playfair Display', serif !important;
-  }
-
-  .royal-detail-page .ph, 
-  .royal-detail-page [class^="ph-"] {
-    font-family: "Phosphor" !important;
-  }
-
-  /* ═══ Background & Layout ═══ */
-  .book-backdrop {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: -1;
-    background-color: #0f0c08;
-    background-image: 
-      radial-gradient(circle at center, rgba(30, 25, 20, 0) 0%, rgba(15, 12, 8, 1) 100%),
-      url("https://www.transparenttextures.com/patterns/dark-leather.png");
-  }
-
-  [data-theme="light"] .book-backdrop {
-    background-color: #f7f3ed;
-    background-image: 
-      radial-gradient(circle at center, rgba(255, 255, 250, 0.2) 0%, rgba(244, 238, 229, 1) 100%),
-      url("https://www.transparenttextures.com/patterns/paper.png");
-  }
-
-  .ai-card-icon {
-    width: 50px;
-    height: 50px;
-    background: var(--lux-surface) !important;
-    border: 1px solid var(--lux-gold) !important;
-    color: var(--lux-gold) !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-    box-shadow: 0 0 15px rgba(201, 168, 76, 0.2);
-  }
-
-  .cover-wrapper {
-    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-    border: 2px solid #2a241c;
-    margin-bottom: 1.5rem;
-  }
-
-  [data-theme="light"] .cover-wrapper {
-    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-    border-color: #e5e0d8;
-  }
-
-  .cover-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-
-  .cover-section:hover .cover-wrapper img {
-    transform: scale(1.03);
-  }
-
-  /* Ribbon */
-  .status-ribbon {
-    position: absolute;
-    top: 20px;
-    right: -35px;
-    background: var(--lux-gold);
-    color: #000;
-    padding: 5px 40px;
-    transform: rotate(45deg);
-    font-weight: bold;
-    font-family: var(--lux-font-serif);
-    font-size: 0.9rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    z-index: 10;
-  }
-
-  /* ═══ Action Buttons ═══ */
-  .shelf-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-  }
-
-  .shelf-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 0.5rem;
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    color: var(--lux-text-secondary);
-    font-family: var(--lux-font-serif);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-
-  [data-theme="light"] .shelf-btn {
-    border-color: #e5e0d8;
-    color: #665c50;
-  }
-
-  .shelf-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--lux-gold);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 0;
-  }
-
-  .shelf-btn:hover {
-    border-color: var(--lux-gold);
-    color: var(--lux-gold);
-    transform: translateY(-2px);
-  }
-
-  .shelf-btn:hover::before {
-    opacity: 0.05;
-  }
-
-  .shelf-btn i, .shelf-btn span {
-    position: relative;
-    z-index: 1;
-  }
-
-  .shelf-btn i {
-    font-size: 1.35rem;
-  }
-
-  .shelf-btn span {
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-  }
-
-  /* Active Status Styles */
-  .shelf-btn[class*="active-"] {
-    background: rgba(201, 168, 76, 0.1);
-    border-color: var(--lux-gold);
-    color: var(--lux-gold);
-  }
-  [data-theme="light"] .shelf-btn[class*="active-"] {
-    background: rgba(201, 168, 76, 0.05);
-    color: #b08d3a;
-    border-color: #b08d3a;
-  }
-
-  /* ═══ Content Side ═══ */
-  .book-title {
-    font-family: var(--lux-font-display);
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    font-weight: 700;
-    line-height: 1.1;
-    margin-bottom: 0.5rem;
-    color: var(--lux-gold);
-    text-shadow: 0 2px 10px rgba(201,168,76,0.1);
-  }
-
-  [data-theme="light"] .book-title {
-    color: #2a241c;
-    text-shadow: none;
-  }
-
-  .book-author {
-    font-family: var(--lux-font-serif);
-    font-size: 1.5rem;
-    color: var(--lux-text-secondary);
-    margin-bottom: 1.5rem;
-    font-style: italic;
-  }
-
-  [data-theme="light"] .book-author {
-    color: #665c50;
-  }
-
-  /* Decorative separator */
-  .classic-separator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    margin: 2rem 0;
-    opacity: 0.6;
-  }
-  .classic-separator::before,
-  .classic-separator::after {
-    content: '';
-    height: 1px;
-    flex: 1;
-    background: linear-gradient(90deg, transparent, var(--lux-gold), transparent);
-  }
-  [data-theme="light"] .classic-separator::before,
-  [data-theme="light"] .classic-separator::after {
-    background: linear-gradient(90deg, transparent, #b08d3a, transparent);
-  }
-  .classic-separator i {
-    color: var(--lux-gold);
-    font-size: 0.8rem;
-  }
-  [data-theme="light"] .classic-separator i {
-    color: #b08d3a;
-  }
-
-  /* Meta Tags */
-  .meta-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .meta-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    font-size: 0.9rem;
-    font-family: var(--lux-font-serif);
-    color: var(--lux-text-primary);
-    position: relative;
-  }
-  
-  [data-theme="light"] .meta-tag {
-    border-color: #e5e0d8;
-    color: #2a241c;
-  }
-
-  .meta-tag i {
-    color: var(--lux-gold);
-  }
-  [data-theme="light"] .meta-tag i {
-    color: #b08d3a;
-  }
-
-  /* Ext Info Grid */
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-
-  .info-item {
-    padding: 1rem;
-    border-right: 1px solid var(--lux-border);
-  }
-  [data-theme="light"] .info-item {
-    border-color: #e5e0d8;
-  }
-  .info-item:last-child {
-    border-right: none;
-  }
-
-  .info-label {
-    font-size: 0.75rem;
-    color: var(--lux-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 0.5rem;
-    display: block;
-    font-family: var(--lux-font-sans);
-  }
-  [data-theme="light"] .info-label {
-    color: #8b7355;
-  }
-
-  .info-value {
-    font-size: 1.1rem;
-    color: var(--lux-text-primary);
-    font-family: var(--lux-font-serif);
-  }
-  [data-theme="light"] .info-value {
-    color: #2a241c;
-  }
-
-  /* Quotes / Synopsis Section */
-  .quote-card {
-    background: rgba(15, 12, 8, 0.4);
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    position: relative;
-  }
-  [data-theme="light"] .quote-card {
-    background: #fbfaf8;
-    border-color: #e5e0d8;
-  }
-  
-  .quote-text {
-    font-family: var(--lux-font-serif);
-    font-size: 1.25rem;
-    line-height: 1.8;
-    color: var(--lux-text-primary);
-    text-align: justify;
-    margin-bottom: 0.5rem;
-  }
-  [data-theme="light"] .quote-text {
-    color: #2a241c;
-  }
-  .quote-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-    color: var(--lux-text-muted);
-    border-top: 1px solid var(--lux-border);
-    padding-top: 1rem;
-    margin-top: 1rem;
-  }
-  [data-theme="light"] .quote-meta {
-    border-color: #e5e0d8;
-    color: #8b7355;
-  }
-
-  /* AI Section */
-  .ai-section-title {
-    font-family: var(--lux-font-display);
-    font-size: 1.8rem;
-    color: var(--lux-gold);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  [data-theme="light"] .ai-section-title {
-    color: #b08d3a;
-  }
-
-  .ai-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .ai-card {
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    padding: 2rem 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    position: relative;
-  }
-  [data-theme="light"] .ai-card {
-    border-color: #e5e0d8;
-  }
-
-  .ai-card::before {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border: 1px solid transparent;
-    transition: all 0.4s ease;
-  }
-
-  .ai-card:hover {
-    border-color: var(--lux-gold);
-    transform: translateY(-5px);
-  }
-  .ai-card:hover::before {
-    border-color: rgba(201, 168, 76, 0.3);
-  }
-
-  .ai-icon {
-    font-size: 2.5rem;
-    color: var(--lux-gold);
-    margin-bottom: 1rem;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-  }
-  [data-theme="light"] .ai-icon {
-    color: #b08d3a;
-  }
-
-  .ai-card h4 {
-    font-family: var(--lux-font-serif);
-    font-size: 1.2rem;
-    color: var(--lux-text-primary);
-    margin-bottom: 0.5rem;
-  }
-  [data-theme="light"] .ai-card h4 {
-    color: #2a241c;
-  }
-
-  .ai-card p {
-    font-size: 0.9rem;
-    color: var(--lux-text-secondary);
-    font-family: var(--lux-font-sans);
-  }
-  [data-theme="light"] .ai-card p {
-    color: #665c50;
-  }
-
-  /* Share Buttons */
-  .share-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--lux-border);
-    color: var(--lux-text-secondary);
-    transition: all 0.3s ease;
-    background: transparent;
-  }
-  [data-theme="light"] .share-btn {
-    border-color: #e5e0d8;
-    color: #665c50;
-  }
-  .share-btn:hover {
-    border-color: var(--lux-gold);
-    color: var(--lux-gold);
-    transform: scale(1.1);
-  }
-
-  /* Horizontal Scroll Items */
-  .horizontal-section {
-    margin-top: 4rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--lux-border);
-  }
-  [data-theme="light"] .horizontal-section {
-    border-color: #e5e0d8;
-  }
-
-  .hs-container {
-    display: flex;
-    gap: 1.5rem;
-    overflow-x: auto;
-    padding: 1rem 0 2rem;
-    scrollbar-width: none;
-  }
-  .hs-container::-webkit-scrollbar { display: none; }
-
-  .hs-item {
-    min-width: 140px;
-    width: 140px;
-    transition: transform 0.3s ease;
-  }
-  .hs-item:hover {
-    transform: translateY(-5px);
-  }
-
-  .hs-img {
-    border-radius: 2px;
-    border: 1px solid var(--lux-border);
-    aspect-ratio: 2/3;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    width: 100%; object-fit: cover;
-  }
-  [data-theme="light"] .hs-img {
-    border-color: #e5e0d8;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  }
-
-  .hs-cover {
-    border-radius: 2px;
-    border: 1px solid var(--lux-border);
-    aspect-ratio: 2/3;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    position: relative;
-  }
-  [data-theme="light"] .hs-cover {
-    border-color: #e5e0d8;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  }
-  .hs-cover img {
-    width: 100%; height: 100%; object-fit: cover;
-    transition: transform 0.4s ease;
-  }
-  .hs-cover:hover img {
-    transform: scale(1.05);
-  }
-  .hs-title {
-    font-family: var(--lux-font-serif);
-    font-size: 1rem;
-    color: var(--lux-text-primary);
-    margin-bottom: 0.25rem;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  [data-theme="light"] .hs-title { color: #2a241c; }
-
-
-  /* Button / Input Styles */
-  .primary-btn {
-    background: var(--lux-gold);
-    color: #000;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    font-family: var(--lux-font-serif);
-    font-weight: 600;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  .primary-btn:hover {
-    filter: brightness(1.1);
-  }
-
-  /* MODALS */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .modal-container {
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
-    background: var(--lux-surface);
-    border: 1px solid var(--lux-gold);
-    border-radius: 2px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow:
-      0 30px 60px rgba(0, 0, 0, 0.5);
-    transform: scale(0.95) translateY(20px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  [data-theme="light"] .modal-container {
-    background: #fbfaf8;
-  }
-
-  .modal-overlay.active .modal-container {
-    transform: scale(1) translateY(0);
-  }
-
-  /* Review Section */
-  .review-card {
-    background: transparent;
-    border: 1px solid var(--lux-border);
-    border-radius: 2px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    transition: all 0.3s ease;
-  }
-  .review-card:hover {
-    border-color: var(--lux-gold);
-  }
-  [data-theme="light"] .review-card {
-    border-color: #e5e0d8;
-  }
-  .review-stars {
-    display: flex;
-    gap: 2px;
-    color: var(--lux-gold);
-  }
-
-  /* Star Rating Input */
-  .star-rating {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
-    gap: 4px;
-  }
-  .star-rating input {
-    display: none;
-  }
-  .star-rating label {
-    cursor: pointer;
-    font-size: 1.75rem;
-    color: var(--lux-border);
-    transition: all 0.2s ease;
-  }
-  [data-theme="light"] .star-rating label {
-    color: #e5e0d8;
-  }
-  .star-rating label:hover,
-  .star-rating label:hover~label,
-  .star-rating input:checked~label {
-    color: var(--lux-gold);
-  }
-
-  .section-title {
-    font-family: var(--lux-font-display);
-    font-size: 1.8rem;
-    color: var(--lux-gold);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  [data-theme="light"] .section-title {
-    color: #b08d3a;
-  }
-
-  /* Animations */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-on-scroll.fade-up {
-    animation: fadeUp 0.6s ease forwards;
-  }
-  .delay-1 { animation-delay: 0.1s; }
-  .delay-2 { animation-delay: 0.2s; }
-  .delay-3 { animation-delay: 0.3s; }
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  .spin { animation: spin 1s linear infinite; }
-
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 {% endblock %}
 
-{% block content %}
-<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-
-<!-- Backdrop -->
-<div class="book-backdrop">
-  <img src="{{ book.cover }}" alt="" onerror="this.style.display='none'">
-</div>
-
-<div class="container pb-5">
-  <div class="detail-layout">
-    <!-- Left Column - Cover -->
-    <div class="cover-section animate-on-scroll fade-up">
-      <!-- 🎨 Cover Section -->
-      <div class="cover-section glass-panel">
-        <div class="cover-glow"></div>
-        <div class="cover-wrapper mb-4">
-          {% if book.cover %}
-          <img src="{{ book.cover }}" alt="{{ book.title }}"
-            onerror="this.onerror=null; this.src='{{ url_for('public.generate_book_cover', title=book.title, author=book.author) }}';">
-          {% else %}
-          <img src="{{ url_for('public.generate_book_cover', title=book.title, author=book.author) }}"
-            alt="{{ book.title }}">
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="d-flex flex-column gap-3">
-        <div class="shelf-actions">
-          <!-- Read Later Button -->
-          <button onclick="updateShelf(this, 'later')"
-            class="shelf-btn {{ 'active-later' if current_status == 'later' else '' }}" id="btn-later">
-            <i class="ph-bold ph-clock"></i>
-            <span>لاحقاً</span>
-          </button>
-
-          <!-- Favorite Button -->
-          <button onclick="updateShelf(this, 'favorite')"
-            class="shelf-btn {{ 'active-favorite' if current_status == 'favorite' else '' }}" id="btn-favorite">
-            <i class="{{ 'ph-fill' if current_status == 'favorite' else 'ph-bold' }} ph-heart"></i>
-            <span>المفضلة</span>
-          </button>
-        </div>
-
-        <script>
-          async function updateShelf(btn, status) {
-            const isAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
-            if (!isAuthenticated) {
-              window.location.href = "{{ url_for('auth.login') }}";
-              return;
-            }
-
-            const iconEl = btn.querySelector('i');
-            const originalIconClass = iconEl.className;
-
-            // Loading state
-            iconEl.className = 'ph ph-spinner spin';
-            btn.style.pointerEvents = 'none';
-
-            try {
-              const res = await fetch(`{{ url_for('public.add_to_shelf', gid=book.id, status='') }}${status}`, {
-                method: 'POST'
-              });
-              const data = await res.json();
-
-              if (data.success) {
-                // Reset all buttons
-                const allStatuses = ['later', 'favorite'];
-                allStatuses.forEach(s => {
-                  const b = document.getElementById(`btn-${s}`);
-                  if (b) {
-                    b.classList.remove('active-later', 'active-favorite');
-
-                    // Reset icon style (outline for all primarily)
-                    const i = b.querySelector('i');
-                    if (s === 'favorite') i.className = 'ph-bold ph-heart';
-                    else i.className = 'ph-bold ph-clock';
-                  }
-                });
-
-                if (data.status) {
-                  // Active status
-                  const activeBtn = document.getElementById(`btn-${data.status}`);
-                  activeBtn.classList.add(`active-${data.status}`);
-
-                  // Make icon filled/styled
-                  const i = activeBtn.querySelector('i');
-                  if (data.status === 'favorite') i.className = 'ph-fill ph-heart';
-                  else if (data.status === 'finished') i.className = 'ph-fill ph-check-circle';
-                  else i.className = 'ph-fill ph-clock'; // or bold
-                }
-
-              } else {
-                alert(data.error || 'حدث خطأ');
-              }
-            } catch (e) {
-              alert('فشل الاتصال');
-            } finally {
-              // Restore pointer events
-              btn.style.pointerEvents = 'auto';
-
-              // If it was just a loading spinner and we didn't enter success block (error), restore original:
-              if (btn.querySelector('.ph-spinner')) {
-                iconEl.className = originalIconClass;
-              }
-            }
-          }
-        </script>
-
-        {% if book.preview %}
-        <a href="{{ book.preview }}" target="_blank" class="ghost-btn w-100 justify-center d-flex align-items-center gap-2 mt-2">
-          <i class="ph ph-eye"></i> معاينة
-        </a>
-        {% endif %}
-
-        <!-- Share Buttons -->
-        <div class="d-flex justify-content-center gap-2 mt-2 pt-3 border-top border-white/10"
-          style="border-top: 1px solid rgba(255,255,255,0.1);">
-          <a href="https://twitter.com/intent/tweet?text=أقرأ كتاب {{ book.title }} حالياً!&url={{ request.url }}"
-            target="_blank" class="share-btn share-twitter"><i class="ph-fill ph-twitter-logo"></i></a>
-          <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}" target="_blank"
-            class="share-btn share-facebook"><i class="ph-fill ph-facebook-logo"></i></a>
-          <a href="whatsapp://send?text=أنصحك بقراءة كتاب {{ book.title }} {{ request.url }}"
-            class="share-btn share-whatsapp"><i class="ph-fill ph-whatsapp-logo"></i></a>
-          <button onclick="navigator.clipboard.writeText(window.location.href); alert('تم نسخ الرابط!')"
-            class="share-btn share-copy"><i class="ph-bold ph-link"></i></button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right Column - Details -->
-    <div class="animate-on-scroll fade-up delay-1">
-      <!-- Meta Tags -->
-      <div class="meta-tags d-flex flex-wrap gap-3 mb-4">
-        <span class="meta-tag fw-bold" style="color: var(--lux-cream); background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.3);">
-          <i class="ph-fill ph-book-open"></i> كتاب
-        </span>
-        {% if book.rating %}
-        <span class="meta-tag fw-bold" style="color: var(--lux-gold); border-color: rgba(201,168,76,0.3);">
-          <i class="ph-fill ph-star"></i> {{ book.rating }}
-        </span>
-        {% endif %}
-        {% if book.publishedDate %}
-        <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
-          <i class="ph-fill ph-calendar text-muted"></i> {{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else book.publishedDate }}
-        </span>
-        {% endif %}
-        {% if book.pageCount %}
-        <span class="meta-tag text-muted" style="border-color: rgba(255,255,255,0.05);">
-          <i class="ph ph-file-text text-muted"></i> {{ book.pageCount }} صفحة
-        </span>
-        {% endif %}
-      </div>
-
-      <!-- Title & Author -->
-      <h1 class="book-title mb-2" style="font-size: clamp(3rem, 6vw, 4.5rem); letter-spacing: -0.02em;">{{ book.title or 'عنوان الكتاب غير متوفر' }}</h1>
-      {% if book.rating %}
-      <div class="d-flex align-center gap-2 mb-3">
-        <div class="stars-display" style="color: var(--lux-gold); font-size: 1.2rem;">
-          {% for i in range(1, 6) %}
-          <i class="ph-fill ph-star"
-            style="opacity: {{ 1 if i <= book.rating|round else 0.3 }}"></i>
-          {% endfor %}
-        </div>
-        <span style="font-weight: 700; color: var(--lux-cream); font-size: 1.2rem;">{{ book.rating }}</span>
-        <span class="text-muted small" style="opacity: 0.7;">تقييم عالمي</span>
-      </div>
-      {% endif %}
-      <div class="book-author" style="font-size: 1.8rem; letter-spacing: 0.02em;">
-        بقلم <strong style="color: var(--lux-gold);">{{ book.author or 'مؤلف غير معروف' }}</strong>
-        {% if book.publishedDate %}
-        <span class="text-muted small ms-2" style="font-size: 1rem;">({{ book.publishedDate.split('-')[0] if '-' in book.publishedDate else book.publishedDate }})</span>
-        {% endif %}
-      </div>
-
-      <div class="classic-separator animate-up delay-1">
-        <i class="ph-fill ph-diamonds-four"></i>
-      </div>
-
-      <!-- Extended Info - بطاقة معلومات الكتاب -->
-      <div class="glass-panel mb-5 p-4" style="background: rgba(15, 12, 8, 0.6); border: 1px solid rgba(201, 168, 76, 0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.4rem; border-color: rgba(201,168,76,0.2) !important;">
-          <i class="ph-fill ph-info text-primary" style="color: var(--lux-gold) !important;"></i> بيانات الإصدار
-        </h3>
-        <div class="info-grid">
-          {% if book.categories %}
-          <div class="info-item">
-            <span class="info-label"><i class="ph-fill ph-books mb-1"></i> التصنيف</span>
-            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.categories|join(', ') if book.categories is iterable and book.categories is not string else book.categories }}</span>
-          </div>
-          {% endif %}
-          {% if book.language %}
-          <div class="info-item">
-            <span class="info-label"><i class="ph-fill ph-translate mb-1"></i> اللغة</span>
-            <span class="info-value text-uppercase" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.language }}</span>
-          </div>
-          {% endif %}
-          {% if book.publisher %}
-          <div class="info-item">
-            <span class="info-label"><i class="ph-fill ph-buildings mb-1"></i> الناشر</span>
-            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.publisher }}</span>
-          </div>
-          {% endif %}
-          {% if book.pageCount %}
-          <div class="info-item">
-            <span class="info-label"><i class="ph-fill ph-files mb-1"></i> الصفحات</span>
-            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.pageCount }}</span>
-          </div>
-          {% endif %}
-          {% if book.publishedDate %}
-          <div class="info-item">
-            <span class="info-label"><i class="ph-fill ph-calendar-blank mb-1"></i> تاريخ النشر</span>
-            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ book.publishedDate }}</span>
-          </div>
-          {% endif %}
-          {% if total_views and total_views > 0 %}
-          <div class="info-item">
-            <span class="info-label"><i class="ph-fill ph-eye mb-1"></i> المشاهدات</span>
-            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ total_views }}</span>
-          </div>
-          {% endif %}
-          {% if unique_viewers and unique_viewers > 0 %}
-          <div class="info-item">
-            <span class="info-label"><i class="ph-fill ph-users mb-1"></i> القراء</span>
-            <span class="info-value" style="color: var(--lux-cream); font-size: 1.15rem;">{{ unique_viewers }}</span>
-          </div>
-          {% endif %}
-          {% if book.isbn %}
-          <div class="info-item" style="border-right: none;">
-            <span class="info-label"><i class="ph-fill ph-barcode mb-1"></i> ردمك (ISBN)</span>
-            <span class="info-value" style="font-family: monospace; font-size: 1rem; color: var(--lux-text-muted);">{{ book.isbn }}</span>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Description Card -->
-      <div class="quote-card mb-5 p-5" style="background: rgba(15, 12, 8, 0.4); border-radius: 8px;">
-        <h3 class="section-heading mb-4 border-bottom pb-3" style="font-size: 1.5rem; color: var(--lux-gold); border-color: rgba(201,168,76,0.1) !important;">
-          <i class="ph-fill ph-text-align-right" style="color: var(--lux-gold);"></i> نبذة عن الكتاب
-          {% if book.ai_generated_desc %}
-          <span class="badge ms-2" style="font-size: 0.75rem; background: rgba(201,168,76,0.1); border: 1px solid var(--lux-gold); color: var(--lux-gold); font-weight: 500;">✨ ملخص ذكي</span>
-          {% endif %}
-        </h3>
-        <div class="book-description-content" style="line-height: 2.2; font-size: 1.25rem; color: var(--lux-cream); text-align: justify; text-justify: inter-word; opacity: 0.95;">
-          {{ book.desc | safe if book.desc else 'لا يوجد وصف متاح لهذا الكتاب.' }}
-        </div>
-      </div>
-
-      <!-- AI Features -->
-      <h3 class="section-heading">
-        <i class="ph-fill ph-sparkle text-primary"></i>
-        مميزات الذكاء الاصطناعي
-      </h3>
-      <div class="ai-grid">
-        <!-- Chat Card -->
-        <div class="ai-card" onclick="openChatModal()">
-          <div class="ai-card-icon">
-            <i class="ph-fill ph-chat-circle-text"></i>
-          </div>
-          <h4>تحدث مع الكتاب</h4>
-          <p>اسأل وحاور الكتاب باستخدام AI</p>
-        </div>
-
-        <!-- Summary Card -->
-        <div class="ai-card" onclick="generateSummary()">
-          <div class="ai-card-icon">
-            <i class="ph-fill ph-magic-wand"></i>
-          </div>
-          <h4>ملخص ذكي</h4>
-          <p>ملخص شامل للنقاط الرئيسية</p>
-        </div>
-
-        <!-- Coach Card -->
-        <div class="ai-card" onclick="openCoachModal()">
-          <div class="ai-card-icon">
-            <i class="ph-fill ph-calendar-check"></i>
-          </div>
-          <h4>مدرب القراءة</h4>
-          <p>خطة قراءة مخصصة لوقتك</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Books by Same Author -->
-  {% if author_books %}
-  {{ render_carousel_section('المزيد من أعمال ' ~ (book.author.split(',')[0] if book.author else 'المؤلف'), 'ph-fill ph-books', author_books, 'author-books', [], '#') }}
-  {% endif %}
-
-  <!-- Similar Books -->
-  {% if similar %}
-  {{ render_carousel_section('كتب قد تعجبك أيضاً', 'ph-fill ph-books text-primary', similar, 'similar-books', [], '#') }}
-  {% endif %}
-
-  <!-- Reviews Section -->
-  <div class="mt-5 pt-5 border-top border-subtle animate-on-scroll fade-up">
-    <div class="d-flex align-center justify-between mb-4">
-      <h3 class="h4 mb-0">
-        <i class="ph-fill ph-star" style="color: var(--warning);"></i>
-        التقييمات والمراجعات
-      </h3>
-    </div>
-
-    <!-- Rating Details Card -->
-    <div id="ratingDetailsCard" class="card glass-panel mb-4" style="background: var(--bg-elevated); display: none;">
-      <h5 class="text-center mb-3" style="color: var(--text-primary); font-weight: 600; letter-spacing: 0.05em;">
-        <i class="ph-fill ph-chart-bar" style="color: var(--warning);"></i> تفاصيل التقييم
-      </h5>
-      <div class="rating-summary text-center mb-4">
-        <div id="avgRatingDisplay" class="d-flex align-center justify-center gap-2 mb-2">
-          <!-- Average rating big number -->
-        </div>
-        <div id="totalRatingsCount" class="text-muted small">
-          <!-- Total count -->
-        </div>
-      </div>
-      <div id="ratingBars" class="rating-bars">
-        <!-- Rating bars will be inserted here -->
-      </div>
-    </div>
-
-    <!-- نموذج إضافة مراجعة -->
-    {% if current_user.is_authenticated %}
-    <div class="card glass-panel mb-4" style="background: var(--bg-elevated);">
-      <h5 class="mb-3" style="color: var(--text-primary);">
-        <i class="ph ph-pencil-line"></i> أضف تقييمك
-      </h5>
-      <form method="post" action="{{ url_for('public.submit_review', gid=book.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-        <!-- تقييم بالنجوم -->
-        <div class="mb-3">
-          <label class="small text-muted mb-2 d-block">تقييمك:</label>
-          <div class="star-rating" id="starRating">
-            {% for i in range(5, 0, -1) %}
-            <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" required>
-            <label for="star{{ i }}" title="{{ i }} نجوم">
-              <i class="ph-fill ph-star"></i>
-            </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <!-- نص المراجعة -->
-        <div class="mb-3">
-          <textarea name="review_text" class="form-control" rows="3"
-            placeholder="شاركنا رأيك في هذا الكتاب... (اختياري)" style="resize: vertical;"></textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary">
-          <i class="ph ph-paper-plane-right"></i> إرسال المراجعة
-        </button>
-      </form>
-    </div>
-    {% else %}
-    <div class="card glass-panel mb-4" style="background: var(--bg-elevated); text-align: center;">
-      <p class="mb-3" style="color: var(--text-muted);">سجل دخولك لإضافة تقييم</p>
-      <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
-        <i class="ph ph-sign-in"></i> تسجيل الدخول
-      </a>
-    </div>
-    {% endif %}
-
-    <!-- قائمة المراجعات -->
-    <div id="reviewsList">
-      <div class="text-center py-4">
-        <i class="ph ph-spinner spin" style="font-size: 1.5rem; color: var(--primary-light);"></i>
-        <p class="text-muted small mt-2">جاري تحميل المراجعات...</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Chat Modal -->
-<div class="modal-overlay" id="chatModal">
-  <div class="modal-container">
-    <div class="d-flex align-center justify-between p-3 border-bottom border-subtle">
-      <h5 class="mb-0" style="color: var(--text-primary);">
-        <i class="ph-fill ph-chat-circle-text" style="color: var(--primary-light);"></i>
-        تحدث مع "{{ book.title }}"
-      </h5>
-      <button class="btn-icon" onclick="closeChatModal()" style="width: 36px; height: 36px;">
-        <i class="ph ph-x"></i>
-      </button>
-    </div>
-    <div class="flex-grow-1 p-3 overflow-y-auto d-flex flex-column gap-3" id="chatMessages" style="min-height: 300px;">
-      <div class="d-flex gap-2">
-        <div class="p-3 rounded-lg" style="max-width: 80%; background: var(--bg-elevated); color: var(--text-primary);">
-          مرحباً! أنا مساعدك الذكي لهذا الكتاب. اسألني أي شيء.
-        </div>
-      </div>
-    </div>
-    <div class="p-3 border-top border-subtle d-flex gap-2">
-      <input type="text" id="chatInput" class="form-control" placeholder="اكتب سؤالك..."
-        onkeypress="if(event.key==='Enter') sendChatMessage()">
-      <button class="btn btn-primary btn-icon" onclick="sendChatMessage()" style="width: 44px; height: 44px;">
-        <i class="ph-bold ph-paper-plane-right"></i>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Result Modal -->
-<div class="modal-overlay" id="aiResultModal">
-  <div class="modal-container">
-    <div class="d-flex align-center justify-between p-3 border-bottom border-subtle">
-      <h5 class="mb-0" id="resultTitle" style="color: var(--text-primary);">النتيجة</h5>
-      <button class="btn-icon" onclick="closeAIResultModal()" style="width: 36px; height: 36px;">
-        <i class="ph ph-x"></i>
-      </button>
-    </div>
-    <div class="p-4 overflow-y-auto" id="resultBody" style="color: var(--text-secondary);"></div>
-  </div>
-</div>
-
+{% block scripts %}
 <script>
-  // Shared JS logic for Book Detail
-  const bookId = "{{ book.id }}";
-  const bookTitle = "{{ book.title }}";
-  let chatHistory = [];
+    const bookId = "{{ book.id }}";
+    const bookTitle = "{{ book.title | replace('\"', '\\\"') }}";
+    let chatHistory = [];
 
-  // --- Modal Logic ---
-  function openChatModal() { document.getElementById('chatModal').classList.add('active'); }
-  function closeChatModal() { document.getElementById('chatModal').classList.remove('active'); }
-  function closeAIResultModal() { document.getElementById('aiResultModal').classList.remove('active'); }
+    const overlay = document.getElementById('modalOverlay');
+    const container = document.getElementById('modalContainer');
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeChatModal();
-      closeAIResultModal();
+    function openModal(content) {
+        container.innerHTML = content;
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            overlay.classList.remove('opacity-0');
+            container.classList.remove('scale-95');
+        }, 50);
     }
-  });
-
-  // --- Chat ---
-  async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
-    if (!msg) return;
-
-    const container = document.getElementById('chatMessages');
-    // User Msg
-    container.innerHTML += `
-      <div class="d-flex justify-end gap-2">
-        <div class="p-3 rounded-lg" style="max-width: 80%; background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2)); color: white;">
-          ${msg}
-        </div>
-      </div>
-    `;
-    input.value = '';
-    container.scrollTop = container.scrollHeight;
-
-    // Loading
-    const loadingId = 'loading-' + Date.now();
-    container.innerHTML += `
-      <div id="${loadingId}" class="d-flex gap-2">
-         <div class="p-3 rounded-lg" style="max-width: 80%; background: var(--bg-elevated); color: var(--text-muted);">
-            <i class="ph ph-dots-three-circle" style="animation: pulse 1s infinite;"></i> جاري الكتابة...
-         </div>
-      </div>
-    `;
-    container.scrollTop = container.scrollHeight;
-
-    try {
-      const res = await fetch(`/public/books/${bookId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history: chatHistory })
-      });
-      const data = await res.json();
-
-      // Remove loading
-      document.getElementById(loadingId).remove();
-
-      container.innerHTML += `
-        <div class="d-flex gap-2">
-          <div class="p-3 rounded-lg" style="max-width: 80%; background: var(--bg-elevated); color: var(--text-primary);">
-            ${data.reply}
-          </div>
-        </div>
-      `;
-      chatHistory.push({ role: 'user', content: msg }, { role: 'assistant', content: data.reply });
-      container.scrollTop = container.scrollHeight;
-
-    } catch (e) {
-      document.getElementById(loadingId).remove();
-      container.innerHTML += `<div class="d-flex gap-2"><div class="p-3 rounded-lg" style="max-width: 80%; background: rgba(239,68,68,0.2); color: var(--danger);">حدث خطأ في الاتصال</div></div>`;
+    
+    function closeModal() {
+        overlay.classList.add('opacity-0');
+        container.classList.add('scale-95');
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 700);
     }
-  }
+    
+    overlay.onclick = (e) => { if(e.target === overlay) closeModal(); };
 
-  // --- Summary ---
-  async function generateSummary() {
-    document.getElementById('aiResultModal').classList.add('active');
-    document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-magic-wand" style="color: var(--accent-magenta);"></i> ملخص الكتاب';
-    document.getElementById('resultBody').innerHTML = `
-      <div class="text-center py-5">
-        <i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--primary-light);"></i>
-        <p class="mt-2 text-muted">جاري التلخيص...</p>
-      </div>
-    `;
-
-    try {
-      const res = await fetch(`/public/books/${bookId}/ai-summary`, { method: 'POST' });
-      const data = await res.json();
-      document.getElementById('resultBody').innerHTML = `<p style="line-height: 1.9; color: var(--text-secondary);">${data.summary}</p>`;
-    } catch (e) {
-      document.getElementById('resultBody').innerHTML = '<p style="color: var(--danger);">حدث خطأ</p>';
-    }
-  }
-
-  // --- Reading Coach ---
-  function openCoachModal() {
-    document.getElementById('aiResultModal').classList.add('active');
-    document.getElementById('resultTitle').innerHTML = '<i class="ph-fill ph-calendar-check" style="color: var(--success);"></i> مدرب القراءة';
-    document.getElementById('resultBody').innerHTML = `
-      <div class="text-center">
-        <p class="mb-4" style="color: var(--text-secondary);">كم يوماً تريد لإنهاء هذا الكتاب؟</p>
-        <div class="d-flex justify-center gap-2 mb-4 flex-wrap">
-          <button class="btn btn-secondary" onclick="generateReadingPlan(7)">أسبوع (7 أيام)</button>
-          <button class="btn btn-secondary" onclick="generateReadingPlan(14)">أسبوعين (14 يوم)</button>
-          <button class="btn btn-secondary" onclick="generateReadingPlan(30)">شهر (30 يوم)</button>
-        </div>
-        <div class="d-flex align-center justify-center gap-2">
-          <input type="number" id="customDays" class="form-control" style="width: 100px; text-align: center;" min="1" max="365" placeholder="عدد">
-          <button class="btn btn-primary" onclick="generateReadingPlan(document.getElementById('customDays').value)">
-            <i class="ph ph-arrow-right"></i> ابدأ
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function generateReadingPlan(days) {
-    if (!days || days < 1) {
-      alert('الرجاء إدخال عدد أيام صحيح');
-      return;
-    }
-    document.getElementById('resultBody').innerHTML = '<div class="text-center py-5"><i class="ph ph-spinner spin" style="font-size: 2rem; color: var(--success);"></i><p class="mt-2 text-muted">جاري إعداد خطة القراءة...</p></div>';
-
-    try {
-      const res = await fetch('/public/api/coach/plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: bookTitle,
-          pages: parseInt("{{ book.pageCount or 200 }}"),
-          days: parseInt(days)
-        })
-  });
-  const data = await res.json();
-
-  let scheduleHtml = '';
-  if (data.schedule && data.schedule.length > 0) {
-    scheduleHtml = `<div class="mt-4" style="max-height: 300px; overflow-y: auto;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead><tr style="background: var(--bg-elevated); color: var(--text-primary);">
-              <th style="padding: 10px; text-align: right;">اليوم</th>
-              <th style="padding: 10px; text-align: right;">المهمة</th>
-            </tr></thead>
-            <tbody>
-              ${data.schedule.map(d => `
-                <tr style="border-bottom: 1px solid var(--border-subtle);">
-                  <td style="padding: 10px; color: var(--text-secondary);">يوم ${d.day}</td>
-                  <td style="padding: 10px; color: var(--text-primary);">${d.task}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>`;
-  }
-
-  document.getElementById('resultBody').innerHTML = `
-        <div class="text-center mb-4">
-          <h4 class="h6 mb-2" style="color: var(--success);">تم إنشاء الخطة!</h4>
-          <p class="text-muted small">بناءً على ${days} أيام</p>
-        </div>
-        ${scheduleHtml}
-        <div class="mt-4 p-3 rounded" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
-          <p class="mb-0 small" style="color: var(--text-secondary); line-height: 1.6;">${data.advice}</p>
-        </div>
-      `;
-    } catch (e) {
-    document.getElementById('resultBody').innerHTML = '<p style="color: var(--danger);">حدث خطأ</p>';
-  }
-  }
-
-
-
-  // --- Reviews Loading ---
-  async function loadReviews() {
-    const list = document.getElementById('reviewsList');
-    try {
-      const res = await fetch(`/public/books/${bookId}/reviews`);
-      const data = await res.json();
-
-      if (data.reviews && data.reviews.length > 0) {
-        // Update Chart
-        if (data.average_rating) {
-          document.getElementById('ratingDetailsCard').style.display = 'block';
-          document.getElementById('avgRatingDisplay').innerHTML = `
-               <span class="avg-rating-number">${data.average_rating}</span>
-               <span class="avg-rating-stars">
-                 <i class="ph-fill ph-star"></i>
-               </span>
-            `;
-          document.getElementById('totalRatingsCount').textContent = `إجمالي ${data.count} تقييم`;
-
-          // Build bars
-          // Assuming data.distribution exists, if not mock it or handle server side
-          // For now simple list
-        }
-
-        list.innerHTML = data.reviews.map(r => `
-           <div class="review-card animate-on-scroll fade-up">
-              <div class="d-flex justify-between mb-2">
-                 <div class="d-flex align-center gap-2">
-                    <div class="review-stars">
-                       ${Array(5).fill(0).map((_, i) => `<i class="ph-${i < r.rating ? 'fill' : 'bold'} ph-star"></i>`).join('')}
+    function openChatModal() {
+        openModal(`
+            <div class="flex flex-col h-full bg-surface">
+                <div class="p-12 border-b border-on-surface/5 flex justify-between items-center bg-surface-container-low">
+                    <div class="space-y-2">
+                        <span class="font-label text-[8px] uppercase tracking-[0.6em] text-primary font-black">Neural Link Established</span>
+                        <h3 class="font-headline font-black text-2xl text-on-surface tracking-tighter uppercase whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">Node Discussion: ${bookTitle}</h3>
                     </div>
-                    <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">
-                       ${r.user_name || 'مستخدم'}
-                    </span>
-                 </div>
-                 <span class="text-muted small">${r.created_at || 'الآن'}</span>
-              </div>
-              <p class="text-secondary mb-0" style="font-size: 0.95rem; line-height: 1.6;">${r.text || ''}</p>
-           </div>
-        `).join('');
-      } else {
-        list.innerHTML = '<p class="text-center text-muted py-3">لا توجد مراجعات حتى الآن. كن أول من يقيم!</p>';
-      }
-    } catch (e) {
-      list.innerHTML = '<p class="text-center text-muted py-3">فشل تحميل المراجعات.</p>';
-    }
-  }
+                    <button onclick="closeModal()" class="w-12 h-12 bg-on-surface text-white flex items-center justify-center hover:bg-primary transition-all shadow-2xl">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                
+                <div id="chatMessages" class="flex-grow overflow-y-auto p-12 space-y-8 bg-surface no-scrollbar">
+                    <div class="flex justify-start">
+                        <div class="bg-surface-container-high p-8 max-w-[85%] border-r-4 border-primary">
+                            <p class="font-headline font-black text-[9px] uppercase tracking-widest text-primary mb-4">Neural Assistant</p>
+                            <p class="font-body text-lg text-on-surface/70 leading-relaxed italic">The analytic core is online. I have indexed the semantic structure of "${bookTitle}". How shall we proceed with the deconstruction?</p>
+                        </div>
+                    </div>
+                </div>
 
-  document.addEventListener('DOMContentLoaded', loadReviews);
+                <div class="p-8 bg-surface-container-high border-t border-on-surface/5">
+                    <div class="relative flex items-center gap-6">
+                        <input type="text" id="chatInput" placeholder="Enter Analytic Query..." 
+                            class="flex-grow bg-surface border-none p-6 font-headline font-black text-xs uppercase tracking-widest focus:ring-2 focus:ring-primary outline-none shadow-inner"/>
+                        <button onclick="sendChatMessage()" class="w-16 h-16 bg-on-surface text-white flex items-center justify-center transition-all shadow-2xl hover:bg-primary">
+                            <span class="material-symbols-outlined transform -scale-x-100">keyboard_arrow_left</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `);
+        document.getElementById('chatInput').onkeypress = (e) => { if(e.key === 'Enter') sendChatMessage(); };
+    }
+
+    async function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const msg = input.value.trim();
+        if(!msg) return;
+        const chatBox = document.getElementById('chatMessages');
+        
+        chatBox.innerHTML += `
+            <div class="flex justify-end">
+                <div class="bg-on-surface text-white p-8 max-w-[85%] shadow-2xl relative">
+                    <div class="absolute right-0 top-0 w-1 h-full bg-primary/40"></div>
+                    <p class="font-body text-lg italic leading-relaxed">${msg}</p>
+                </div>
+            </div>`;
+        
+        input.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
+        const typingId = 'typing-' + Date.now();
+        chatBox.innerHTML += `
+            <div id="${typingId}" class="flex justify-start">
+                <div class="bg-surface-container-low p-8 flex items-center gap-4 border border-on-surface/5">
+                    <span class="w-1.5 h-1.5 bg-primary rounded-full animate-ping"></span>
+                    <span class="font-label text-[8px] uppercase tracking-widest text-on-surface/30">Analyzing Node...</span>
+                </div>
+            </div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+            const res = await fetch(`/public/books/${bookId}/chat`, { 
+                method: 'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body: JSON.stringify({message:msg, history:chatHistory}) 
+            });
+            const data = await res.json();
+            document.getElementById(typingId).remove();
+            
+            chatBox.innerHTML += `
+                <div class="flex justify-start">
+                    <div class="bg-surface-container-high p-8 max-w-[85%] border-r-4 border-primary">
+                        <p class="font-headline font-black text-[9px] uppercase tracking-widest text-primary mb-4">Neural Synthesis</p>
+                        <p class="font-body text-lg text-on-surface/70 leading-relaxed italic">${data.reply.replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>`;
+            
+            chatHistory.push({role:'user',content:msg},{role:'assistant',content:data.reply});
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } catch(e) { 
+            document.getElementById(typingId).remove();
+            chatBox.innerHTML += `<div class="p-6 bg-primary/10 text-primary font-headline font-black text-[9px] uppercase tracking-widest text-center">Neural Link Dropout: Terminal Failure</div>`;
+        }
+    }
+
+    async function generateSummary() {
+        openModal(`
+            <div class="p-24 text-center space-y-12">
+                <div class="relative w-24 h-24 mx-auto">
+                    <div class="absolute inset-0 bg-primary/10 rounded-full animate-ping"></div>
+                    <div class="relative w-24 h-24 border-[12px] border-on-surface/5 border-t-primary rounded-full animate-spin"></div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="font-headline font-black text-3xl text-on-surface tracking-tighter uppercase font-black">Synthesizing Semantic Core</h3>
+                    <p class="font-label text-[10px] text-on-surface/30 uppercase tracking-[0.5em] font-black">Phase 1: Volume Deconstruction</p>
+                </div>
+            </div>
+        `);
+        try {
+            const res = await fetch(`/public/books/${bookId}/ai-summary`, {method:'POST'});
+            const data = await res.json();
+            openModal(`
+                <div class="flex flex-col h-full bg-surface">
+                    <div class="p-12 border-b border-on-surface/5 flex justify-between items-center bg-surface-container-low">
+                        <div class="space-y-2">
+                            <span class="font-label text-[8px] uppercase tracking-[0.6em] text-secondary font-black">Data Synthesis Complete</span>
+                            <h3 class="font-headline font-black text-2xl text-on-surface tracking-tighter uppercase whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">Abstract Reconnaissance</h3>
+                        </div>
+                        <button onclick="closeModal()" class="w-12 h-12 bg-on-surface text-white flex items-center justify-center hover:bg-primary transition-all shadow-2xl">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <div class="flex-grow overflow-y-auto p-16 bg-surface no-scrollbar">
+                        <div class="max-w-prose mx-auto font-body text-xl text-on-surface/70 leading-relaxed italic border-r-8 border-on-surface/5 pr-12">
+                            ${data.summary.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                </div>
+            `);
+        } catch(e) { 
+            closeModal();
+            alert('Analytical error during synthesis.'); 
+        }
+    }
+
+    function openCoachModal() {
+        openModal(`
+            <div class="p-16 space-y-16">
+                <div class="flex justify-between items-center">
+                    <div class="space-y-2">
+                        <span class="font-label text-[8px] uppercase tracking-[0.6em] text-primary font-black">Acquisition Protocol Config</span>
+                        <h3 class="font-headline font-black text-4xl text-on-surface tracking-tighter uppercase">Define Temporal Scope</h3>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-8">
+                    ${[{d:7,l:'Rapid'}, {d:14,l:'Standard'}, {d:30,l:'Measured'}].map(p=>`
+                    <button onclick="generateReadingPlan(${p.d})" class="group bg-surface-container-high border-2 border-transparent p-10 transition-all hover:bg-on-surface hover:text-white flex flex-col items-center gap-2 shadow-2xl">
+                        <span class="font-headline font-black text-4xl group-hover:text-primary transition-colors">${p.d}</span>
+                        <span class="font-label text-[10px] uppercase font-black tracking-widest opacity-40 group-hover:opacity-100">${p.l} Pulse</span>
+                    </button>`).join('')}
+                </div>
+                
+                <div class="pt-12 border-t border-on-surface/5 space-y-8">
+                    <span class="font-label text-[9px] font-black text-on-surface/20 uppercase tracking-[0.4em]">Override Temporal Constraint:</span>
+                    <div class="flex gap-6">
+                        <input type="number" id="customDays" placeholder="7" class="w-32 bg-surface-container-high border-none p-6 font-headline font-black text-lg text-center outline-none focus:ring-2 focus:ring-primary shadow-inner"/>
+                        <button onclick="generateReadingPlan(document.getElementById('customDays').value)" class="flex-grow bg-on-surface text-white py-6 font-headline font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-primary transition-all">Initialize Blueprint</button>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
+    async function generateReadingPlan(days) {
+        if(!days||days<1) return;
+        openModal(`
+            <div class="p-24 text-center space-y-12">
+                <div class="w-16 h-16 border-[8px] border-on-surface/5 border-t-primary rounded-full animate-spin mx-auto"></div>
+                <h3 class="font-headline font-black text-3xl text-on-surface tracking-tighter uppercase">Mapping Blueprint</h3>
+            </div>
+        `);
+        try {
+            const res = await fetch('/public/api/coach/plan', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    title:bookTitle,
+                    pages:parseInt("{{ book.pageCount or 320 }}"),
+                    days:parseInt(days)
+                })
+            });
+            const data = await res.json();
+            
+            let milestonesHTML = '';
+            if(data.schedule && data.schedule.length > 0) {
+                milestonesHTML = data.schedule.map(m=>`
+                    <div class="flex items-start gap-8 p-8 bg-surface-container-low border border-on-surface/5 group hover:bg-surface-container-high transition-all">
+                        <div class="w-16 h-16 bg-surface-container-high font-headline font-black text-xs flex items-center justify-center text-primary border border-on-surface/5 group-hover:bg-primary group-hover:text-white transition-all">DAY ${m.day}</div>
+                        <div class="flex-1 pt-2">
+                             <p class="font-body text-lg italic text-on-surface/70 leading-relaxed">${m.task}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                milestonesHTML = `<div class="p-12 bg-surface-container-low text-on-surface/40 font-body text-xl italic text-center">Neural logic failed to generate specific milestones.</div>`;
+            }
+            
+            openModal(`
+                <div class="flex flex-col h-full bg-surface">
+                    <div class="p-12 border-b border-on-surface/5 flex justify-between items-center bg-surface-container-low">
+                        <div class="space-y-2">
+                            <span class="font-label text-[8px] uppercase tracking-[0.6em] text-primary font-black">Acquisition Blueprint Generated</span>
+                            <h3 class="font-headline font-black text-2xl text-on-surface tracking-tighter uppercase">Temporal Path: ${days} Units</h3>
+                        </div>
+                        <button onclick="closeModal()" class="w-12 h-12 bg-on-surface text-white flex items-center justify-center hover:bg-primary transition-all shadow-2xl">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <div class="flex-grow overflow-y-auto p-12 space-y-6 bg-surface no-scrollbar">
+                        ${milestonesHTML}
+                    </div>
+                    ${data.advice ? `
+                    <div class="p-12 border-t border-on-surface/5 bg-surface-container-low">
+                        <div class="flex items-start gap-6">
+                            <span class="material-symbols-outlined text-primary text-3xl">light_mode</span>
+                            <p class="font-body text-lg text-on-surface/60 italic leading-relaxed">${data.advice}</p>
+                        </div>
+                    </div>` : ''}
+                </div>
+            `);
+        } catch(e) { closeModal(); alert('Blueprint generation failure.'); }
+    }
+
+    async function updateShelf(btn, status) {
+        const isAuth = {{ 'true' if current_user.is_authenticated else 'false' }};
+        if(!isAuth) return window.location.href = "{{ url_for('auth.login') }}";
+        
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined animate-spin mr-4">sync</span> Syncing Telemetry';
+        
+        try {
+            const res = await fetch(`{{ url_for('public.add_to_shelf', gid=book.id, status='') }}${status}`, {method:'POST'});
+            const data = await res.json();
+            if(data.success) {
+                window.location.reload();
+            } else { 
+                alert('Synchronization Failed'); 
+                btn.disabled=false; 
+                btn.innerHTML = originalHTML;
+            }
+        } catch(e) { 
+            alert('Analytic Stream Error'); 
+            btn.disabled=false; 
+            btn.innerHTML = originalHTML;
+        }
+    }
+
+    // Review Form Toggle
+    function toggleReviewForm() {
+        const container = document.getElementById('review-form-container');
+        container.classList.toggle('hidden');
+        if (!container.classList.contains('hidden')) {
+            container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    // Interactive Star Rating
+    document.querySelectorAll('.rating-star').forEach(star => {
+        star.parentElement.onmouseenter = () => {
+            const r = parseInt(star.dataset.rating);
+            document.querySelectorAll('.rating-star').forEach(s => {
+                if (parseInt(s.dataset.rating) <= r) {
+                    s.style.fontVariationSettings = "'FILL' 1";
+                    s.style.color = "#ea580c";
+                }
+            });
+        };
+        star.parentElement.onmouseleave = () => {
+            const checked = document.querySelector('.rating-input:checked');
+            const r = checked ? parseInt(checked.value) : 0;
+            document.querySelectorAll('.rating-star').forEach(s => {
+                if (parseInt(s.dataset.rating) <= r) {
+                    s.style.fontVariationSettings = "'FILL' 1";
+                    s.style.color = "#ea580c";
+                } else {
+                    s.style.fontVariationSettings = "'FILL' 0";
+                    s.style.color = "";
+                }
+            });
+        };
+    });
 </script>
 {% endblock %}
