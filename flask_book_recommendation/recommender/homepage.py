@@ -530,6 +530,7 @@ def get_homepage_sections(user_id, recent_query=None):
     return sections
 
 
+@cache.memoize(timeout=43200)
 def get_all_libraries_showcase(query="books", limit_per_source=6):
     """
     جلب كتب من جميع المصادر الخمسة لعرضها معاً.

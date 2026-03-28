@@ -47,12 +47,20 @@ main_bp = Blueprint("main", __name__)
 @main_bp.route("/")
 def home():
     """
-    الصفحة الرئيسية — جلب البيانات الأساسية فوراً لضمان تجربة Stitch Premium.
+    الصفحة الرئيسية — مع تخزين مؤقت ذكي لتسريع فائق.
     """
     from flask import make_response
     
-    # جلب كتب متنوعة للأقسام المختلفة
     user_id = current_user.id if current_user.is_authenticated else None
+    cache_key = f"home_full_{user_id or 'anon'}"
+    
+    # ⚡ محاولة جلب من الكاش أولاً (تسريع 90%+)
+    cached_resp = cache.get(cache_key)
+    if cached_resp:
+        return cached_resp
+    
+    
+    # جلب كتب متنوعة للأقسام المختلفة
     
     if user_id:
         featured = get_deep_learning_recommendations(user_id, limit=100)
@@ -109,7 +117,8 @@ def home():
     # قائمة التصنيفات الأساسية
     categories = [
         "Programming", "Artificial Intelligence", "Science", 
-        "History", "Philosophy", "Art", "Fiction"
+        "History", "Philosophy", "Art", "Fiction",
+        "Psychology", "Business", "Self-Help", "Travel", "Religion"
     ]
 
     # Fetch real project algorithm recommendations for the showcase
@@ -217,9 +226,11 @@ def home():
         mind_metrics_percentage=mind_metrics_percentage,
         current_filters={'query': '', 'sort': 'ai_relevance', 'debug_ts': time.time()}
     ))
-    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-    resp.headers["Pragma"] = "no-cache"
-    resp.headers["Expires"] = "0"
+    # ⚡ Cache-Control: allow browser caching for 3 minutes
+    resp.headers["Cache-Control"] = "private, max-age=180"
+    
+    # ⚡ Store in server cache for 3 minutes
+    cache.set(cache_key, resp, timeout=180)
     return resp
 
 @main_bp.route("/feed/home")
@@ -233,6 +244,13 @@ def home_feed():
     import uuid
 
     user_id = current_user.id if current_user.is_authenticated else None
+    
+    # ⚡ Cache home_feed for 2 minutes
+    feed_cache_key = f"home_feed_{user_id or 'anon'}"
+    cached_feed = cache.get(feed_cache_key)
+    if cached_feed:
+        return cached_feed
+    
     session_id = request.cookies.get("session", str(uuid.uuid4()))
     now_ts = _time.time()
 
@@ -295,7 +313,7 @@ def home_feed():
     except Exception as e:
         current_app.logger.warning(f"Cache pre-warm failed: {e}")
 
-    with ThreadPoolExecutor(max_workers=12) as ex:
+    with ThreadPoolExecutor(max_workers=6) as ex:  # ⚡ Reduced from 12 to 6
         futs = {
             # Basic AI
             ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=100, randomize=True): ("cat", "deep_learning"),
@@ -316,7 +334,7 @@ def home_feed():
             ex.submit(_run_safe, app_obj, engine.recommend_graph_discovery, user_id=user_id, top_k=100, context=ctx): ("neural", "graph_discovery"),
         }
         try:
-            for f in as_completed(futs, timeout=12.0):
+            for f in as_completed(futs, timeout=8.0):  # ⚡ Reduced from 12s to 8s
                 type_, name = futs[f]
                 try:
                     res = f.result() or []
@@ -413,8 +431,10 @@ def home_feed():
         featured_lists=featured_lists,
     )
     resp = jsonify({"success": True, "html": html})
-    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Cache-Control"] = "private, max-age=120"
+    
+    # ⚡ Cache the feed response for 2 minutes
+    cache.set(feed_cache_key, resp, timeout=120)
     return resp
 
 
@@ -658,21 +678,45 @@ def browse():
     Explore page for specific categories (See All).
     """
     category = request.args.get('category', 'unified')
-    limit = 100 # Show more books for browse page
-    
-    # Imports inside function to avoid circular dependency
-    from ..recommender import (
-        get_trending, get_top_rated, 
-        get_deep_learning_recommendations, get_behavior_based_recommendations,
-        get_cf_similar
-    )
-    from .explore import get_most_viewed_books_custom, get_trending_by_libraries
-    from flask import current_app
+    try: limit = int(request.args.get('limit', 100))
+    except ValueError: limit = 100
+    try: offset = int(request.args.get('offset', 0))
+    except ValueError: offset = 0
     
     user_id = current_user.id if current_user.is_authenticated else None
-    books = []
-    title = "Browse Books"
-    description = "Explore our collection"
+    
+    # Check cache
+    cache_key = f"browse_{category}_{limit}_{offset}_{user_id or 'anon'}"
+    cached_books = cache.get(cache_key)
+    if cached_books is not None:
+        books = cached_books
+        title = "Browse Books"
+        description = "Explore our collection"
+        if category == 'top_rated':
+            title = "Highest Rated by Community"
+            description = "Books with the highest average ratings from our users."
+        elif category == 'most_viewed':
+            title = "Most Viewed This Week"
+            description = "The most popular books currently being viewed by our community."
+        elif category == 'trending_libs':
+            title = "Trending in User Libraries"
+            description = "Books that are frequently being added to user collections recently."
+        elif category == 'unified':
+            title = "Unified AI Picks"
+            description = "Top recommendations curated by our specific AI ensemble for you."
+    else:
+        # Imports inside function to avoid circular dependency
+        from ..recommender import (
+            get_trending, get_top_rated, 
+            get_deep_learning_recommendations, get_behavior_based_recommendations,
+            get_cf_similar
+        )
+        from .explore import get_most_viewed_books_custom, get_trending_by_libraries
+        from flask import current_app
+        
+        books = []
+        title = "Browse Books"
+        description = "Explore our collection"
 
     if category == 'top_rated':
         title = "Highest Rated by Community"
@@ -778,6 +822,10 @@ def browse():
             # Additional Random Shuffle if results are small to force change
             if len(books) > 0 and len(books) < 20:
                  random.shuffle(books)
+                 
+        # Save to cache if books were found
+        if books:
+             cache.set(cache_key, books, timeout=600 if user_id else 1800)
 
         else:
              books = get_trending(limit=limit)
@@ -968,13 +1016,6 @@ def books():
         if book.language:
             all_languages.add(book.language)
 
-    # ============ توصيات الذكاء الاصطناعي (Deep Learning) ============
-    recs = get_deep_learning_recommendations(current_user.id, limit=8)
-    
-    # ============ المكتبات الخمس ============
-    from ..recommender import get_all_libraries_showcase, get_hybrid_recommendations, get_author_books # Added imports
-    library_sections = get_all_libraries_showcase(query="programming books", limit_per_source=8)
-
     return render_template(
         "books.html",
         books=my_books,
@@ -984,13 +1025,46 @@ def books():
         reading_books=reading_books,
         on_hold_books=on_hold_books,
         dropped_books=dropped_books,
-        cf_recs=recs,
-        library_sections=library_sections,
         reading_stats=reading_stats,
         all_categories=sorted(all_categories),
         all_languages=sorted(all_languages)
     )
 
+
+def background_sync_book_details(app, book_id, google_id):
+    """تحديث بيانات الكتاب في الخلفية لمنع تأخير عرض الصفحة"""
+    with app.app_context():
+        try:
+            book = Book.query.get(book_id)
+            if not book or not google_id: return
+            
+            from ..utils import fetch_book_details
+            details = fetch_book_details(google_id)
+            if not details: return
+            
+            changed = False
+            if not book.published_date and details.get('publishedDate'):
+                book.published_date = details.get('publishedDate')
+                changed = True
+            if not book.page_count and details.get('pageCount'):
+                book.page_count = details.get('pageCount')
+                changed = True
+            if not book.categories and details.get('categories'):
+                cats = details.get('categories')
+                book.categories = ", ".join(cats) if isinstance(cats, list) else str(cats)
+                changed = True
+            if not book.publisher and details.get('publisher'):
+                book.publisher = details.get('publisher')
+                changed = True
+            if not book.language and details.get('language'):
+                book.language = details.get('language')
+                changed = True
+            
+            if changed:
+                db.session.commit()
+                logger.debug(f"Background sync completed for book {book_id}")
+        except Exception as e:
+            logger.error(f"Background Sync Error: {e}")
 
 @main_bp.route("/books/<int:book_id>")
 @login_required
@@ -1014,55 +1088,26 @@ def book_detail(book_id):
     book_status = book_status_obj.status if book_status_obj else None
     
     # ---------------------------------------------------------
-    # 🆕 التوصيات الهجينة (Hybrid Recommendations)
+    # 🆕 التوصيات الهجينة (Hybrid Recommendations) - تم تعطيلها مؤقتاً لتسريع الصفحة
     # ---------------------------------------------------------
-    from ..recommender import get_hybrid_recommendations, get_author_books
-
-    # 1. كتب قد تعجبك (You Might Also Like)
-    similar = get_hybrid_recommendations(current_user.id, book, limit=12)
-
-    # 2. المزيد لنفس المؤلف (More by this Author)
+    similar = []
     author_books = []
-    if book.author and book.author != "Unknown":
-         author_books = get_author_books(book.author, exclude_book_id=book.google_id, limit=8)
 
-    # جلب تفاصيل إضافية وتحديث قاعدة البيانات إذا كانت ناقصة
+    # جلب تفاصيل إضافية في الخلفية (لتسريع الاستجابة)
     if book.google_id:
+        from flask import current_app
+        import threading
+        app_obj = current_app._get_current_object()
+        threading.Thread(target=background_sync_book_details, args=(app_obj, book.id, book.google_id), daemon=True).start()
+        
+        # محاولة جلب التقييم العالمي من الكاش (لحظي إذا كان موجوداً)
         try:
             from ..utils import fetch_book_details
             details = fetch_book_details(book.google_id)
             if details:
-                # تحديث قاعدة البيانات
-                changed = False
-                if not book.published_date and details.get('publishedDate'):
-                    book.published_date = details.get('publishedDate')
-                    changed = True
-                if not book.page_count and details.get('pageCount'):
-                    book.page_count = details.get('pageCount')
-                    changed = True
-                if not book.categories and details.get('categories'):
-                    # Convert list to string safely
-                    cats = details.get('categories')
-                    if isinstance(cats, list):
-                        book.categories = ", ".join(cats)
-                    else:
-                        book.categories = str(cats)
-                    changed = True
-                if not book.publisher and details.get('publisher'):
-                    book.publisher = details.get('publisher')
-                    changed = True
-                if not book.language and details.get('language'):
-                    book.language = details.get('language')
-                    changed = True
-                
-                # تخزين التقييم العالمي للعرض فقط (غير موجود في جدول الكتب)
                 setattr(book, 'global_rating', details.get('rating'))
                 setattr(book, 'global_ratings_count', details.get('ratingsCount'))
-
-                if changed:
-                    db.session.commit()
-        except Exception as e:
-            logger.error(f"Error fetching extra book details: {e}")
+        except: pass
 
     # جلب المراجعات (للكتب المشتركة عبر Google ID)
     reviews = []
@@ -1098,6 +1143,56 @@ def save_notes(book_id):
     book.notes = notes
     db.session.commit()
     flash("تم حفظ الملاحظات بنجاح ✨", "success")
+    return redirect(url_for("main.book_detail", book_id=book.id))
+
+
+@main_bp.post("/books/<int:book_id>/review")
+@login_required
+def add_review(book_id):
+    book = Book.query.get_or_404(book_id)
+    
+    rating = request.form.get("rating", 5, type=int)
+    content = request.form.get("content", "").strip()
+    
+    if not content:
+        flash("يرجى كتابة مراجعة قبل الحفظ", "warning")
+        return redirect(url_for("main.book_detail", book_id=book.id))
+        
+    # التحقق مما إذا كان هناك مراجعة سابقة
+    review = BookReview.query.filter_by(user_id=current_user.id, book_id=book.id).first()
+    
+    if review:
+        review.rating = rating
+        review.review_text = content
+        flash("تم تحديث مراجعتك بنجاح ✨", "success")
+    else:
+        review = BookReview(
+            user_id=current_user.id,
+            book_id=book.id,
+            google_id=book.google_id,
+            rating=rating,
+            review_text=content
+        )
+        db.session.add(review)
+        flash("تمت إضافة المراجعة بنجاح ✨", "success")
+        
+    db.session.commit()
+    
+    # تحديث اهتمامات المستخدم في الخلفية (اختياري)
+    try:
+        from .public import background_interest_update
+        from flask import current_app
+        import threading
+        real_app = current_app._get_current_object()
+        threading.Thread(target=background_interest_update, args=(
+            real_app, 
+            current_user.id, 
+            book.title, 
+            book.author, 
+            content
+        )).start()
+    except: pass
+    
     return redirect(url_for("main.book_detail", book_id=book.id))
 
 
@@ -1194,7 +1289,7 @@ def set_book_status(book_id, status):
         
     # --- 🆕 Online Learning Feedback Update ---
     try:
-        from ..ai_book_recommender.engine import get_engine
+        from ai_book_recommender.engine import get_engine
         b_id_val = str(book.google_id or book.id)
         get_engine().record_feedback(
             user_id=current_user.id,
@@ -1276,7 +1371,7 @@ def rate_book(book_id: int):
         
     # --- 🆕 Online Learning Feedback Update ---
     try:
-        from ..ai_book_recommender.engine import get_engine
+        from ai_book_recommender.engine import get_engine
         b_id_val = str(book.google_id or book.id)
         get_engine().record_feedback(
             user_id=current_user.id,

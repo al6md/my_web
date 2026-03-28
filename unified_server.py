@@ -27,11 +27,12 @@ PORT = int(os.environ.get("PORT", 5000))
 if __name__ == "__main__":
     print(f"Starting Server on http://localhost:{PORT}")
     
-    # Run using Uvicorn with auto-reload enabled for code, templates, and static files
+    # Run using Uvicorn
+    # Note: reload=True can cause restart loops if log files are in the same directory.
+    # We disable it for stability, or you can use reload_dirs to watch specific folders.
     uvicorn.run(
         "unified_server:root_app", 
         host="0.0.0.0", 
         port=PORT, 
-        reload=True,
-        reload_includes=["*.html", "*.css", "*.js", "*.yaml"]
+        reload=False  # Disabled to prevent restart loops from log files
     )

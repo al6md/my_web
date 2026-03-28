@@ -1,280 +1,291 @@
 {% extends "base.html" %}
 
-{% block title %}مكتبتي | إلهام - My Library{% endblock %}
+{% block title %}My Library | Elham - Inspired Reading{% endblock %}
+
+{% block head %}
+<style>
+    .font-headline { font-family: 'Be Vietnam Pro', sans-serif; }
+    .glass-card { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    .custom-quote-shape { border-radius: 1rem 3rem 1rem 3rem; }
+    .editorial-text { line-height: 1.6; letter-spacing: -0.01em; }
+</style>
+{% endblock %}
 
 {% block content %}
-<main class="max-w-7xl mx-auto px-6 py-8">
-    <!-- Header Section & Reading Insights -->
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
-        <div class="lg:col-span-8">
-            <h1 class="text-4xl md:text-5xl font-black text-on-surface tracking-tight mb-4 font-headline">كتبي <span class="text-primary font-normal text-3xl opacity-60">/ My Library</span></h1>
-            <p class="text-on-surface-variant max-w-xl text-lg arabic-text">مرحباً بك في ركنك الهادئ. هنا تنمو الأفكار وتزدهر الحكايات. واصل رحلتك في عوالم الكتب.</p>
-            <div class="mt-8 flex flex-wrap gap-4">
-                <div class="bg-surface-container-low p-6 rounded-xl flex-1 min-w-[200px]">
-                    <span class="material-symbols-outlined text-primary text-3xl mb-2">auto_stories</span>
-                    <div class="text-3xl font-black text-on-surface">{{ reading_stats.total_books|default(books|length) }}</div>
-                    <div class="text-sm text-on-surface-variant font-semibold">Total Books / مجموع الكتب</div>
+<main class="mt-8 px-4 md:px-8 max-w-full mx-auto space-y-24 pb-32" dir="ltr">
+    
+    <!-- Reading Statistics Hero Section -->
+    <section class="relative bg-gradient-to-br from-primary to-primary-dim rounded-[2.5rem] p-10 md:p-20 text-on-primary overflow-hidden shadow-2xl">
+        <div class="relative z-10 grid md:grid-cols-2 gap-12 items-center text-left">
+            <div>
+                <h1 class="text-5xl md:text-7xl font-black font-headline tracking-tighter mb-6">Knowledge Forge</h1>
+                <p class="text-primary-container font-body text-2xl max-w-lg editorial-text opacity-90">"A book is a dream that you hold in your hand." Track your journey between the lines and document your intellectual milestones in your private Elham space.</p>
+            </div>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="bg-white/5 backdrop-blur-2xl rounded-3xl p-8 flex flex-col items-center justify-center text-center border border-white/10">
+                    <span class="text-5xl font-black font-headline">{{ reading_stats.total_books }}</span>
+                    <span class="text-[11px] uppercase font-bold tracking-[0.3em] mt-3 opacity-60">Books</span>
                 </div>
-                <div class="bg-primary-container/30 p-6 rounded-xl flex-1 min-w-[200px]">
-                    <span class="material-symbols-outlined text-primary text-3xl mb-2">bolt</span>
-                    <div class="text-3xl font-black text-on-surface">{{ reading_stats.reading_count|default(0) }}</div>
-                    <div class="text-sm text-on-surface-variant font-semibold">Currently Reading / أقرأ حالياً</div>
+                <div class="bg-secondary-container/95 text-on-secondary-container rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-3xl">
+                    <span class="text-5xl font-black font-headline">{{ reading_stats.finished_count }}</span>
+                    <span class="text-[11px] uppercase font-bold tracking-[0.3em] mt-3 opacity-60">Finished</span>
                 </div>
-                <div class="bg-secondary-container/30 p-6 rounded-xl flex-1 min-w-[200px]">
-                    <span class="material-symbols-outlined text-secondary text-3xl mb-2">workspace_premium</span>
-                    <div class="text-3xl font-black text-on-surface">{{ reading_stats.finished_count|default(0) }}</div>
-                    <div class="text-sm text-on-surface-variant font-semibold">Finished / الكتب المكتملة</div>
+                <div class="bg-tertiary-container text-on-tertiary-container rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-3xl">
+                    <span class="text-5xl font-black font-headline">{{ reading_stats.total_pages }}</span>
+                    <span class="text-[11px] uppercase font-bold tracking-[0.3em] mt-3 opacity-60">Pages</span>
                 </div>
             </div>
         </div>
-        
-        <div class="lg:col-span-4">
-            {% if reading_books %}
-                {% set current_book = reading_books[0] %}
-                <div class="bg-surface-container-highest rounded-lg p-6 relative overflow-hidden h-full flex flex-col justify-between group cursor-pointer" onclick="window.location.href='{{ url_for('main.book_detail', book_id=current_book.id) }}';">
-                    <div class="relative z-10">
-                        <span class="text-xs font-bold uppercase tracking-widest text-secondary mb-2 block">Currently Reading</span>
-                        <h3 class="text-2xl font-black text-on-surface mb-1 truncate">{{ current_book.title }}</h3>
-                        <p class="text-on-surface-variant text-sm mb-6 italic">by {{ current_book.author or "Unknown Author" }}</p>
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-xs font-bold">
-                                <span>{{ current_book.reading_progress or 0 }}% Complete</span>
-                                <span class="arabic-text">تمت قراءة {{ ((current_book.reading_progress or 0) * (current_book.page_count or 300) / 100)|int }} صفحة</span>
-                            </div>
-                            <div class="w-full bg-surface-container rounded-full h-3">
-                                <div class="bg-gradient-to-r from-primary to-primary-container h-3 rounded-full transition-all duration-1000" style="width: {{ current_book.reading_progress or 0 }}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="mt-8 bg-primary text-on-primary py-3 px-6 rounded-full font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
-                        <span>Continue Reading / تابع القراءة</span>
-                        <span class="material-symbols-outlined">menu_book</span>
-                    </button>
-                    <!-- Visual decoration -->
-                    <div class="absolute -right-12 -top-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
-                </div>
-            {% else %}
-                <div class="bg-surface-container-highest rounded-lg p-6 flex flex-col items-center justify-center h-full text-center border-2 border-dashed border-outline-variant/30">
-                    <span class="material-symbols-outlined text-primary text-5xl mb-4 opacity-40">book_5</span>
-                    <p class="text-on-surface-variant font-bold">لا يوجد كتاب يتم قراءته حالياً</p>
-                    <p class="text-on-surface-variant text-xs mt-2">ابدأ رحلتك المعرفية الآن</p>
-                    <button onclick="document.getElementById('addBookModal').showModal()" class="mt-6 bg-primary text-on-primary px-6 py-2 rounded-full text-sm font-bold">إضافة كتاب جديد</button>
-                </div>
-            {% endif %}
-        </div>
+        <!-- Decorative Elements -->
+        <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/40 rounded-full blur-[120px]"></div>
+        <div class="absolute -top-24 -right-24 w-80 h-80 bg-white/30 rounded-full blur-[100px]"></div>
     </section>
 
-    <!-- Library Tabs/Categories -->
-    <section class="mb-10">
-        <div class="flex flex-wrap items-center justify-between gap-6 border-b border-outline-variant/20 pb-4">
-            <div class="flex gap-8 overflow-x-auto no-scrollbar" id="library-tabs">
-                <button onclick="switchTab('reading')" class="tab-btn active-tab text-primary font-black border-b-4 border-primary pb-4 whitespace-nowrap text-lg transition-all" data-tab="reading">أقرأ الآن / Currently Reading</button>
-                <button onclick="switchTab('queue')" class="tab-btn text-on-surface-variant font-semibold hover:text-primary pb-4 whitespace-nowrap text-lg transition-colors" data-tab="queue">أرغب في قراءتها / Want to Read</button>
-                <button onclick="switchTab('finished')" class="tab-btn text-on-surface-variant font-semibold hover:text-primary pb-4 whitespace-nowrap text-lg transition-colors" data-tab="finished">انتهيت منها / Finished</button>
+    <!-- Currently Reading -->
+    <section>
+        <div class="flex justify-between items-end mb-12">
+            <div class="text-left pl-6 border-l-8 border-primary">
+                <span class="text-tertiary font-bold text-sm uppercase tracking-widest block mb-2">Current Pursuit</span>
+                <h2 class="text-4xl md:text-5xl font-black font-headline text-on-surface">Reading Now</h2>
             </div>
-            <div class="flex items-center gap-2">
-                <button class="p-2 bg-surface-container rounded-md"><span class="material-symbols-outlined">grid_view</span></button>
-                <button class="p-2 hover:bg-surface-container rounded-md"><span class="material-symbols-outlined text-on-surface-variant">list</span></button>
-            </div>
-        </div>
-    </section>
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        <!-- Main Content Area -->
-        <div class="lg:col-span-8">
-            <!-- Reading Tab Content -->
-            <div id="tab-reading" class="tab-content">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
-                    {% for book in reading_books %}
-                    <div class="group cursor-pointer">
-                        <div class="relative aspect-[2/3] rounded-lg overflow-hidden mb-4 shadow-lg transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl" onclick="window.location.href='{{ url_for('main.book_detail', book_id=book.id) }}';">
-                            <img alt="{{ book.title }}" class="w-full h-full object-cover" src="{{ book.cover_url or 'https://placehold.co/300x450/f9fafb/ea580c?text=كتاب' }}"/>
-                            <div class="absolute top-3 right-3 bg-secondary text-on-secondary text-[10px] font-bold px-2 py-1 rounded-full uppercase">Reading</div>
-                            <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-surface-container">
-                                <div class="h-full bg-primary" style="width: {{ book.reading_progress or 0 }}%"></div>
-                            </div>
-                        </div>
-                        <h4 class="font-bold text-on-surface truncate">{{ book.title }}</h4>
-                        <p class="text-xs text-on-surface-variant mb-1 italic">{{ book.author or "Unknown" }}</p>
-                        <form method="post" action="{{ url_for('main.update_book_status', book_id=book.id) }}" class="mt-2">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="status" value="finished">
-                            <button class="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Mark as Finished</button>
-                        </form>
-                    </div>
-                    {% else %}
-                    <div class="col-span-full py-20 bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant/20 flex flex-col items-center justify-center text-center">
-                        <span class="material-symbols-outlined text-5xl opacity-20 mb-4">menu_book</span>
-                        <p class="text-on-surface-variant font-bold">لا توجد كتب قيد القراءة حالياً</p>
-                    </div>
-                    {% endfor %}
-                    
-                    <!-- Add Book Placeholder -->
-                    <div onclick="document.getElementById('addBookModal').showModal()" class="border-2 border-dashed border-outline-variant rounded-lg aspect-[2/3] flex flex-col items-center justify-center gap-4 group cursor-pointer hover:border-primary transition-colors">
-                        <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary-container transition-colors">
-                            <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">add</span>
-                        </div>
-                        <span class="font-bold text-on-surface-variant text-sm text-center px-4">أضف كتاباً جديداً<br/>Add New Book</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Queue Tab Content (Hidden by default) -->
-            <div id="tab-queue" class="tab-content hidden">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
-                    {% set wants_to_read = books | rejectattr('status', 'equalto', 'reading') | rejectattr('status', 'equalto', 'finished') | list %}
-                    {% for book in wants_to_read %}
-                    <div class="group cursor-pointer">
-                        <div class="relative aspect-[2/3] rounded-lg overflow-hidden mb-4 shadow-lg transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl" onclick="window.location.href='{{ url_for('main.book_detail', book_id=book.id) }}';">
-                            <img alt="{{ book.title }}" class="w-full h-full object-cover" src="{{ book.cover_url or 'https://placehold.co/300x450/f9fafb/ea580c?text=كتاب' }}"/>
-                            <div class="absolute top-3 right-3 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-1 rounded-full uppercase">Queue</div>
-                        </div>
-                        <h4 class="font-bold text-on-surface truncate">{{ book.title }}</h4>
-                        <p class="text-xs text-on-surface-variant mb-1 italic">{{ book.author or "Unknown" }}</p>
-                        <form method="post" action="{{ url_for('main.update_book_status', book_id=book.id) }}" class="mt-2">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="status" value="reading">
-                            <button class="text-[10px] font-black uppercase tracking-widest text-secondary hover:underline">Start Reading Now</button>
-                        </form>
-                    </div>
-                    {% else %}
-                    <div class="col-span-full py-20 bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant/20 flex flex-col items-center justify-center text-center">
-                        <p class="text-on-surface-variant font-bold">قائمة الانتظار فارغة</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Finished Tab Content (Hidden by default) -->
-            <div id="tab-finished" class="tab-content hidden">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-8">
-                    {% set finished_reading = books | selectattr('status', 'equalto', 'finished') | list %}
-                    {% for book in finished_reading %}
-                    <div class="group cursor-pointer">
-                        <div class="relative aspect-[2/3] rounded-lg overflow-hidden mb-4 shadow-lg transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl" onclick="window.location.href='{{ url_for('main.book_detail', book_id=book.id) }}';">
-                            <img alt="{{ book.title }}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="{{ book.cover_url or 'https://placehold.co/300x450/f9fafb/ea580c?text=كتاب' }}"/>
-                            <div class="absolute top-3 right-3 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded-full uppercase">Finished</div>
-                        </div>
-                        <h4 class="font-bold text-on-surface truncate">{{ book.title }}</h4>
-                        <div class="flex justify-between items-center mt-1">
-                            <p class="text-xs text-on-surface-variant italic">{{ book.author or "Unknown" }}</p>
-                            <form action="{{ url_for('main.remove_book', book_id=book.id) }}" method="POST" class="m-0" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب من أرشيفك؟')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="material-symbols-outlined text-sm text-on-surface/20 hover:text-error transition-colors">delete</button>
-                            </form>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="col-span-full py-20 bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant/20 flex flex-col items-center justify-center text-center">
-                        <p class="text-on-surface-variant font-bold">لم تنهِ أي كتب بعد</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar Area: Recommendations -->
-        <aside class="lg:col-span-4">
-            <div class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/10 sticky top-24">
-                <h3 class="text-lg font-black text-on-surface mb-6 font-headline flex items-center gap-2">
-                    <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
-                    Recommended for You
-                </h3>
-                <div class="space-y-6">
-                    {% if recs %}
-                        {% for book in recs[:5] %}
-                        <div class="flex gap-4 items-center group cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id or book.google_id) }}';">
-                            <img alt="{{ book.title }}" class="w-14 h-20 object-cover rounded shadow-md group-hover:scale-110 transition-transform" src="{{ book.cover_url or book.cover or 'https://placehold.co/200x300/f9fafb/ea580c?text=كتاب' }}"/>
-                            <div class="flex-1 overflow-hidden">
-                                <h6 class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">{{ book.title }}</h6>
-                                <p class="text-xs text-on-surface-variant italic truncate">{{ book.author or book.authors[0] if book.authors else "Unknown" }}</p>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-sm text-on-surface-variant italic text-center py-4">Generating unique picks for you...</p>
-                    {% endif %}
-                    
-                    <a href="{{ url_for('main.home') }}" class="block w-full text-center py-3 border border-primary text-primary rounded-full text-xs font-bold hover:bg-primary/5 transition-colors mt-4">
-                        Discover More / اكتشف المزيد
-                    </a>
-                </div>
-            </div>
-        </aside>
-    </div>
-</main>
-
-<!-- Cataloging Modal -->
-<dialog id="addBookModal" class="bg-surface border border-on-surface/10 p-8 md:p-12 shadow-2xl w-full max-w-xl rounded-xl backdrop:bg-on-background/80 backdrop:backdrop-blur-xl">
-    <div class="space-y-12">
-        <div class="flex justify-between items-start">
-            <div class="space-y-4">
-                <span class="font-label text-xs uppercase tracking-[0.4em] text-primary">Cataloging / تسجيل</span>
-                <h3 class="font-headline text-4xl font-black">Register Volume</h3>
-            </div>
-            <button onclick="document.getElementById('addBookModal').close()" class="text-on-surface/40 hover:text-primary transition-colors">
-                <span class="material-symbols-outlined text-3xl">close</span>
+            <button class="text-primary font-black hover:text-primary-dim transition-all flex items-center gap-4 text-sm group">
+                Full Collection
+                <span class="material-symbols-outlined text-2xl group-hover:translate-x-2 transition-transform">arrow_forward</span>
             </button>
         </div>
         
-        <form action="{{ url_for('main.create_book') }}" method="POST" class="space-y-8">
+        {% if reading_books %}
+        <div class="grid lg:grid-cols-2 gap-12">
+            {% for book in reading_books[:2] %}
+            <div class="flex bg-surface-container-lowest rounded-[2.5rem] overflow-hidden hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.12)] transition-all group text-left">
+                <div class="w-2/5 relative overflow-hidden h-[28rem]">
+                    <img src="{{ book.cover_url or 'https://placehold.co/400x600/fbfbe2/a04100?text=Node' }}" 
+                         alt="{{ book.title }}" 
+                         loading="lazy" decoding="async"
+                         class="h-full w-full object-cover transform scale-105 group-hover:scale-115 transition-transform duration-1000 ease-out">
+                </div>
+                <div class="w-3/5 p-10 md:p-12 flex flex-col justify-between bg-white/40 backdrop-blur-sm">
+                    <div>
+                        <span class="bg-tertiary-container/50 text-on-tertiary-container text-xs font-black px-5 py-2 rounded-full uppercase tracking-widest inline-block mb-6">
+                            {{ (book.categories.split(',')[0] if book.categories else 'General') }}
+                        </span>
+                        <h3 class="text-3xl md:text-4xl font-black font-headline text-on-surface line-clamp-2 leading-tight cursor-pointer hover:text-primary transition-colors" onclick="window.location.href='{{ url_for('main.book_detail', book_id=book.id) }}'">{{ book.title }}</h3>
+                        <p class="text-on-surface-variant font-bold mt-3 text-lg opacity-50 italic">{{ book.author or 'Unidentified Author' }}</p>
+                    </div>
+                    <div class="mt-auto space-y-6">
+                        <div class="flex justify-between text-sm font-black">
+                            <span class="text-primary">{{ book.reading_progress or 0 }}% Progress</span>
+                            <span class="text-on-surface-variant/40 font-medium">{% if book.page_count %}{{ (book.page_count * (1 - (book.reading_progress or 0) / 100))|int }} pages left{% endif %}</span>
+                        </div>
+                        <div class="h-3.5 w-full bg-surface-container rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-primary via-secondary to-primary-container transition-all duration-[1.5s] ease-out" style="width: {{ book.reading_progress or 0 }}%"></div>
+                        </div>
+                        <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="w-full bg-primary text-on-primary font-black py-6 rounded-2xl flex items-center justify-center gap-4 active:scale-95 transition-all shadow-2xl shadow-primary/25 hover:bg-primary-dim mt-4">
+                            Resume Reading
+                            <span class="material-symbols-outlined text-xl">menu_book</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-surface-container-low rounded-[3rem] p-24 text-center border-4 border-dashed border-outline-variant/10">
+            <span class="material-symbols-outlined text-7xl text-outline mb-8 opacity-20">book_5</span>
+            <p class="text-on-surface-variant text-2xl font-black">No active reads started</p>
+            <p class="text-on-surface-variant/50 text-base mt-4">A world of knowledge awaits. Pick your first journey today.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Personal Collections -->
+    <section>
+        <div class="flex justify-between items-end mb-12 text-left">
+            <div class="pl-6 border-l-8 border-secondary">
+                <span class="text-tertiary font-bold text-sm uppercase tracking-widest block mb-2">Custom Curation</span>
+                <h2 class="text-4xl md:text-5xl font-black font-headline text-on-surface">Collections</h2>
+            </div>
+            <button onclick="document.getElementById('addBookModal').showModal()" class="bg-surface-container-high p-5 rounded-full hover:bg-primary hover:text-white transition-all shadow-xl">
+                <span class="material-symbols-outlined text-3xl">add</span>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
+            {% for category in all_categories[:3] %}
+            {% set ns = namespace(count=0, sample_books=[]) %}
+            {% for b in books %}
+                {% if b.categories and category in b.categories %}
+                    {% set ns.count = ns.count + 1 %}
+                    {% if ns.sample_books|length < 3 %}
+                        {% set _ = ns.sample_books.append(b) %}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            <div class="space-y-6 group cursor-pointer text-left">
+                <div class="grid grid-cols-2 gap-2 rounded-[2.5rem] overflow-hidden h-64 bg-surface-container-high transition-all group-hover:-translate-y-4 group-hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)]">
+                    {% for cb in ns.sample_books %}
+                    <img src="{{ cb.cover_url or 'https://placehold.co/200x300/fbfbe2/a04100?text=Node' }}" class="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000">
+                    {% endfor %}
+                    {% if ns.count > 3 %}
+                    <div class="bg-primary/20 flex items-center justify-center text-primary font-black text-2xl">+{{ ns.count - 3 }}</div>
+                    {% else %}
+                    <div class="bg-surface-container-highest/10"></div>
+                    {% endif %}
+                </div>
+                <div>
+                    <h4 class="font-headline font-black text-2xl tracking-tight pl-2">{{ category }}</h4>
+                    <p class="text-on-surface-variant font-bold text-sm opacity-40 pl-2 uppercase pb-2">{{ ns.count }} Books</p>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="space-y-6 group cursor-pointer" onclick="document.getElementById('addBookModal').showModal()">
+                <div class="flex items-center justify-center h-64 bg-surface-container-low border-4 border-dashed border-outline-variant/10 rounded-[2.5rem] transition-all hover:border-primary hover:bg-white group-hover:-translate-y-4">
+                    <div class="text-center">
+                        <span class="material-symbols-outlined text-6xl text-outline/20 mb-4 block">create_new_folder</span>
+                        <p class="text-outline font-black text-xs uppercase tracking-[0.4em] pl-2">Add New Book</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- My Wishlist -->
+    {% if later %}
+    <section class="bg-surface-container-low rounded-[4rem] p-12 md:p-20 shadow-inner">
+        <div class="flex justify-between items-end mb-16 text-left px-4">
+            <div>
+                <span class="text-secondary font-bold text-sm uppercase tracking-widest block mb-3">Wishlist</span>
+                <h2 class="text-4xl md:text-5xl font-black font-headline text-on-surface">To Read Later</h2>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-10">
+            {% for book in later %}
+            <div class="glass-card rounded-[2rem] p-6 group transition-all hover:bg-white hover:shadow-3xl text-left overflow-hidden border-none">
+                <div class="aspect-[2/3] rounded-2xl overflow-hidden mb-6 shadow-2xl group-hover:shadow-[0_24px_48px_-8px_rgba(0,0,0,0.2)] transition-all relative">
+                    <img src="{{ book.cover_url or 'https://placehold.co/200x300/fbfbe2/a04100?text=Wish' }}" loading="lazy" decoding="async" class="w-full h-full object-cover transform group-hover:scale-115 transition-transform duration-[1.2s] ease-out">
+                    <div class="absolute inset-0 bg-primary/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-md">
+                        <span class="material-symbols-outlined text-white text-5xl">auto_stories</span>
+                    </div>
+                </div>
+                <h5 class="font-headline font-black text-lg text-on-surface truncate tracking-tight pl-1">{{ book.title }}</h5>
+                <p class="text-xs text-on-surface-variant font-bold mt-1.5 truncate opacity-50 pl-1">{{ book.author }}</p>
+                <form action="{{ url_for('main.set_book_status', book_id=book.id, status='reading') }}" method="POST" class="mt-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="w-full py-4 bg-white rounded-2xl text-xs font-black text-primary shadow-sm hover:bg-primary hover:text-white transition-all border border-primary/5 uppercase tracking-tighter">
+                        Start Reading
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Finished Books -->
+    {% if finished %}
+    <section>
+        <div class="text-left pl-6 border-l-8 border-primary mb-12">
+            <span class="text-primary font-bold text-sm uppercase tracking-widest block mb-2">Milestones Achieved</span>
+            <h2 class="text-4xl md:text-5xl font-black font-headline text-on-surface">Completed</h2>
+        </div>
+        <div class="grid md:grid-cols-2 gap-12">
+            {% for book in finished[:4] %}
+            <div class="bg-surface-container rounded-[2.5rem] p-10 flex gap-10 items-center text-left hover:shadow-2xl transition-all group relative overflow-hidden">
+                <img src="{{ book.cover_url or 'https://placehold.co/200x300/fbfbe2/a04100?text=Done' }}" loading="lazy" decoding="async" class="w-28 h-40 object-cover rounded-2xl shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-[1s] z-10">
+                <div class="flex-1 z-10">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="text-left">
+                            <h4 class="font-headline font-black text-2xl leading-tight truncate max-w-[250px]">{{ book.title }}</h4>
+                            <p class="text-on-surface-variant font-bold text-sm mt-1 opacity-40 uppercase tracking-widest">{{ book.author }}</p>
+                        </div>
+                        <div class="flex text-tertiary gap-1">
+                            {% for i in range(5) %}
+                            <span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">star</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mt-8 flex gap-4">
+                        <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="px-8 py-3 bg-primary text-on-primary text-xs font-black rounded-full transition-all active:scale-95 shadow-2xl shadow-primary/30 hover:bg-primary-dim">Review</a>
+                        <button class="px-8 py-3 bg-surface-container-highest text-on-surface text-xs font-black rounded-full hover:bg-outline-variant transition-all">Share</button>
+                    </div>
+                </div>
+                <!-- Subtle Achievement Decoration -->
+                <div class="absolute -top-12 -right-12 opacity-[0.03] rotate-12">
+                    <span class="material-symbols-outlined text-[10rem]">workspace_premium</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Editorial Quote Section -->
+    <section class="max-w-5xl mx-auto py-16">
+        <div class="custom-quote-shape bg-secondary-container text-on-secondary-container p-16 md:p-24 relative overflow-hidden text-left shadow-3xl">
+            <span class="material-symbols-outlined text-[12rem] absolute -top-12 -left-12 opacity-10">format_quote</span>
+            <p class="text-4xl md:text-5xl font-headline font-black italic relative z-10 leading-[1.6] tracking-tight">
+                "Reading is the journey of the mind to discover new horizons, the bridge connecting us to the wisdom of ages."
+            </p>
+            <div class="mt-16 flex items-center gap-5 relative z-10">
+                <div class="h-px w-20 bg-secondary/30"></div>
+                <p class="font-black text-secondary text-2xl tracking-tighter">Your Daily Inspiration</p>
+            </div>
+            <!-- Decorative Depth -->
+            <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-white/10 rounded-full blur-[80px]"></div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-[100] flex justify-around items-end px-6 pb-8 bg-white/95 backdrop-blur-3xl rounded-t-[3.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.1)] border-t border-outline-variant/5">
+    <a href="{{ url_for('main.home') }}" class="flex flex-col items-center justify-center text-on-surface-variant p-4 hover:text-primary transition-all">
+        <span class="material-symbols-outlined text-3xl">explore</span>
+        <span class="text-[11px] font-black uppercase tracking-[0.2em] mt-2 opacity-50">Discover</span>
+    </a>
+    <a href="{{ url_for('main.books') }}" class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full p-5 mb-4 shadow-[0_20px_40px_-5px_rgba(111,38,246,0.5)] -translate-y-6 ring-[12px] ring-white">
+        <span class="material-symbols-outlined text-3xl font-bold">auto_stories</span>
+    </a>
+    <a href="{{ url_for('auth.profile') }}" class="flex flex-col items-center justify-center text-on-surface-variant p-4 hover:text-primary transition-all">
+        <span class="material-symbols-outlined text-3xl">person</span>
+        <span class="text-[11px] font-black uppercase tracking-[0.2em] mt-2 opacity-50">Profile</span>
+    </a>
+</nav>
+
+<!-- Cataloging Modal -->
+<dialog id="addBookModal" class="bg-surface border border-on-surface/5 p-10 md:p-16 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.4)] w-full max-w-2xl rounded-[3rem] backdrop:bg-on-background/90 backdrop:backdrop-blur-2xl">
+    <div class="space-y-16 text-left">
+        <div class="flex justify-between items-start">
+            <div class="space-y-4">
+                <span class="font-label text-xs uppercase tracking-[0.5em] text-primary border-b-2 border-primary/20 pb-2">Record a New Journey</span>
+                <h3 class="font-headline text-5xl font-black tracking-tighter">Forge Knowledge</h3>
+            </div>
+            <button onclick="document.getElementById('addBookModal').close()" class="text-on-surface/20 hover:text-primary transition-all hover:rotate-90">
+                <span class="material-symbols-outlined text-4xl">close</span>
+            </button>
+        </div>
+        
+        <form action="{{ url_for('main.create_book') }}" method="POST" class="space-y-10">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="space-y-8">
-                <div class="space-y-2">
-                    <label class="font-label text-[10px] uppercase font-bold text-secondary">Volume Title / العنوان</label>
-                    <input type="text" name="title" required 
-                            class="w-full bg-surface-container-high rounded-lg p-4 font-headline text-xl focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-on-surface/20" 
-                            placeholder="The Architecture of Tomorrow">
+                <div class="space-y-3">
+                    <label class="font-black text-xs uppercase tracking-widest text-secondary block pl-1">Volume Title</label>
+                    <input type="text" name="title" required class="w-full bg-surface-container-high rounded-2xl p-6 font-headline text-2xl focus:ring-4 focus:ring-primary/10 border-none outline-none transition-all placeholder:opacity-20 shadow-inner" placeholder="Between the lines...">
                 </div>
-                <div class="space-y-2">
-                    <label class="font-label text-[10px] uppercase font-bold text-secondary">Creator / Author / المؤلف</label>
-                    <input type="text" name="author" 
-                            class="w-full bg-surface-container-high rounded-lg p-4 font-headline text-xl focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-on-surface/20" 
-                            placeholder="Anonymous Curator">
+                <div class="space-y-3">
+                    <label class="font-black text-xs uppercase tracking-widest text-secondary block pl-1">Authors Mark</label>
+                    <input type="text" name="author" class="w-full bg-surface-container-high rounded-2xl p-6 font-headline text-2xl focus:ring-4 focus:ring-primary/10 border-none outline-none transition-all placeholder:opacity-20 shadow-inner" placeholder="The Creative Thinker">
                 </div>
             </div>
             <div class="pt-8">
-                <button type="submit" class="w-full bg-primary text-white font-headline font-bold py-5 text-lg rounded-full hover:shadow-xl hover:-translate-y-1 transition-all active:scale-[0.98] shadow-2xl">
-                    Commit to Archives / الإضافة للمكتبة
+                <button type="submit" class="w-full bg-primary text-white font-headline font-black py-7 text-2xl rounded-2xl hover:shadow-[0_24px_48px_-8px_rgba(111,38,246,0.4)] hover:-translate-y-1.5 transition-all active:scale-[0.97] group">
+                   <span class="flex items-center justify-center gap-4">
+                        Stamp Recommendation
+                        <span class="material-symbols-outlined group-hover:rotate-12 transition-transform">inventory_2</span>
+                   </span>
                 </button>
             </div>
         </form>
     </div>
 </dialog>
 
-{% endblock %}
-
-{% block scripts %}
-<script>
-    function switchTab(tabId) {
-        // Toggle tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.add('hidden');
-        });
-        document.getElementById('tab-' + tabId).classList.remove('hidden');
-
-        // Toggle button styles
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active-tab', 'text-primary', 'border-b-4', 'border-primary', 'font-black');
-            btn.classList.add('text-on-surface-variant', 'font-semibold');
-        });
-        
-        const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
-        activeBtn.classList.remove('text-on-surface-variant', 'font-semibold');
-        activeBtn.classList.add('active-tab', 'text-primary', 'border-b-4', 'border-primary', 'font-black');
-    }
-</script>
-
-<style>
-    .active-tab {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .tab-content {
-        animation: fadeIn 0.4s ease-out;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
 {% endblock %}

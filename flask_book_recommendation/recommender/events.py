@@ -68,14 +68,14 @@ def log_user_view(user_id, book):
         
         # --- 🆕 User Embedding Update (Phase 2) ---
         try:
-            from ..ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+            from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
             user_embedding_manager.update_user_embedding(user_id, book_id=b_id, google_id=g_id)
         except Exception as e_emb:
             logger.error(f"Embedding update error: {e_emb}")
             
         # --- 🆕 Online Learning Feedback Update ---
         try:
-            from ..ai_book_recommender.engine import get_engine
+            from ai_book_recommender.engine import get_engine
             b_id_val = str(g_id or b_id or "")
             if b_id_val:
                 get_engine().record_feedback(

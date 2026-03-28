@@ -4,17 +4,29 @@
 
 {% block content %}
 <!-- Welcome & Featured Hero -->
-<section class="max-w-[1440px] mx-auto px-8 pt-10 pb-20">
+<section class="max-w-full mx-auto px-8 pt-10 pb-20">
     {% set hero_book = featured_book if featured_book else (featured_books[0] if featured_books else None) %}
     
-    <div class="mb-12">
-        <h1 class="text-5xl md:text-7xl font-black text-on-surface tracking-tight leading-[1.1] max-w-4xl font-headline">
-            Curate your intellect.<br>
-            <span class="text-outline-variant font-medium italic">One brilliant idea</span> at a time.
-        </h1>
-        <p class="mt-6 text-on-surface-variant text-lg font-medium max-w-2xl leading-relaxed">
-            Welcome back to your sanctuary of thought. Here is a hand-picked selection blending architectural discipline with boundless creativity.
-        </p>
+    <div class="mb-20 text-center flex flex-col items-center">
+        <div class="flex items-center gap-8 mb-10">
+            <span class="w-24 h-[1px] bg-on-surface/20 rounded-full"></span>
+            <span class="material-symbols-outlined text-on-surface/40 text-4xl" style="font-variation-settings: 'FILL' 1, 'wght' 200;">auto_stories</span>
+            <span class="w-24 h-[1px] bg-on-surface/20 rounded-full"></span>
+        </div>
+        
+        <div class="w-full max-w-6xl px-4">
+            <h1 class="text-4xl md:text-7xl font-black tracking-tighter leading-[1.2] font-headline bg-gradient-to-b from-black via-gray-800 to-gray-500 bg-clip-text text-transparent">
+                Set sail into the vast horizons of knowledge<br>
+                and discover the extraordinary wonders<br>
+                and mysteries of wisdom.
+            </h1>
+        </div>
+
+        <div class="mt-12 flex items-center gap-6">
+            <span class="w-2 h-2 rounded-full bg-[#1a1a1a] opacity-80 shadow-md"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#333333] opacity-60 shadow-sm"></span>
+            <span class="w-1 h-1 rounded-full bg-[#555555] opacity-40"></span>
+        </div>
     </div>
 
     <!-- Featured Editor's Pick -->
@@ -24,7 +36,7 @@
         
         <div class="w-full md:w-1/3 max-w-[320px] shrink-0 relative z-10">
             <div class="aspect-[2/3] rounded-xl overflow-hidden shadow-2xl shadow-black/40 group-hover:-translate-y-2 group-hover:rotate-2 transition-all duration-500 bg-surface-container-highest border-4 border-white/10">
-                <img src="{{ hero_book.cover_url or hero_book.cover or 'https://placehold.co/400x600/f8fafc/ea580c?text=كتاب' }}" alt="{{ hero_book.title }}" class="w-full h-full object-cover">
+                <img src="{{ hero_book.cover_url or hero_book.cover or 'https://placehold.co/400x600/f8fafc/ea580c?text=كتاب' }}" alt="{{ hero_book.title }}" class="w-full h-full object-cover" loading="lazy" decoding="async">
             </div>
             <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-secondary rounded-full flex items-center justify-center text-on-secondary font-black text-xs uppercase tracking-widest -rotate-12 shadow-lg group-hover:scale-110 transition-transform font-headline">
                 Editor's<br>Pick
@@ -65,7 +77,7 @@
 <!-- Recommended For You (AI & Algorithms representation) -->
 {% if ai_algo_books and ai_algo_books|length >= 4 %}
 <section class="bg-surface-container-lowest py-20 border-b border-surface-container">
-    <div class="max-w-[1440px] mx-auto px-8">
+    <div class="max-w-full mx-auto px-8">
         <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
                 <span class="text-[#7c3aed] text-sm font-bold tracking-widest uppercase mb-3 block">Curated For Your Profile</span>
@@ -80,10 +92,10 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-10">
             <!-- Featured Recommendation -->
             {% set feat_reco = ai_algo_books[0] %}
-            <div class="md:col-span-5 lg:col-span-4 cursor-pointer group" onclick="window.location.href='{{ url_for('public.book_detail', gid=feat_reco.id) }}';">
+            <div class="md:col-span-5 lg:col-span-3 cursor-pointer group" onclick="window.location.href='{{ url_for('public.book_detail', gid=feat_reco.id) }}';">
                 <div class="bg-[#f4ede2] rounded-3xl p-10 aspect-[4/5] flex flex-col items-center justify-center relative overflow-hidden mb-6 transition-all group-hover:bg-[#ebe2cf] border border-[#eadaaf]">
                     <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-                    <img src="{{ feat_reco.cover_url or feat_reco.cover or 'https://placehold.co/300x450/f8fafc/ea580c?text=كتاب' }}" alt="{{ feat_reco.title }}" class="w-2/3 shadow-2xl rounded-md z-10 group-hover:scale-105 transition-transform duration-500">
+                    <img src="{{ feat_reco.cover_url or feat_reco.cover or 'https://placehold.co/300x450/f8fafc/ea580c?text=كتاب' }}" alt="{{ feat_reco.title }}" class="w-2/3 shadow-2xl rounded-md z-10 group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
                     <div class="absolute top-6 left-6 bg-white px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-on-surface shadow-sm z-10">{{ feat_reco.algorithm_tag or "Collection" }}</div>
                 </div>
                 <h3 class="text-2xl font-black text-on-surface mb-2 font-headline group-hover:text-primary transition-colors">{{ feat_reco.title }}</h3>
@@ -94,44 +106,112 @@
                     {% endfor %}
                 </div>
             </div>
+            <!-- Supporting Recommendations - Horizontal Scroll -->
+            <div class="md:col-span-12 lg:col-span-7 flex flex-col">
+                <div id="reco-scroll" class="w-full overflow-x-auto no-scrollbar scroll-smooth snap-x pb-6">
+                    <div id="reco-scroll-inner" class="flex flex-row gap-6 items-start min-w-max px-4">
+                        {% for reco in ai_algo_books[1:101] %}
+                        <div class="reco-book-card flex-shrink-0 w-[260px] group cursor-pointer transition-all duration-500 snap-center {% if loop.index > 12 %}hidden reco-hidden-card{% endif %}" 
+                             onclick="window.location.href='{{ url_for('public.book_detail', gid=reco.id) }}';">
+                            <div class="aspect-[2/3] rounded-2xl overflow-hidden bg-surface-container shadow-2xl mb-4 relative ring-1 ring-on-surface/5 w-full transition-transform group-hover:-translate-y-2 duration-500">
+                                <img loading="lazy" decoding="async" src="{{ reco.cover_url or reco.cover or 'https://placehold.co/300x450/f8fafc/ea580c?text=Book' }}" 
+                                     alt="{{ reco.title }}" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                                    <span class="bg-white/95 p-4 rounded-full shadow-2xl text-primary transform scale-75 group-hover:scale-100 transition-transform duration-500">
+                                        <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="px-0.5 text-center">
+                                <h4 class="font-black text-on-surface text-lg leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-1 font-headline tracking-tighter">{{ reco.title }}</h4>
+                                <p class="text-on-surface-variant/40 text-[10px] font-black truncate tracking-[0.3em] uppercase">{{ reco.author or 'Collection' }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
 
-            <!-- Supporting Recommendations List -->
-            <div class="md:col-span-7 lg:col-span-5 flex flex-col py-2 overflow-y-auto h-[500px] pr-4 no-scrollbar gap-2">
-                {% for reco in ai_algo_books[1:100] %}
-                <div class="flex gap-6 group cursor-pointer p-4 -mx-4 rounded-xl hover:bg-surface-container transition-colors mb-2" onclick="window.location.href='{{ url_for('public.book_detail', gid=reco.id) }}';">
-                    <div class="w-24 shrink-0 aspect-[2/3] rounded-md overflow-hidden bg-surface-container-highest shadow-md">
-                        <img src="{{ reco.cover_url or reco.cover or 'https://placehold.co/200x300/f8fafc/ea580c?text=كتاب' }}" alt="{{ reco.title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                    </div>
-                    <div class="flex flex-col justify-center">
-                        <h4 class="text-xl font-bold text-on-surface mb-1 group-hover:text-primary transition-colors line-clamp-2 font-headline">{{ reco.title }}</h4>
-                        <p class="text-on-surface-variant text-sm font-semibold mb-3">{{ reco.author }}</p>
-                        <div class="flex items-center gap-4 mt-auto">
-                            <span class="flex items-center text-xs font-bold text-outline">
-                                <span class="material-symbols-outlined text-[14px] mr-1" data-icon="schedule" style="font-variation-settings: 'opsz' 14">schedule</span>
-                                4h 20m read
-                            </span>
-                            <button class="text-[#7c3aed] text-[10px] font-black uppercase tracking-widest hover:underline">{{ reco.algorithm_tag or "Add to Library" }}</button>
+                        <!-- "Show All" Button - Inline at End of Scroll -->
+                        <div id="reco-show-all-btn" class="flex-shrink-0 w-[200px] snap-center flex items-center justify-center self-stretch">
+                            <button id="toggle-reco-all" class="group flex flex-col items-center justify-center gap-4 w-full h-full min-h-[300px] rounded-[2rem] bg-surface-container-low border-2 border-dashed border-surface-container-highest hover:border-primary hover:bg-primary/5 transition-all duration-500 cursor-pointer">
+                                <div class="w-16 h-16 rounded-full bg-on-surface flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all duration-500 shadow-xl">
+                                    <span class="material-symbols-outlined text-surface text-3xl transition-transform duration-500 group-hover:rotate-90">add</span>
+                                </div>
+                                <span id="toggle-all-text" class="text-on-surface font-black text-sm uppercase tracking-[0.2em] group-hover:text-primary transition-colors">عرض الكل</span>
+                                <span class="text-on-surface-variant/50 text-[10px] font-bold tracking-widest">{{ ai_algo_books|length - 1 }} كتاب</span>
+                            </button>
                         </div>
                     </div>
                 </div>
-                {% if not loop.last %}
-                <hr class="border-surface-container-highest my-2">
-                {% endif %}
-                {% endfor %}
-            </div>
 
-            <!-- Stat Block -->
-            <div class="hidden lg:flex lg:col-span-3 flex-col justify-end bg-[#eee7db] rounded-3xl p-10 relative overflow-hidden border border-[#e6d8c4]">
-                <div class="absolute -top-10 -right-10 text-[#7c3aed] opacity-5"><span class="material-symbols-outlined text-[200px]" data-icon="psychology">psychology</span></div>
-                <p class="bg-[#7c3aed]/10 text-[#7c3aed] text-[10px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-md self-start">Your Mind Metrics</p>
-                <h4 class="text-6xl font-black text-on-surface font-headline mb-4">{{ mind_metrics_percentage }}%</h4>
-                <div class="bg-white/40 backdrop-blur-sm p-4 rounded-xl mb-8">
-                    <p class="text-on-surface text-sm font-semibold leading-relaxed">
-                        <span class="text-[#7c3aed]">of your recent reading</span> aligns with analytical thinking and systemic design.
+                <script>
+                    document.getElementById('toggle-reco-all').addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const hiddenCards = document.querySelectorAll('.reco-hidden-card');
+                        const text = document.getElementById('toggle-all-text');
+                        const btnContainer = document.getElementById('reco-show-all-btn');
+                        const isExpanded = hiddenCards.length > 0 && !hiddenCards[0].classList.contains('hidden');
+
+                        if (isExpanded) {
+                            // Collapse
+                            hiddenCards.forEach((card) => {
+                                card.style.opacity = '0';
+                                card.style.transform = 'scale(0.9)';
+                                setTimeout(() => card.classList.add('hidden'), 300);
+                            });
+                            text.innerText = 'عرض الكل';
+                            btnContainer.querySelector('.material-symbols-outlined').style.transform = '';
+                            // Scroll back to start
+                            setTimeout(() => {
+                                document.getElementById('reco-scroll').scrollTo({ left: 0, behavior: 'smooth' });
+                            }, 350);
+                        } else {
+                            // Expand
+                            hiddenCards.forEach((card, i) => {
+                                card.classList.remove('hidden');
+                                card.style.opacity = '0';
+                                card.style.transform = 'scale(0.9)';
+                                card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                setTimeout(() => {
+                                    card.style.opacity = '1';
+                                    card.style.transform = 'scale(1)';
+                                }, i * 30);
+                            });
+                            text.innerText = 'عرض أقل';
+                            btnContainer.querySelector('.material-symbols-outlined').style.transform = 'rotate(45deg)';
+                            // Nudge scroll to show new books
+                            setTimeout(() => {
+                                document.getElementById('reco-scroll').scrollBy({ left: 300, behavior: 'smooth' });
+                            }, 100);
+                        }
+                    });
+                </script>
+            </div>
+                
+                <style>
+                    .no-scrollbar::-webkit-scrollbar { display: none; }
+                    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                </style>
+
+            <!-- Stat Block (Restored) -->
+            <div class="hidden lg:flex lg:col-span-2 flex-col justify-end bg-surface-container-low rounded-[2.5rem] p-8 relative overflow-hidden border border-surface-container">
+                <div class="absolute top-6 right-6 text-primary opacity-10"><span class="material-symbols-outlined text-[60px]" style="font-variation-settings: 'FILL' 1, 'wght' 300">psychology</span></div>
+                <p class="bg-primary/10 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-6 px-4 py-2 rounded-full self-start">Mind Metrics</p>
+                
+                <h4 class="text-6xl font-black text-on-surface font-headline mb-4 tracking-tighter">{{ mind_metrics_percentage }}%</h4>
+                <div class="bg-white/80 backdrop-blur-md p-5 rounded-2xl mb-8 border border-white/50 shadow-sm">
+                    <p class="text-on-surface text-sm font-bold leading-relaxed">
+                        <span class="text-primary font-black">توافقك</span> مع التفكير المنظومي.
                     </p>
                 </div>
-                <div class="w-full bg-white/50 rounded-full h-2.5 mb-2 overflow-hidden shadow-inner">
-                    <div class="bg-[#7c3aed] h-full rounded-full shadow-lg" style="width: {{ mind_metrics_percentage }}%"></div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-on-surface-variant text-xs font-bold">التقدم</span>
+                        <span class="text-primary text-xs font-black">{{ mind_metrics_percentage }}%</span>
+                    </div>
+                    <div class="w-full bg-surface-container-high rounded-full h-3 overflow-hidden shadow-inner">
+                        <div class="bg-gradient-to-r from-primary to-primary/70 h-full rounded-full shadow-lg transition-all duration-1000" style="width: {{ mind_metrics_percentage }}%"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -141,7 +221,7 @@
 
 <!-- Trending Now (Horizontal Scroll) -->
 {% if most_viewed_books %}
-<section class="py-24 bg-surface max-w-[1440px] mx-auto">
+<section class="py-24 bg-surface max-w-full mx-auto">
     <div class="px-8 flex justify-between items-end mb-12">
         <h2 class="text-3xl font-black text-on-surface font-headline uppercase tracking-tight">Community Pulse</h2>
         <div class="flex gap-2">
@@ -154,7 +234,7 @@
         {% for book in most_viewed_books[:10] %}
         <div class="shrink-0 w-[220px] snap-start group cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
             <div class="aspect-[2/3] rounded-xl overflow-hidden bg-surface-container shadow-lg mb-5 relative">
-                <img src="{{ book.cover_url or book.cover or 'https://placehold.co/300x450/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                <img src="{{ book.cover_url or book.cover or 'https://placehold.co/300x450/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" decoding="async">
                 <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <span class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center text-primary backdrop-blur-sm"><span class="material-symbols-outlined" data-icon="menu_book">menu_book</span></span>
                 </div>
@@ -176,7 +256,7 @@
 <!-- Because You Searched -->
 {% if top_rated_books_sorted and top_rated_books_sorted|length >= 4 %}
 <section class="bg-surface-container-low py-24 border-y border-surface-container">
-    <div id="trending-now-section" class="max-w-[1440px] mx-auto px-8">
+    <div id="trending-now-section" class="max-w-full mx-auto px-8">
         <div class="text-center mb-16">
             <span class="text-secondary font-black text-[10px] tracking-[0.2em] uppercase mb-4 block">Viral across community</span>
             <h2 class="text-4xl font-black text-on-surface font-headline uppercase">Trending Now</h2>
@@ -191,7 +271,7 @@
                         <div class="absolute top-0 left-0 z-20 bg-primary text-white font-black text-xl px-5 py-3 rounded-br-3xl shadow-2xl border-r border-b border-white/20 flex items-center justify-center">
                             <span class="text-xs opacity-70 mr-1">#</span>{{ loop.index }}
                         </div>
-                        <img src="{{ book.cover_url or book.cover or 'https://placehold.co/400x300/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <img src="{{ book.cover_url or book.cover or 'https://placehold.co/400x300/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" decoding="async">
                         <div class="absolute top-3 right-3 bg-secondary/90 backdrop-blur-md text-white text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-full shadow-sm">Top Rated</div>
                     </div>
                     <h4 class="font-bold text-xl text-on-surface mb-2 font-headline leading-tight line-clamp-2">{{ book.title }}</h4>
@@ -257,7 +337,7 @@
 {% endif %}
 
 <!-- Quote Block -->
-<section class="max-w-[1440px] mx-auto px-8 py-32 relative">
+<section class="max-w-full mx-auto px-8 py-32 relative">
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-surface-container-highest opacity-50 z-0 pointer-events-none">
         <span class="font-headline font-black text-[300px] leading-none">"</span>
     </div>
@@ -273,7 +353,7 @@
 </section>
 
 <!-- Dynamic Feed Container -->
-<div id="home-feed-container" class="bg-surface max-w-[1440px] mx-auto px-8 pb-20 space-y-20"></div>
+<div id="home-feed-container" class="bg-surface max-w-full mx-auto px-8 pb-20 space-y-20"></div>
 
 {% endblock %}
 

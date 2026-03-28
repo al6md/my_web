@@ -22,6 +22,7 @@ from .helpers import _book_to_dict
 logger = logging.getLogger(__name__)
 
 
+@cache.memoize(timeout=3600)
 def get_hybrid_recommendations(user_id, book, limit=12):
     """
     توصيات هجينة للكتاب الحالي.
@@ -146,6 +147,7 @@ def get_hybrid_recommendations(user_id, book, limit=12):
     return recs[:limit]
 
 
+@cache.memoize(timeout=43200)
 def get_author_books(author_name, exclude_book_id=None, limit=8):
     """
     جلب كتب أخرى لنفس المؤلف.
@@ -210,6 +212,7 @@ def get_author_books(author_name, exclude_book_id=None, limit=8):
     return books_dicts[:limit]
 
 
+@cache.memoize(timeout=3600)
 def get_top_rated(limit=10):
     """
     Get top rated books based on user reviews (BookReview).
@@ -263,6 +266,7 @@ def get_top_rated(limit=10):
         return []
 
 
+@cache.memoize(timeout=600)
 def get_because_you_read(user_id, limit=12):
     """
     توصيات بناءً على كتاب قرأه المستخدم مؤخراً.
@@ -303,6 +307,7 @@ def get_because_you_read(user_id, limit=12):
         return {'source_book': None, 'recommendations': []}
 
 
+@cache.memoize(timeout=1800)
 def get_similar_users_favorites(user_id, limit=12):
     """
     جلب الكتب المفضلة لدى مستخدمين لهم ذوق مشابه.

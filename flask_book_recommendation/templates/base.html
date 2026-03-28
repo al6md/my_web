@@ -3,11 +3,20 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>{% block title %}Elham (إلهام) - Inspired Reading{% endblock %}</title>
+    <title>{% block title %}Elham - Inspired Reading{% endblock %}</title>
+    
+    <!-- Performance: Preconnect to critical origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://books.google.com" crossorigin>
     
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography,aspect-ratio"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Performance: Reduced font weights (removed 500/600 unused), added display=swap -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <!-- Performance: Lazy-load Material Symbols (heavy ~300KB font) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" onload="this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"></noscript>
     <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -82,9 +91,9 @@
             display: inline-block;
             vertical-align: middle;
         }
+        html { font-size: 112.5% !important; } /* 18px base - unified, removed duplicate from html tag */
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         h1, h2, h3 { font-family: 'Be Vietnam Pro', sans-serif; }
-        .arabic-text { font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.6; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -108,13 +117,16 @@
 
     <!-- TopNavBar -->
     <nav class="fixed top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-surface-container-highest">
-        <div class="flex justify-between items-center w-full px-8 py-4 max-w-[1440px] mx-auto">
+        <div class="flex justify-between items-center w-full px-8 py-4 max-w-full mx-auto">
             <div class="flex items-center gap-10">
-                <a href="{{ url_for('main.home') }}" class="text-2xl font-black tracking-tighter text-primary font-headline">Elham</a>
-                <div class="hidden md:flex items-center gap-8">
-                    <a class="{{ 'text-primary border-b-2 border-primary pb-1' if request.endpoint == 'main.home' else 'text-on-surface-variant hover:text-primary' }} font-bold transition-colors" href="{{ url_for('main.home') }}">Discover</a>
-                    <a class="{{ 'text-primary border-b-2 border-primary pb-1' if request.endpoint == 'public.list_books' else 'text-on-surface-variant hover:text-primary' }} font-bold transition-colors" href="{{ url_for('public.list_books') }}">Public Library</a>
-                    <a class="{{ 'text-primary border-b-2 border-primary pb-1' if request.endpoint == 'main.books' else 'text-on-surface-variant hover:text-primary' }} font-bold transition-colors" href="{{ url_for('main.books') }}">Personal Library</a>
+                <a href="{{ url_for('main.home') }}" class="flex items-center gap-3 text-3xl font-black tracking-tighter text-[#4800b1] font-headline italic">
+                    <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+                    Elham
+                </a>
+                <div class="hidden md:flex items-center gap-4">
+                    <a class="px-6 py-3 rounded-xl text-xl font-bold transition-all {{ 'bg-primary text-white shadow-lg shadow-primary/20' if request.endpoint == 'main.home' else 'text-on-surface-variant hover:bg-primary hover:text-white' }}" href="{{ url_for('main.home') }}">Discover</a>
+                    <a class="px-6 py-3 rounded-xl text-xl font-bold transition-all {{ 'bg-primary text-white shadow-lg shadow-primary/20' if request.endpoint == 'public.list_books' else 'text-on-surface-variant hover:bg-primary hover:text-white' }}" href="{{ url_for('public.list_books') }}">Public Library</a>
+                    <a class="px-6 py-3 rounded-xl text-xl font-bold transition-all {{ 'bg-primary text-white shadow-lg shadow-primary/20' if request.endpoint == 'main.books' else 'text-on-surface-variant hover:bg-primary hover:text-white' }}" href="{{ url_for('main.books') }}">Personal Library</a>
                 </div>
             </div>
             <div class="flex items-center gap-5">
@@ -148,10 +160,10 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t border-surface-container-highest pt-20 pb-12">
-        <div class="max-w-[1440px] mx-auto px-8">
+        <div class="max-w-[1800px] mx-auto px-8">
             <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-16 mb-16">
                 <div class="lg:col-span-2">
-                    <span class="text-2xl font-black text-primary mb-8 block font-headline">Elham</span>
+                    <span class="text-2xl font-black text-primary mb-8 block font-headline italic">Elham</span>
                     <p class="text-on-surface-variant text-sm font-medium leading-relaxed max-w-sm">
                         Connecting curious minds with transformative stories. Your next inspiration starts with a single page. Join our community of readers today.
                     </p>
@@ -190,7 +202,7 @@
             </div>
             <div class="pt-10 border-t border-surface-container flex flex-col md:flex-row justify-between items-center gap-6">
                 <p class="text-on-surface-variant text-[13px] font-medium">
-                    © 2024 Elham (إلهام). Crafted with intention for the inspired reader.
+                    © 2024 Elham. Crafted with intention for the inspired reader.
                 </p>
                 <div class="flex items-center gap-2 text-on-surface-variant text-[13px] font-medium">
                     <span>Designed with</span>

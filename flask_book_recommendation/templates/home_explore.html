@@ -49,7 +49,7 @@
                 <div class="snap-start shrink-0 w-48 sm:w-64 space-y-6 group cursor-pointer" onclick="window.location.href='{{ url_for('main.book_detail', book_id=b.id) }}';">
                     <div class="aspect-[2/3] bg-surface-container-highest relative shadow-xl group-hover:shadow-2xl transition-all duration-700 overflow-hidden">
                         <img src="{{ b.cover_url or 'https://placehold.co/400x600/fbfbe2/a04100?text=Folio' }}" 
-                             alt="{{ b.title }}" 
+                             alt="{{ b.title }}" loading="lazy" decoding="async"
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000">
                         
                         <!-- Actions Overlay -->
@@ -90,7 +90,7 @@
                 <div class="snap-start shrink-0 w-48 sm:w-64 space-y-6 group">
                     <div class="aspect-[2/3] bg-surface-container-highest relative shadow-xl group-hover:shadow-2xl transition-all duration-700 overflow-hidden">
                         <img src="{{ g.cover_url or 'https://placehold.co/400x600/fbfbe2/a04100?text= Folio' }}" 
-                             alt="{{ g.title }}" 
+                             alt="{{ g.title }}" loading="lazy" decoding="async"
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0">
                         
                         <!-- Discovery Overlay -->

@@ -71,6 +71,10 @@ def start_scheduler(app):
     # Check if we're running in the main Werkzeug process (avoids double execution in debug mode)
     if os.environ.get("WERKZEUG_RUN_MAIN") != "true" and app.debug:
         return
+        
+    # Guard against uvicorn reloader if it's active
+    if os.environ.get("RELOAD") == "true" and os.environ.get("UVICORN_RELOADER_RUN") != "true":
+        return
 
     scheduler = BackgroundScheduler(daemon=True)
     

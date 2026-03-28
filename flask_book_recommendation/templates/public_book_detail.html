@@ -3,12 +3,12 @@
 {% block title %}{{ book.title }} | The Digital Curator{% endblock %}
 
 {% block content %}
-<main class="pt-24 bg-background">
+<main class="pt-24 bg-background min-h-screen">
     <!-- Hero Section -->
     <section class="relative min-h-[819px] flex items-center overflow-hidden bg-gradient-to-br from-slate-900 via-[#30007c] to-[#6f26f6] text-white py-20 px-8">
         <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDwgkC_cgKneCJu3L5F51pdugw_Kh-tpsSnvxSO6DiMRKAs0JIBdY2IJG9sKXmG3LtFd5s9daKUe9hO83VJftIB5gj_oiMWvRZyt0J3fAUmTzefj8Sd8LvQg4-nlEjqA8MmnT1H6Bq-Hf5GsBSSz-yFHv-xCCZDIlZ53BXD9sHuYu9kSTfR5A6Wbm-tgqQhhFXLRYuChQyteziY17Q1BCuDmLS_KY38_yDBeTMaCKiZVKziJ4UmDaKhmjHFVMABycHlc-7LooTZ9yI');"></div>
         <div class="max-w-[1440px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center relative z-10">
-            <!-- Left: Book Cover (Asymmetric Float) -->
+            <!-- Left: Book Cover -->
             <div class="lg:col-span-5 relative group">
                 <div class="absolute -inset-4 bg-primary/20 blur-3xl rounded-full"></div>
                 <div class="relative transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
@@ -79,7 +79,7 @@
         </div>
     </section>
 
-    <!-- Content Section: Bento Meta & Description -->
+    <!-- Content Section -->
     <section class="max-w-[1440px] mx-auto px-8 -mt-16 relative z-10">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Description Card -->
@@ -170,7 +170,6 @@
                 </div>
 
                 <!-- Feedback / Reviews -->
-                <!-- Feedback / Reviews -->
                 <div class="bg-surface-container-low rounded-xl p-8 border border-outline-variant/5">
                     <h3 class="font-bold text-on-surface mb-6 flex items-center justify-between">
                         Voices of Inspiration
@@ -206,7 +205,7 @@
                         {% endif %}
                     </div>
 
-                    <!-- Submit Review Button / Card -->
+                    <!-- Submit Review Button -->
                     <div class="mt-8 pt-8 border-t border-on-surface/10 text-center">
                         {% if current_user.is_authenticated %}
                             <button onclick="toggleReviewForm()" class="w-full py-4 bg-on-surface text-surface rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2">
@@ -219,7 +218,7 @@
                     </div>
                 </div>
 
-                <!-- Review Form (Hidden by default) -->
+                <!-- Review Form -->
                 <div id="review-form-container" class="hidden bg-white rounded-xl p-8 border-2 border-primary/20 shadow-2xl animate-fade-in">
                     <div class="flex justify-between items-center mb-6">
                         <h4 class="font-black text-on-surface uppercase tracking-widest text-xs">Your Perspective</h4>
@@ -276,25 +275,22 @@
         </div>
     </section>
     {% endif %}
-</main>
 
-<!-- Unified Modal Container -->
-<div id="modalOverlay" class="fixed inset-0 bg-on-surface/90 backdrop-blur-3xl z-[100] hidden flex items-center justify-center p-8 transition-all duration-700 opacity-0 overflow-hidden">
-    <div id="modalContainer" class="bg-surface w-full max-w-3xl shadow-[0_100px_200px_rgba(0,0,0,0.5)] transform scale-95 transition-all duration-700 relative h-[85vh] md:h-auto md:max-h-[85vh] flex flex-col">
-        <!-- Content will be injected here -->
+    <!-- Unified Modal Container -->
+    <div id="modalOverlay" class="fixed inset-0 bg-on-surface/90 backdrop-blur-3xl z-[100] hidden flex items-center justify-center p-8 transition-all duration-700 opacity-0 overflow-hidden">
+        <div id="modalContainer" class="bg-surface w-full max-w-3xl shadow-[0_100px_200px_rgba(0,0,0,0.5)] transform scale-95 transition-all duration-700 relative h-[85vh] md:h-auto md:max-h-[85vh] flex flex-col">
+            <!-- Content Injected Here -->
+        </div>
     </div>
-</div>
-
-<style>
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
+</main>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    {% if book %}
     const bookId = "{{ book.id }}";
     const bookTitle = "{{ book.title | replace('\"', '\\\"') }}";
+    {% endif %}
     let chatHistory = [];
 
     const overlay = document.getElementById('modalOverlay');
@@ -561,7 +557,6 @@
         }
     }
 
-    // Review Form Toggle
     function toggleReviewForm() {
         const container = document.getElementById('review-form-container');
         container.classList.toggle('hidden');
@@ -570,7 +565,6 @@
         }
     }
 
-    // Interactive Star Rating
     document.querySelectorAll('.rating-star').forEach(star => {
         star.parentElement.onmouseenter = () => {
             const r = parseInt(star.dataset.rating);

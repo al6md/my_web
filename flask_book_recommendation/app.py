@@ -1,6 +1,7 @@
 # app/__init__.py أو flask_book_recommendation/__init__.py
 import sys
 import io
+import os
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -13,6 +14,7 @@ from logging.handlers import RotatingFileHandler
 # Force reload trigger v3
 from flask import Flask, redirect, url_for, jsonify, request
 from flask_cors import CORS
+from flask_compress import Compress
 from .config import Config
 from .extensions import db, login_manager, migrate, csrf, cache, jwt
 from .models import User
@@ -60,6 +62,10 @@ def create_app():
     csrf.init_app(app)
     cache.init_app(app)
     jwt.init_app(app)  # JWT للـ API
+    Compress(app)  # ⚡ Gzip/Brotli compression for all responses
+    
+    # Custom Jinja2 Tests
+    app.jinja_env.tests['contains'] = lambda container, item: item in container if container else False
     
     # تفعيل CORS للـ API فقط (للسماح لـ Flutter بالاتصال)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -112,6 +118,17 @@ def create_app():
     def ping():
         return jsonify(status="ok")
 
+    # ⚡ Performance: Static files caching + smart response headers
+    @app.after_request
+    def add_performance_headers(response):
+        # Cache static assets for 1 week
+        if request.path.startswith('/static/'):
+            response.headers['Cache-Control'] = 'public, max-age=604800'
+        # Cache images from external sources
+        if response.content_type and 'image' in response.content_type:
+            response.headers['Cache-Control'] = 'public, max-age=86400'
+        return response
+
     # معالجة الأخطاء
     @app.errorhandler(404)
     def not_found(e):
@@ -153,6 +170,11 @@ def create_app():
     return app
 
 
-# For Gunicorn in production (Render)
+# For Gunicorn in production (Render) or local testing
 # Usage: gunicorn flask_book_recommendation.app:app
-app = create_app()
+if __name__ == "__main__" or os.environ.get("FLASK_RUN_FROM_CLI") == "true":
+    app = create_app()
+else:
+    # When imported by unified_server.py, we don't want a module-level 'app' 
+    # that independently calls create_app() at import time.
+    app = None

@@ -19,7 +19,30 @@ print(f"DEBUG: Loading .env from {dotenv_path}")
 load_dotenv(dotenv_path, override=True)
 print(f"DEBUG: GEMINI_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
+def clean_book_title(title):
+    """تنظيف وتنسيق عناوين الكتب الطويلة والمعقدة"""
+    if not title: return ""
+    
+    # تفكيك العنوان إذا كان يحتوي على نقطتين (غالباً ما يكون الباقي هو العنوان الفرعي)
+    if ":" in title:
+        parts = title.split(":", 1)
+        main_title = parts[0].strip()
+        # إذا كان العنوان الرئيسي قصيراً جداً (مثلاً "A: The Story of..."), نأخذ العنوان كاملاً
+        if len(main_title) > 8:
+            title = main_title
+            
+    # إزالة الأقواس والمعلومات الإضافية المتكررة في مصادر مثل Gutenberg
+    title = title.split("(", 1)[0].strip()
+    title = title.split("[", 1)[0].strip()
+    
+    # تقليص الطول إذا كان لا يزال طويلاً جداً (مثلاً أكثر من 80 حرف)
+    if len(title) > 85:
+        title = title[:82] + "..."
+        
+    return title
+
 # @cache.memoize(timeout=1800) # DISABLED: We need completely fresh books for FreshInject
+@cache.memoize(timeout=86400)
 def fetch_google_books(query, max_results=12, start_index=0, order_by="relevance"):
     params = {
         "q": query, "maxResults": max_results,
@@ -38,6 +61,7 @@ def fetch_google_books(query, max_results=12, start_index=0, order_by="relevance
     # في حال حدوث أي خطأ أو عدم نجاح الطلب، نرجع قيم فارغة بدلاً من None
     return [], 0
 
+@cache.memoize(timeout=172800)
 def fetch_book_details(book_id, source="google"):
     """
     جلب تفاصيل الكتاب بناءً على المصدر
@@ -72,7 +96,7 @@ def fetch_book_details(book_id, source="google"):
 
             return {
                 "id": data["id"],
-                "title": vol.get("title", "No Title"),
+                "title": clean_book_title(vol.get("title", "No Title")),
                 "author": vol.get("authors", ["Unknown"])[0],
                 "description": vol.get("description"),
                 "cover": vol.get("imageLinks", {}).get("thumbnail"),
@@ -169,12 +193,12 @@ def generate_ai_description(title: str, author: str = "") -> str:
 # -----------------------------------------------------------
 # 2. Project Gutenberg
 # -----------------------------------------------------------
-@cache.memoize(timeout=3600)
+@cache.memoize(timeout=86400)
 def fetch_gutenberg_books(query, page=1, limit=12, **kwargs):
     api_url = "https://gutendex.com/books"
     params = {"search": query, "page": page}
     try:
-        r = requests.get(api_url, params=params, timeout=10)
+        r = requests.get(api_url, params=params, timeout=4)
         if r.ok:
             results = r.json().get("results", [])
             books = []
@@ -185,13 +209,14 @@ def fetch_gutenberg_books(query, page=1, limit=12, **kwargs):
                 seen.add(title[:20].lower())
                 authors = ", ".join([a.get("name") for a in b.get("authors", [])])
                 books.append({
-                    "id": f"gut_{b.get('id')}", "title": title, "author": authors,
+                    "id": f"gut_{b.get('id')}", "title": clean_book_title(title), "author": authors,
                     "cover": b.get("formats", {}).get("image/jpeg"), "source": "gutenberg"
                 })
             return books[:limit]
     except: pass
     return []
 
+@cache.memoize(timeout=172800)
 def fetch_gutenberg_detail(gut_id):
     clean_id = gut_id.replace("gut_", "")
     try:
@@ -200,7 +225,7 @@ def fetch_gutenberg_detail(gut_id):
             b = r.json()
             formats = b.get("formats", {})
             return {
-                "id": gut_id, "title": b.get("title"), 
+                "id": gut_id, "title": clean_book_title(b.get("title")), 
                 "author": ", ".join([a.get("name") for a in b.get("authors", [])]),
                 "desc": "كلاسيكيات عالمية (Public Domain).",
                 "cover": formats.get("image/jpeg"),
@@ -295,6 +320,7 @@ def fetch_openlib_books(query, limit=12, offset=0, **kwargs):
         print(f"[OpenLib] Error: {e}")
     return []
 
+@cache.memoize(timeout=172800)
 def fetch_openlib_detail(ol_id):
     clean_id = ol_id.replace("ol_", "")
     try:
@@ -309,7 +335,7 @@ def fetch_openlib_detail(ol_id):
             rating = fetch_openlib_rating(olid=clean_id)
 
             return {
-                "id": ol_id, "title": data.get("title"), "author": "OpenLibrary Author",
+                "id": ol_id, "title": clean_book_title(data.get("title")), "author": "OpenLibrary Author",
                 "desc": desc or "No description.", "cover": cover,
                 "preview": f"https://openlibrary.org/works/{clean_id}", 
                 "rating": rating,
@@ -508,13 +534,14 @@ def generate_ai_cover_url(title, author=None):
 # -----------------------------------------------------------
 # 4. IT Bookstore
 # -----------------------------------------------------------
+@cache.memoize(timeout=172800)
 def fetch_itbook_detail(isbn):
     try:
         r = requests.get(f"https://api.itbook.store/1.0/books/{isbn}", timeout=5)
         if r.ok:
             data = r.json()
             return {
-                "id": data.get("isbn13"), "title": data.get("title"), "author": data.get("authors"),
+                "id": data.get("isbn13"), "title": clean_book_title(data.get("title")), "author": data.get("authors"),
                 "desc": data.get("desc"), "cover": data.get("image"), "preview": data.get("url"), "source": "itbook"
             }
     except: pass
@@ -524,6 +551,7 @@ def fetch_itbook_detail(isbn):
 
 # ... (باقي الكود في الأعلى كما هو) ...
 
+@cache.memoize(timeout=86400)
 def fetch_itbook_books(query, page=1, limit=8, **kwargs): # 👈 أضفنا متغير page
     try:
         # 👈 نضع رقم الصفحة في الرابط بدلاً من الرقم 1 الثابت
@@ -544,7 +572,7 @@ def fetch_itbook_books(query, page=1, limit=8, **kwargs): # 👈 أضفنا مت
             subtitle = b.get("subtitle") or ""
             author = subtitle or "IT Book"
             books.append({
-                "id": isbn13, "title": title, "author": author,
+                "id": isbn13, "title": clean_book_title(title), "author": author,
                 "cover": b.get("image"), "source": "itbook"
             })
         return books
@@ -556,6 +584,7 @@ def fetch_itbook_books(query, page=1, limit=8, **kwargs): # 👈 أضفنا مت
 # -----------------------------------------------------------
 # 5. Archive.org
 # -----------------------------------------------------------
+@cache.memoize(timeout=172800)
 def fetch_archive_detail(archive_id, max_results=1): # تم تعديل التوقيع ليتوافق
     # إذا تم تمرير ID كنص عادي (للبحث عن التفاصيل)
     if isinstance(archive_id, str) and not archive_id.startswith("http"):
@@ -571,7 +600,7 @@ def fetch_archive_detail(archive_id, max_results=1): # تم تعديل التو�
                     if isinstance(desc, list):
                         desc = " ".join(desc)
                     return {
-                        "id": archive_id, "title": meta.get("title"),
+                        "id": archive_id, "title": clean_book_title(meta.get("title")),
                         "author": meta.get("creator") if isinstance(meta.get("creator"), str) else ", ".join(meta.get("creator", [])) if meta.get("creator") else "Unknown Author",
                         "desc": desc,
                         "cover": f"https://archive.org/services/img/{clean_id}",
@@ -595,6 +624,7 @@ def fetch_archive_detail(archive_id, max_results=1): # تم تعديل التو�
     # إذا تم استخدامها للبحث (كما في book_detail سابقاً)
     return fetch_archive_books(archive_id, limit=max_results), 0
 
+@cache.memoize(timeout=86400)
 def fetch_archive_books(query, limit=12, **kwargs):
     """جلب كتب من Internet Archive مع معالجة أفضل للأخطاء"""
     base_url = "https://archive.org/advancedsearch.php"
@@ -615,7 +645,7 @@ def fetch_archive_books(query, limit=12, **kwargs):
     
     try:
         print(f"[Archive] Searching for: {clean_query}")
-        r = requests.get(base_url, params=params, timeout=8)  # timeout سريع
+        r = requests.get(base_url, params=params, timeout=4)  # Accelerated timeout
         if r.ok:
             data = r.json()
             docs = data.get("response", {}).get("docs", [])

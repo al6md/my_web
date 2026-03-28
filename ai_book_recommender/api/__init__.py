@@ -234,8 +234,15 @@ def create_app() -> FastAPI:
     return app
 
 
-# Create default app instance
-app = create_app()
+# Create default app instance for dev/testing
+if __name__ == "__main__":
+    app = create_app()
+else:
+    # We provide a factory or the user can call create_app()
+    # But for unified_server.py, we might still need a module-level 'app'
+    # if it's imported as 'engine_app'.
+    # To keep it safe, we'll only create it if NOT in a reload/import loop that we want to avoid.
+    app = create_app() 
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000):

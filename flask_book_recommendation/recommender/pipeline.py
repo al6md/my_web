@@ -323,6 +323,7 @@ def apply_diversity(books, book_embeddings_map, lambda_=0.7):
     
     return selected
 
+@cache.memoize(timeout=3600)
 def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
     """
     Get recommendations using the Two-Tower Deep Learning model 

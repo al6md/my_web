@@ -1,201 +1,203 @@
 {% extends "base.html" %}
 
-{% block title %}{{ book.title }} | The Digital Curator{% endblock %}
+{% block title %}{{ book.title }} | Elham Details{% endblock %}
+
+{% block head %}
+<style>
+    .font-headline { font-family: 'Be Vietnam Pro', sans-serif; }
+    .bento-card { background: #fdf7ff; border-radius: 2.5rem; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); }
+    .bento-card:hover { transform: translateY(-8px); box-shadow: 0 40px 80px -20px rgba(111,38,246,0.15); }
+    .status-badge { padding: 0.6rem 1.5rem; border-radius: 99px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .editorial-quote { border-radius: 1rem 3rem 1rem 3rem; background: #fed07f; color: #634500; }
+</style>
+{% endblock %}
 
 {% block content %}
-<main class="pt-32 min-h-screen bg-surface">
-    <div class="max-w-screen-2xl mx-auto px-8 lg:px-24 pb-24">
+<main class="mt-8 px-6 md:px-12 max-w-full mx-auto pb-32" dir="ltr">
+    
+    <!-- Hero Section: The Masterwork -->
+    <div class="grid lg:grid-cols-12 gap-10 items-stretch">
         
-        <!-- Breadcrumb / Return Path -->
-        <div class="mb-16">
-            <a href="javascript:history.back()" class="group inline-flex items-center gap-4 text-on-surface/40 hover:text-primary transition-all font-label text-xs uppercase tracking-widest font-black">
-                <span class="material-symbols-outlined text-sm group-hover:-translate-x-2 transition-transform">arrow_back</span>
-                Return to Archives
-            </a>
-        </div>
-
-        <div class="flex flex-col lg:flex-row gap-24 items-start">
-            
-            <!-- Structural Book Pillar -->
-            <div class="w-full lg:w-[450px] shrink-0 sticky top-32">
-                <div class="relative group shadow-[0_50px_100px_-20px_rgba(115,92,0,0.15)] bg-surface-container-highest">
-                    <img src="{{ book.cover_url or 'https://placehold.co/800x1200/fbfbe2/a04100?text=Aurelian+Folio' }}" 
-                         alt="{{ book.title }}" 
-                         class="w-full aspect-[2/3] object-cover group-hover:scale-[1.02] transition-transform duration-700">
-                    
-                    <!-- Architectural Framing Overlay -->
-                    <div class="absolute inset-0 border-[24px] border-white/10 pointer-events-none transition-all group-hover:border-white/20"></div>
+        <!-- Left Column: Visual Essence -->
+        <div class="lg:col-span-4 space-y-8">
+            <div class="relative group rounded-[3rem] overflow-hidden shadow-3xl aspect-[3/4.5]">
+                <img src="{{ book.cover_url or 'https://placehold.co/600x900/fbfbe2/a04100?text=Masterpiece' }}" 
+                     alt="{{ book.title }}" 
+                     class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-12">
+                     <button class="w-full bg-white/20 backdrop-blur-xl text-white py-5 rounded-2xl font-black text-lg border border-white/30 hover:bg-white hover:text-primary transition-all">
+                        View High-Res
+                     </button>
                 </div>
-
-                <!-- Quick Metadata Blocks -->
-                <div class="mt-12 grid grid-cols-2 gap-px bg-on-surface/5 border border-on-surface/5">
-                    <div class="bg-surface p-6">
-                        <span class="font-label text-[10px] uppercase font-black text-secondary block mb-1">Curation Grade</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-headline text-2xl font-black text-primary">{{ book.average_rating or '4.8' }}</span>
-                            <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
-                        </div>
-                    </div>
-                    <div class="bg-surface p-6">
-                        <span class="font-label text-[10px] uppercase font-black text-secondary block mb-1">Volume Status</span>
-                        <span class="font-headline text-xl font-bold text-on-surface">Authenticated</span>
+            </div>
+            
+            <!-- Quick Actions Bento -->
+            <div class="bento-card p-10 space-y-6 bg-surface-container-low shadow-inner">
+                <div class="flex flex-col gap-4">
+                    <form action="{{ url_for('main.set_book_status', book_id=book.id, status='reading') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="w-full bg-primary text-on-primary py-6 rounded-[1.5rem] font-black flex items-center justify-center gap-4 hover:bg-primary-dim transition-all active:scale-95 shadow-xl shadow-primary/20">
+                            <span class="material-symbols-outlined">auto_stories</span>
+                            Resume Reading
+                        </button>
+                    </form>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button class="bg-white py-5 rounded-2xl font-black text-sm text-secondary border border-secondary/10 flex items-center justify-center gap-3 hover:bg-secondary-container transition-all">
+                            <span class="material-symbols-outlined text-xl">bookmark</span>
+                            Save Quote
+                        </button>
+                        <button class="bg-white py-5 rounded-2xl font-black text-sm text-on-surface-variant border border-outline-variant/10 flex items-center justify-center gap-3 hover:bg-surface-container transition-all">
+                            <span class="material-symbols-outlined text-xl">share</span>
+                            Share
+                        </button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Curatorial Analysis Area -->
-            <div class="flex-1 space-y-24">
-                
-                <!-- Core Description -->
-                <div class="space-y-8">
-                    <div class="space-y-4">
-                        <span class="font-label text-xs uppercase tracking-[0.6em] text-primary">Folio Entry No. {{ book.id }}</span>
-                        <h1 class="font-headline text-7xl font-black tracking-tighter leading-[1.1] text-on-surface">{{ book.title }}</h1>
-                        <p class="font-headline text-2xl font-bold text-secondary">{{ book.authors|join(' & ') if book.authors else (book.author or 'Anonymous Contributor') }}</p>
+        <!-- Right Column: Narrative & Data -->
+        <div class="lg:col-span-8 space-y-10">
+            
+            <!-- Metadata Bento -->
+            <div class="bento-card p-12 md:p-16 flex flex-col justify-between h-full bg-surface-container-lowest border border-surface-container shadow-sm">
+                <div class="space-y-10">
+                    <div class="flex justify-between items-start">
+                        <div class="space-y-4">
+                            <div class="flex gap-3">
+                                <span class="status-badge bg-tertiary-container/40 text-on-tertiary-container">
+                                    {{ (book.categories.split(',')[0] if book.categories else 'Classical') }}
+                                </span>
+                                {% if status and status.status == 'finished' %}
+                                <span class="status-badge bg-primary/10 text-primary">Mastered</span>
+                                {% endif %}
+                            </div>
+                            <h1 class="text-5xl md:text-7xl font-black font-headline tracking-tighter leading-tight text-on-surface">{{ book.title }}</h1>
+                            <p class="text-2xl md:text-3xl font-bold text-on-surface-variant/60 italic">{{ book.author or 'Unknown Visionary' }}</p>
+                        </div>
+                        <div class="flex flex-col items-center gap-2">
+                             <div class="w-20 h-20 bg-secondary-container rounded-3xl flex items-center justify-center text-secondary shadow-xl">
+                                <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">star</span>
+                             </div>
+                             <span class="font-black text-sm text-secondary">4.9/5.0</span>
+                        </div>
                     </div>
 
-                    <div class="prose prose-stone max-w-none">
-                        <p class="font-body text-xl text-on-surface-variant leading-relaxed first-letter:text-5xl first-letter:font-headline first-letter:font-black first-letter:text-primary first-letter:mr-3 first-letter:float-left pt-6">
-                            {{ book.description or 'The text contained within this volume awaits comprehensive digital analysis. Its architectural significance and semantic structure are currently being cataloged by our recommendation algorithms. Initial scans suggest a work of profound intellectual value.' }}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 pt-10 border-t border-surface-container">
+                        <div class="space-y-2">
+                            <span class="text-[10px] uppercase tracking-[0.3em] font-black text-on-surface-variant/40">Pages</span>
+                            <p class="text-2xl font-black font-headline">{{ book.page_count or 'N/A' }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-[10px] uppercase tracking-[0.3em] font-black text-on-surface-variant/40">Year</span>
+                            <p class="text-2xl font-black font-headline">{{ book.published_date or 'Classic' }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-[10px] uppercase tracking-[0.3em] font-black text-on-surface-variant/40">Language</span>
+                            <p class="text-2xl font-black font-headline">{{ book.language|upper if book.language else 'EN' }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-[10px] uppercase tracking-[0.3em] font-black text-on-surface-variant/40">Reading Time</span>
+                            <p class="text-2xl font-black font-headline">~{{ ((book.page_count or 200) / 25)|int }} hrs</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6 pt-10">
+                        <h3 class="text-xs font-black uppercase tracking-[0.4em] text-primary">Synopsis & Analysis</h3>
+                        <p class="text-xl md:text-2xl leading-relaxed text-on-surface-variant font-medium opacity-80 max-w-4xl">
+                            {{ book.description or 'No analytical synopsis available for this volume yet. Engage with the text to unlock AI-generated insights.' }}
                         </p>
                     </div>
                 </div>
 
-                <!-- Review Section / The Public Inquiry -->
-                <section class="space-y-12">
-                    <div class="flex flex-col md:flex-row justify-between items-end gap-8 pb-8 border-b border-on-surface/10">
-                        <div class="space-y-4">
-                            <h2 class="font-headline text-4xl font-black tracking-tight">Public Inquiry</h2>
-                            <p class="font-body text-sm text-on-surface-variant">Observations and annotations from fellow curators across the network.</p>
-                        </div>
-                        <button onclick="document.getElementById('reviewModal').showModal()" 
-                                class="bg-on-surface text-white font-headline font-black px-10 py-5 hover:bg-primary transition-all active:scale-[0.98] shadow-2xl flex items-center gap-3">
-                            <span class="material-symbols-outlined">add_comment</span>
-                            Submit Annotation
-                        </button>
+                <!-- Reading Progress Bento Mini -->
+                {% if status and status.status == 'reading' %}
+                <div class="mt-16 p-8 bg-surface-container-low rounded-3xl border border-surface-container flex items-center gap-10">
+                    <div class="relative w-24 h-24">
+                        <svg class="w-full h-full -rotate-90">
+                            <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="8" fill="transparent" class="text-surface-container-high"></circle>
+                            <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="8" fill="transparent" class="text-primary" stroke-dasharray="251" stroke-dashoffset="{{ 251 - (251 * (status.reading_progress or 0) / 100) }}"></circle>
+                        </svg>
+                        <span class="absolute inset-0 flex items-center justify-center font-black text-xl">{{ status.reading_progress }}%</span>
                     </div>
-
-                    <div class="space-y-12">
-                        {% if reviews %}
-                            {% for review in reviews %}
-                            <div class="flex gap-8 group">
-                                <div class="w-16 h-16 shrink-0 bg-surface-container-high overflow-hidden border border-on-surface/5 flex items-center justify-center font-headline font-black text-xl text-primary">
-                                    {{ review.user.username[0]|upper }}
-                                </div>
-                                <div class="flex-1 space-y-4">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-headline font-black text-lg">{{ review.user.username }}</h4>
-                                            <span class="font-label text-[10px] uppercase font-bold text-on-surface/30">{{ review.created_at.strftime('%d %B %Y') }}</span>
-                                        </div>
-                                        <div class="flex text-primary text-xs" dir="ltr">
-                                            {% for i in range(5) %}
-                                                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' {{ 1 if i < (review.rating or 5) else 0 }};">star</span>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                    <p class="font-body text-on-surface-variant leading-relaxed italic">"{{ review.content }}"</p>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                            <!-- Informative Placeholder -->
-                            <div class="py-24 text-center space-y-6 bg-surface-container-low border border-dashed border-on-surface/10">
-                                <span class="material-symbols-outlined text-4xl text-on-surface/10">history_edu</span>
-                                <p class="font-body italic text-on-surface/30">No official annotations have been committed for this volume yet.</p>
-                                <button onclick="document.getElementById('reviewModal').showModal()" class="text-primary font-headline font-bold border-b border-primary hover:text-on-surface hover:border-on-surface transition-all">Be the first to analyze</button>
-                            </div>
-                        {% endif %}
+                    <div>
+                        <h4 class="font-black text-lg">Active Pulse</h4>
+                        <p class="text-sm text-on-surface-variant font-medium opacity-60">You're currently in the flow of this narrative.</p>
                     </div>
-                </section>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Annotation Modal -->
-    <dialog id="reviewModal" class="bg-surface border border-on-surface/10 p-12 shadow-2xl w-full max-w-xl backdrop:bg-on-background/80 backdrop:backdrop-blur-xl">
-        <div class="space-y-12">
-            <div class="flex justify-between items-start">
-                <div class="space-y-4">
-                    <span class="font-label text-xs uppercase tracking-[0.4em] text-primary">Annotation</span>
-                    <h3 class="font-headline text-4xl font-black">Commit Inquiry</h3>
-                </div>
-                <button onclick="document.getElementById('reviewModal').close()" class="text-on-surface/40 hover:text-primary transition-colors">
-                    <span class="material-symbols-outlined text-3xl">close</span>
-                </button>
+    <!-- Secondary Bento Grid: Details, Notes & Community -->
+    <div class="grid lg:grid-cols-12 gap-10 mt-10">
+        
+        <!-- Private Notes Bento -->
+        <div class="lg:col-span-5 bento-card p-12 bg-surface-container-low shadow-inner">
+            <div class="flex justify-between items-center mb-10">
+                <h3 class="text-xs font-black uppercase tracking-[0.4em] text-secondary">Private Reflections</h3>
+                <span class="material-symbols-outlined text-secondary opacity-40">edit_note</span>
             </div>
-            
-            <form action="{{ url_for('main.add_review', book_id=book.id) }}" method="POST" class="space-y-12">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
-                <div class="space-y-8">
-                    <!-- Star Rating -->
-                    <div class="space-y-4">
-                        <label class="font-label text-[10px] uppercase font-bold text-secondary text-center block">Quality Assessment</label>
-                        <div class="flex justify-center items-center gap-4" dir="ltr">
-                            <input type="hidden" name="rating" id="ratingValue" value="5">
-                            {% for i in range(1, 6) %}
-                            <span class="material-symbols-outlined text-4xl text-on-surface/10 cursor-pointer hover:scale-125 hover:text-primary transition-all star-btn" 
-                                  data-val="{{ i }}" 
-                                  style="font-variation-settings: 'FILL' 1; color: #a04100;">star</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <label class="font-label text-[10px] uppercase font-bold text-secondary">Critical Notes</label>
-                        <textarea name="content" rows="5" required 
-                                  class="w-full bg-transparent border-2 border-on-surface/10 p-6 font-body text-lg focus:border-primary outline-none transition-all placeholder:text-on-surface/20" 
-                                  placeholder="Document your findings here..."></textarea>
-                    </div>
-                </div>
-
-                <div class="pt-8">
-                    <button type="submit" class="w-full bg-primary text-white font-headline font-black py-6 text-xl hover:bg-on-surface transition-all active:scale-[0.98] shadow-2xl">
-                        Archive Annotation
-                    </button>
-                </div>
-            </form>
+            <textarea class="w-full bg-white/60 border-none rounded-3xl p-8 h-80 text-lg font-medium focus:ring-4 focus:ring-secondary/10 transition-all placeholder:italic placeholder:opacity-30" 
+                      placeholder="Capture your ephemeral thoughts here...">{{ book.notes or '' }}</textarea>
+            <button class="mt-8 w-full py-5 bg-secondary text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-secondary-dim transition-all active:scale-95 shadow-lg shadow-secondary/20">
+                Commit to Memory
+            </button>
         </div>
-    </dialog>
-</main>
-{% endblock %}
 
-{% block scripts %}
-<script>
-    const stars = document.querySelectorAll('.star-btn');
-    const ratingInput = document.getElementById('ratingValue');
-    const primaryColor = '#a04100';
-    const mutedColor = 'rgba(0,0,0,0.1)';
-
-    stars.forEach(star => {
-        star.addEventListener('click', () => {
-            const val = parseInt(star.getAttribute('data-val'));
-            ratingInput.value = val;
+        <!-- Community Wisdom Bento -->
+        <div class="lg:col-span-7 bento-card p-12 md:p-16 bg-white border border-surface-container shadow-sm overflow-hidden relative">
+            <h3 class="text-xs font-black uppercase tracking-[0.4em] text-tertiary mb-12">Collective Resonance</h3>
             
-            stars.forEach(s => {
-                const sVal = parseInt(s.getAttribute('data-val'));
-                if (sVal <= val) {
-                    s.style.fontVariationSettings = "'FILL' 1";
-                    s.style.color = primaryColor;
-                } else {
-                    s.style.fontVariationSettings = "'FILL' 0";
-                    s.style.color = mutedColor;
-                }
-            });
-        });
-    });
+            <div class="space-y-10">
+                {% if reviews %}
+                    {% for review in reviews[:2] %}
+                    <div class="space-y-5 border-l-4 border-tertiary/20 pl-8">
+                        <div class="flex items-center gap-4">
+                            <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ review.user_id }}" class="w-10 h-10 rounded-full">
+                            <div>
+                                <h5 class="font-black text-sm">Philosopher #{{ review.user_id }}</h5>
+                                <div class="flex text-tertiary text-[10px] mt-1">
+                                    {% for i in range(review.rating) %}
+                                    <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-lg font-medium text-on-surface-variant leading-relaxed italic opacity-80">"{{ review.review_text }}"</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="py-20 text-center space-y-4 opacity-30">
+                        <span class="material-symbols-outlined text-6xl">forum</span>
+                        <p class="font-black text-xl">The collective is silent on this volume.</p>
+                        <p class="text-sm font-medium">Be the first to echo your thoughts.</p>
+                    </div>
+                {% endif %}
+            </div>
 
-    // Initialize state
-    window.addEventListener('DOMContentLoaded', () => {
-        const val = parseInt(ratingInput.value);
-        stars.forEach(s => {
-            const sVal = parseInt(s.getAttribute('data-val'));
-            if (sVal <= val) {
-                s.style.fontVariationSettings = "'FILL' 1";
-                s.style.color = primaryColor;
-            }
-        });
-    });
-</script>
+            <!-- Absolute Decoration -->
+            <div class="absolute -bottom-10 -right-10 w-48 h-48 bg-tertiary/5 rounded-full blur-3xl"></div>
+        </div>
+    </div>
+
+    <!-- Editorial Inscription (Aesthetic Quote) -->
+    {% if quotes %}
+    <div class="mt-24 max-w-5xl mx-auto">
+        <div class="editorial-quote p-16 md:p-24 shadow-2xl relative overflow-hidden group">
+            <span class="material-symbols-outlined text-[10rem] absolute -top-8 -left-8 opacity-10">format_quote</span>
+            <p class="text-3xl md:text-5xl font-black font-headline italic tracking-tighter leading-tight relative z-10">
+                "{{ quotes[0].quote_text }}"
+            </p>
+            <div class="mt-12 flex items-center gap-4 opacity-60 font-black text-sm uppercase tracking-widest relative z-10">
+                <div class="h-px w-12 bg-on-tertiary-container/30"></div>
+                Page {{ quotes[0].page_number or 'Unmarked' }}
+            </div>
+            <!-- Interactive Highlight -->
+            <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </div>
+    </div>
+    {% endif %}
+
+</main>
 {% endblock %}

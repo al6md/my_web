@@ -10,6 +10,7 @@ from datetime import datetime
 import requests
 import random
 import urllib.parse
+import threading
 
 from ..utils import (
     translate_to_english_with_gemini, analyze_search_intent_with_ai,
@@ -39,10 +40,85 @@ RANDOM_TOPICS = [
 CATEGORIES = [
     "Programming", "Artificial Intelligence", "Networking", 
     "Databases", "Security", "Cloud", "Web Development", 
-    "Classic Literature", "History", "Science"
+    "Classic Literature", "History", "Science",
+    "Psychology", "Business", "Self-Help", "Travel", "Religion", "Art", "Philosophy", "Fiction"
 ]
 
+@cache.memoize(timeout=86400)
+def cached_translate_to_english(text):
+    """ترجمة الموضيع للإنجليزية مع التخزين المؤقت لتجنب تكرار النداءات لـ Gemini"""
+    try:
+        # إذا كان النص بالفعل إنجليزي (حروف لاتينية فقط)
+        if all(ord(c) < 128 for c in text.replace(" ", "")):
+            return text
+            
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if not gemini_key: return text
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+        prompt = f"Translate this specific book topic or title to English. Return ONLY the English translation, no other text: '{text}'"
+        
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        r = requests.post(url, json=payload, timeout=5)
+        if r.ok:
+            data = r.json()
+            translated = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            return translated.strip()
+    except: pass
+    return text
+
+def background_log_search(app, user_id, q):
+    """تسجيل سجل البحث في الخلفية"""
+    with app.app_context():
+        try:
+            # 1. سجل البحث
+            history = SearchHistory(
+                user_id=user_id,
+                query=q,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(history)
+            
+            # 2. تحديث التفضيلات
+            keywords = q.lower().split()
+            valid_kw = [k for k in keywords if len(k) > 2]
+            for kw in valid_kw[:3]:
+                pref = UserPreference.query.filter_by(user_id=user_id, topic=kw).first()
+                if pref:
+                    pref.weight += 10.0
+                    pref.updated_at = datetime.utcnow()
+                else:
+                    pref = UserPreference(user_id=user_id, topic=kw, weight=50.0)
+                    db.session.add(pref)
+            
+            db.session.commit()
+            
+            # إبطال الكاش
+            try:
+                from ..recommender import get_homepage_sections, get_topic_based, get_last_search_recommendations
+                cache.delete_memoized(get_homepage_sections)
+                cache.delete_memoized(get_topic_based)
+                cache.delete_memoized(get_last_search_recommendations)
+            except: pass
+        except Exception as e:
+            db.session.rollback()
+            print(f"Background Search Log Error: {e}")
+
+def background_record_feedback(app, user_id, books):
+    """تسجيل تغذية راجعة للكتب في الخلفية"""
+    with app.app_context():
+        try:
+            from ai_book_recommender.engine import get_engine
+            engine = get_engine()
+            for book in books[:15]: # تقليل العدد قليلاً
+                bid = book.get("google_id") or book.get("id")
+                if bid:
+                    engine.record_feedback(user_id=user_id, item_id=str(bid), feedback_type="search", value=1.0)
+        except Exception as e:
+            print(f"Background Feedback Error: {e}")
+
 @public_bp.get("/books", endpoint="list_books")
+@cache.cached(timeout=300, query_string=True, unless=lambda: current_user.is_authenticated)
 def list_books():
     q   = (request.args.get("q") or "").strip()
     cat = (request.args.get("cat") or "").strip()
@@ -59,6 +135,9 @@ def list_books():
     current_page = (start // per) + 1
     # ==========================================
 
+    # 0. تهيئة المتغيرات الأساسية
+    interests_exhausted = False
+    
     # 1. حفظ سجل البحث وتحديث التفضيلات (للمستخدمين المسجلين)
     # نتجاهل الاستعلامات الخاصة بالنظام (مثل special:interests)
     if q and not q.startswith("special:") and current_user.is_authenticated:
@@ -68,115 +147,41 @@ def list_books():
         if q not in recent: recent.insert(0, q)
         session["recent_public_queries"] = recent[:5]
         
-        # ب) حفظ في قاعدة البيانات (للنظام الذكي)
-        try:
-            # 1. سجل البحث
-            history = SearchHistory(
-                user_id=current_user.id,
-                query=q,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(history)
-            
-            # --- 🆕 User Embedding Update (Phase 2) ---
-            try:
-                from ..ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
-                # Since we don't have a specific book_id for a general search, 
-                # we could skip or use the first result. The requirement says search interaction.
-                # However, usually we update on book-specific actions.
-                # If the user wants search, we might need a way to map search to a vector.
-                # For now, I'll focus on View/Library/Rating which are book-specific.
-                pass 
-            except Exception as e_emb:
-                print(f"Embedding update error: {e_emb}")
-            # ------------------------------------------
-
-            # 2. تحديث التفضيلات
-            # إذا كان البحث طويلاً، نأخذ أول كلمة ذات معنى
-            # أو نحفظ البحث كاملاً إذا كان قصيراً (مثل "python")
-            keywords = q.lower().split()
-            # نركز على أهم الكلمات (تجاهل الحروف)
-            valid_kw = [k for k in keywords if len(k) > 2]
-            
-            # نعطي وزناً إضافياً للبحث الحالي
-            for kw in valid_kw[:3]: # نأخذ أول 3 كلمات
-                pref = UserPreference.query.filter_by(
-                    user_id=current_user.id,
-                    topic=kw
-                ).first()
-                
-                if pref:
-                    pref.weight += 10.0  # زيادة كبيرة للوزن
-                    pref.updated_at = datetime.utcnow()
-                else:
-                    pref = UserPreference(
-                        user_id=current_user.id,
-                        topic=kw,
-                        weight=50.0  # وزن ابتدائي ضخم جداً ليظهر فوراً
-                    )
-                    db.session.add(pref)
-            
-            db.session.commit()
-            
-            # إبطال الكاش (لضمان تحديث التوصيات فوراً)
-            try:
-                # نحتاج للدوال لإبطال الكاش الخاص بها
-                from ..recommender import get_homepage_sections, get_topic_based, get_last_search_recommendations
-                
-                # حذف كل الكاش للدوال (بدون تحديد المعاملات لضمان الحذف الكامل)
-                cache.delete_memoized(get_homepage_sections)
-                cache.delete_memoized(get_topic_based)
-                cache.delete_memoized(get_last_search_recommendations)
-                
-                # إبطال كاش التوصيات السلوكية أيضاً
-                from ..recommender import get_behavior_based_recommendations
-                cache.delete_memoized(get_behavior_based_recommendations)
-                
-                print(f"Cache cleared for all users after search by user {current_user.id}.")
-            except Exception as e:
-                print(f"Error clearing cache: {e}")
-            
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error saving search prefs: {e}")
+        # ب) حفظ في قاعدة البيانات (في الخلفية لتسريع الاستجابة)
+        from flask import current_app
+        app = current_app._get_current_object()
+        threading.Thread(target=background_log_search, args=(app, current_user.id, q), daemon=True).start()
 
     # 2. تجهيز نص البحث والترجمة
-    if q: base_query = q
-    elif cat: base_query = f"subject:{cat}"
-    else: base_query = random.choice(RANDOM_TOPICS)
-
-    google_query = base_query
+    if q: 
+        base_query = q
+        google_query = q
+    elif cat: 
+        base_query = cat
+        google_query = f"subject:{cat}" # Google Books supports subject: prefix
+    else: 
+        base_query = random.choice(RANDOM_TOPICS)
+        google_query = base_query
     
-    # تعريف دالة الترجمة محلياً لضمان عملها بشكل صحيح
-    def local_translate_to_english(text):
-        try:
-            # إذا كان النص بالفعل إنجليزي (حروف لاتينية فقط)
-            if all(ord(c) < 128 for c in text.replace(" ", "")):
-                return text
-                
-            import os
-            gemini_key = os.environ.get("GEMINI_API_KEY")
-            if not gemini_key: return text
-            
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-            prompt = f"Translate this specific book topic or title to English. Return ONLY the English translation, no other text: '{text}'"
-            
-            payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            r = requests.post(url, json=payload, timeout=5)
-            if r.ok:
-                data = r.json()
-                translated = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                return translated.strip()
-        except: pass
-        return text
-
-    # الترجمة للمكتبات الأجنبية
-    english_query = local_translate_to_english(base_query)
+    # الترجمة للمكتبات الأجنبية (مخزنة مؤقتاً)
+    english_query = cached_translate_to_english(base_query)
     
     # 🛑 لمنع نتائج IT Bookstore العشوائية:
     # نقوم بتعطيل البحث فيها إذا كان الموضوع لا يبدو تقنياً
     # لكن للتبسيط، سنعتمد على أن البحث الدقيق لا يرجع نتائج عشوائية
     if not english_query: english_query = base_query
+
+    # -----------------------------------------------------
+    # ⚡ SPA Fast-Path: Return instant shell skeleton
+    # -----------------------------------------------------
+    if not request.args.get('async_load') and not request.args.get('partial'):
+        # Just render the outer shell instantly
+        return render_template(
+            "public_books.html",
+            q=q, cat=cat, sort=sort, per=per, start=start, 
+            total=0, shown=0, categories=CATEGORIES,
+            deferred_load=True
+        )
 
     # -----------------------------------------------------
     # 🚀 تشغيل جميع APIs بشكل متوازي (أسرع 3-4 مرات!)
@@ -349,9 +354,9 @@ def list_books():
             ]
             
             try:
-                for future in as_completed(futures, timeout=10):
+                for future in as_completed(futures, timeout=6):  # ⚡ Phase 5: Reduced from 10s to 6s
                     try:
-                        source, items = future.result(timeout=8)
+                        source, items = future.result(timeout=5)  # ⚡ Phase 5: Reduced from 8s to 5s
                         if source == "google":
                             clean_items = items
                         elif source == "gutenberg":
@@ -367,27 +372,11 @@ def list_books():
             except Exception as e:
                 print(f"Parallel fetch partially timed out or failed: {e}")
 
-    # --- 🆕 Search Result Feedback (Phase: Search Learning) ---
     if current_user.is_authenticated and q and not q.startswith("special:"):
-        try:
-            from ai_book_recommender.engine import get_engine
-            engine = get_engine()
-            # Combine all results to record feedback
-            all_search_results = clean_items + gut_items + ia_items + ol_items + it_items
-            for book in all_search_results[:20]: # Only top 20 to avoid overwhelm
-                # We use google_id if available, otherwise fallback to item id
-                bid = book.get("google_id") or book.get("id")
-                if bid:
-                    engine.record_feedback(
-                        user_id=current_user.id,
-                        item_id=str(bid),
-                        feedback_type="search",
-                        value=1.0  # Normalized positive signal for appearing in search
-                    )
-            print(f"Recorded search feedback for {len(all_search_results[:20])} books for user {current_user.id}")
-        except Exception as e:
-            print(f"Error recording search feedback: {e}")
-    # ---------------------------------------------------------
+        all_results = clean_items + gut_items + ia_items + ol_items + it_items
+        from flask import current_app
+        app = current_app._get_current_object()
+        threading.Thread(target=background_record_feedback, args=(app, current_user.id, all_results), daemon=True).start()
 
     # 4. Reranking (إذا كان المستخدم مسجلاً)
     if current_user.is_authenticated and not q.startswith("special:"):
@@ -405,6 +394,11 @@ def list_books():
          
     shown = len(clean_items) + len(gut_items) + len(ia_items) + len(ol_items) + len(it_items)
 
+    # 🛑 Infinite Scroll: Return partial template if requested
+    if request.args.get('partial'):
+        all_books = clean_items + gut_items + ia_items + ol_items + it_items
+        return render_template("public_books_items.html", source=all_books, src_name="UNIFIED")
+
     return render_template(
         "public_books.html",
         items=clean_items,
@@ -420,64 +414,71 @@ def list_books():
 
 @public_bp.get("/books/<gid>", endpoint="book_detail")
 def book_detail(gid):
+    # ⚡ Phase 4: Cache book data + similar books for 30 minutes
+    detail_cache_key = f"book_detail_data_{gid}"
+    cached_detail = cache.get(detail_cache_key)
+    
+    # Initialize variables
+    similar = []
+    author_books = []
     book_data = None
+    
+    if cached_detail:
+        book_data, similar, author_books = cached_detail
 
-    if gid.startswith("gut_"):
-        book_data = fetch_gutenberg_detail(gid)
-    elif gid.startswith("arch_"):
-        book_data = fetch_archive_detail(gid)
-    elif gid.startswith("ol_"):
-        book_data = fetch_openlib_detail(gid)
-    elif gid.startswith("local_"):
-        try:
-            local_id = int(gid.replace("local_", ""))
+    if not book_data:
+        if gid.startswith("gut_"):
+            book_data = fetch_gutenberg_detail(gid)
+        elif gid.startswith("arch_"):
+            book_data = fetch_archive_detail(gid)
+        elif gid.startswith("ol_"):
+            book_data = fetch_openlib_detail(gid)
+        elif gid.startswith("local_"):
+            try:
+                local_id = int(gid.replace("local_", ""))
+                from ..recommender.helpers import _book_to_dict
+                book = Book.query.get(local_id)
+                if book:
+                    book_data = _book_to_dict(book)
+            except Exception as e:
+                print(f"Error fetching local book {gid}: {e}")
+        elif gid.isdigit() and len(gid) == 13:
+            book_data = fetch_itbook_detail(gid)
+            if book_data is None:
+                book_data = {
+                    "id": gid, "title": f"IT Book {gid}", "author": "",
+                    "desc": "لم يتم العثور على تفاصيل.", "cover": None,
+                    "preview": f"https://itbook.store/search/{gid}", "source": "itbook",
+                }
+        else:
             from ..recommender.helpers import _book_to_dict
-            book = Book.query.get(local_id)
+            book = Book.query.filter_by(google_id=gid).first()
             if book:
                 book_data = _book_to_dict(book)
-        except Exception as e:
-            print(f"Error fetching local book {gid}: {e}")
-    elif gid.isdigit() and len(gid) == 13:
-        book_data = fetch_itbook_detail(gid)
-        if book_data is None:
-            book_data = {
-                "id": gid, "title": f"IT Book {gid}", "author": "",
-                "desc": "لم يتم العثور على تفاصيل.", "cover": None,
-                "preview": f"https://itbook.store/search/{gid}", "source": "itbook",
-            }
-    else:
-        # 1. أولاً: البحث في قاعدة البيانات المحلية (سريع وموثوق)
-        from ..recommender.helpers import _book_to_dict
-        book = Book.query.filter_by(google_id=gid).first()
-        if book:
-            book_data = _book_to_dict(book)
+            
+            if not book_data:
+                d = fetch_book_details(gid)
+                if d:
+                    cover = d.get("cover") or ""
+                    if cover and cover.startswith("http://"):
+                        cover = "https://" + cover[7:]
         
-        # 2. ثانياً: إذا لم يوجد محلياً، جلب من Google Books API
-        if not book_data:
-            d = fetch_book_details(gid)
-            if d:
-                # fetch_book_details returns flat dict with title, author, etc.
-                # Not nested volumeInfo like the raw API
-                cover = d.get("cover") or ""
-                if cover and cover.startswith("http://"):
-                    cover = "https://" + cover[7:]
-    
-                book_data = {
-                    "id": gid, 
-                    "title": d.get("title") or "عنوان غير متوفر",
-                    "author": d.get("author") or "مؤلف غير معروف",
-                    "desc": d.get("description") or "لا يوجد وصف متاح لهذا الكتاب.", 
-                    "cover": cover,
-                    "preview": d.get("preview"),
-                    "source": d.get("source", "google"),
-                    "publishedDate": d.get("publishedDate"),
-                    "pageCount": d.get("pageCount"),
-                    "categories": d.get("categories") or [],
-                    "rating": d.get("rating"),
-                    "publisher": d.get("publisher"),
-                    "language": d.get("language"),
-                    "isbn": d.get("isbn"),
-                }
+                    book_data = {
+                        "id": gid, 
+                        "title": d.get("title") or "عنوان غير متوفر",
+                        "author": d.get("author") or "مؤلف غير معروف",
+                        "desc": d.get("description") or "لا يوجد وصف متاح لهذا الكتاب.", 
+                        "cover": cover,
+                        "preview": d.get("preview"),
+                        "source": d.get("source", "google"),
+                        "publishedDate": d.get("publishedDate"),
+                        "pageCount": d.get("pageCount"),
+                        "categories": d.get("categories") or [],
+                        "rating": d.get("rating"),
+                        "publisher": d.get("publisher"),
+                        "language": d.get("language"),
+                        "isbn": d.get("isbn"),
+                    }
 
     if not book_data: abort(404)
     book_data.setdefault("google_id", gid)
@@ -498,15 +499,18 @@ def book_detail(gid):
     # -------------------------------------------------
     #   اقتراحات متشابهة (محسّن: تصنيفات + مؤلف + بحث دلالي)
     # -------------------------------------------------
-    similar = []
-    author_books = []  # 🆕 كتب من نفس المؤلف
+    if not cached_detail:
+        similar = []
+        author_books = []
     seen_ids = {book_data["id"]}
     title = (book_data.get("title") or "").strip()
     categories = book_data.get("categories", [])
     author = (book_data.get("author") or "").strip()
     
-    # جلب من مصادر متعددة بشكل متوازي
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    # ⚡ Skip fetching similar books if we have cached data
+    if not cached_detail:
+        # جلب من مصادر متعددة بشكل متوازي
+        from concurrent.futures import ThreadPoolExecutor, as_completed
     
     def fetch_by_title():
         """البحث بالعنوان"""
@@ -595,39 +599,42 @@ def book_detail(gid):
         try: return ("openlib", fetch_openlib_books(title[:30], limit=8) or [])
         except: return ("openlib", [])
     
-    # تشغيل متوازي مع 4 استراتيجيات
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = [
-            executor.submit(fetch_by_title),
-            executor.submit(fetch_by_category),
-            executor.submit(fetch_by_author),
-            executor.submit(fetch_ol),
-        ]
-        
-        try:
-            for future in as_completed(futures, timeout=8):
-                try:
-                    source, results = future.result(timeout=6)
-                    for it in results:
-                        sid = it.get("id")
-                        if not sid or sid in seen_ids: continue
-                        seen_ids.add(sid)
-                        
-                        # فصل كتب المؤلف عن المشابهة
-                        if source == "author":
-                            author_books.append(it)
-                        else:
-                            similar.append(it)
-                except Exception as e:
-                    pass
-        except:
-            pass
+    # تشغيل متوازي مع 4 استراتيجيات (فقط إذا لم يكن هناك cache)
+    if not cached_detail:
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [
+                executor.submit(fetch_by_title),
+                executor.submit(fetch_by_category),
+                executor.submit(fetch_by_author),
+                executor.submit(fetch_ol),
+            ]
+            
+            try:
+                for future in as_completed(futures, timeout=6):  # ⚡ Reduced from 8s
+                    try:
+                        source, results = future.result(timeout=4)  # ⚡ Reduced from 6s
+                        for it in results:
+                            sid = it.get("id")
+                            if not sid or sid in seen_ids: continue
+                            seen_ids.add(sid)
+                            
+                            if source == "author":
+                                author_books.append(it)
+                            else:
+                                similar.append(it)
+                    except Exception as e:
+                        pass
+            except:
+                pass
     
-    # خلط النتائج وتحديد العدد
-    import random
-    random.shuffle(similar)
-    similar = similar[:40]
-    author_books = author_books[:12]  # حد أقصى لكتب المؤلف
+        # خلط النتائج وتحديد العدد
+        import random
+        random.shuffle(similar)
+        similar = similar[:40]
+        author_books = author_books[:12]
+    
+        # ⚡ Phase 4: Cache the fetched data for 30 minutes
+        cache.set(detail_cache_key, (book_data, similar, author_books), timeout=1800)
 
     # -------------------------------------------------
     #   التحقق من حالة الكتاب في مكتبة المستخدم
@@ -697,9 +704,8 @@ def book_detail(gid):
             log_interaction(current_user.id, gid, "view", metadata={"source": book_data.get("source", "unknown")})
             # ------------------------------------------
 
-            # --- 🆕 User Embedding Update (Phase 2) ---
             try:
-                from ..ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+                from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
                 user_embedding_manager.update_user_embedding(current_user.id, google_id=gid)
             except Exception as e_emb:
                 print(f"Embedding update error: {e_emb}")
@@ -926,7 +932,7 @@ def add_to_shelf(gid, status):
         
         # --- 🆕 User Embedding Update (Phase 2) ---
         try:
-            from ..ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+            from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
             # local_book.id is the internal ID
             user_embedding_manager.update_user_embedding(current_user.id, book_id=local_book.id)
         except Exception as e_emb:

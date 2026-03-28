@@ -42,6 +42,8 @@ class Book(db.Model):
     # --- إضافة شرط مركب: يمنع المستخدم نفسه من إضافة الكتاب مرتين، لكن يسمح لغيره ---
     __table_args__ = (
         db.UniqueConstraint('owner_id', 'google_id', name='uq_owner_book'),
+        db.Index('idx_book_owner_created', 'owner_id', 'created_at'),  # ⚡ Phase 3: faster library queries
+        db.Index('idx_book_categories', 'categories'),  # ⚡ Phase 3: faster category search
     )
 
 class Genre(db.Model):
@@ -229,9 +231,10 @@ class UserBookView(db.Model):
     book = db.relationship("Book", backref=db.backref("views", lazy="dynamic"))
 
     __table_args__ = (
-        # فهرس مركب للبحث السريع عن مشاهدات مستخدم لكتاب معين
         db.Index("idx_user_view_book", "user_id", "book_id"),
         db.Index("idx_user_view_google", "user_id", "google_id"),
+        db.Index("idx_view_count_desc", "view_count"),  # ⚡ Phase 3: faster trending queries
+        db.Index("idx_view_last_viewed", "last_viewed_at"),  # ⚡ Phase 3: faster recent views
     )
 
     def __repr__(self):

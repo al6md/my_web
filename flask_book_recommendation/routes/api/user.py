@@ -111,7 +111,7 @@ def add_to_library(gid: str):
     
     # --- 🆕 User Embedding Update (Phase 2) ---
     try:
-        from ...ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+        from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
         user_embedding_manager.update_user_embedding(user_id, book_id=book.id)
     except Exception as e_emb:
         print(f"Embedding update error: {e_emb}")
@@ -235,7 +235,7 @@ def rate_book(gid: str):
     
     # --- 🆕 User Embedding Update (Phase 2) ---
     try:
-        from ...ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+        from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
         user_embedding_manager.update_user_embedding(user_id, google_id=gid)
     except Exception as e_emb:
         print(f"Embedding update error: {e_emb}")
@@ -329,7 +329,7 @@ def log_book_view():
         
         # --- 🆕 User Embedding Update (Phase 2) ---
         try:
-            from ...ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+            from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
             user_embedding_manager.update_user_embedding(user_id, book_id=book_id, google_id=google_id)
         except Exception as e_emb:
             print(f"Embedding update error: {e_emb}")

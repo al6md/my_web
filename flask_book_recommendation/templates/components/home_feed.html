@@ -1,6 +1,6 @@
 <!-- Because you searched for Section -->
 {% if dynamic_search_books is defined and dynamic_search_books and dynamic_search_books|length > 0 %}
-<section class="max-w-[1440px] mx-auto px-8 mb-20">
+<section class="max-w-[1800px] mx-auto px-8 mb-20">
     <div class="bg-[#fdf2d7] rounded-[40px] p-10 md:p-16 flex flex-col lg:flex-row items-center gap-16 border border-[#f5e1b9]">
         <!-- Left Side: Content -->
         <div class="lg:w-2/5">
@@ -41,7 +41,7 @@
 
 <!-- Binge-Worthy Series / Folio Groups -->
 {% if featured_lists is defined and featured_lists and featured_lists|length > 0 %}
-<section class="max-w-[1440px] mx-auto px-8 py-20">
+<section class="max-w-[1800px] mx-auto px-8 py-20">
     <div class="flex flex-col md:flex-row items-end justify-between mb-16 gap-4">
         <div>
             <h2 class="text-3xl font-black text-on-surface tracking-tight font-headline uppercase">Curated Collections</h2>
@@ -84,7 +84,7 @@
 
 {# Readers Like You (Similar Minds) #}
 {% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
-<section class="max-w-[1440px] mx-auto px-8 py-20 border-t border-surface-container-highest mt-12">
+<section class="max-w-[1800px] mx-auto px-8 py-20 border-t border-surface-container-highest mt-12">
     <div class="text-center mb-16">
         <span class="text-primary font-black text-[10px] tracking-[0.2em] uppercase mb-4 block">Parallel Curators</span>
         <h2 class="text-4xl font-black text-on-surface font-headline">Because You Both Read...</h2>
@@ -107,93 +107,3 @@
 </section>
 {% endif %}
 
-{# Neural Engine Highlights #}
-{% if neural_sections is defined and neural_sections %}
-<section class="max-w-[1440px] mx-auto px-8 py-20 bg-[#f8fafc] rounded-[60px] my-20">
-    <div class="flex items-center gap-12 mb-16">
-        <div class="w-1 bg-[#7c3aed] self-stretch rounded-full"></div>
-        <div>
-            <span class="text-[#7c3aed] font-black text-[10px] tracking-[0.3em] uppercase block mb-2">Neural Core Intelligence</span>
-            <h2 class="text-5xl font-black text-[#1e293b] font-headline">Engine Results</h2>
-        </div>
-    </div>
-
-    <div class="space-y-24">
-        {% for key, section in neural_sections.items() %}
-        {% if section.books %}
-        <div class="space-y-10">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-                <h3 class="text-2xl font-bold text-slate-800 uppercase tracking-tight">{{ section.title }}</h3>
-                <span class="text-[10px] font-black bg-slate-100 px-3 py-1 rounded text-slate-500">TAG: {{ key|upper }}</span>
-            </div>
-            <div class="flex overflow-x-auto gap-8 pb-8 no-scrollbar">
-                {% for book in section.books[:8] %}
-                <div class="shrink-0 w-48 group cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
-                    <div class="aspect-[2/3] bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-4 relative">
-                        <!-- Rank Badge -->
-                        <div class="absolute top-2 left-2 z-20 bg-slate-900/80 backdrop-blur-sm text-white font-bold text-[10px] w-6 h-6 flex items-center justify-center rounded-full border border-white/20">
-                            {{ loop.index }}
-                        </div>
-                        <img src="{{ book.cover_url or 'https://placehold.co/200x300/f1f5f9/64748b?text=NEURAL' }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                        <div class="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm w-8 h-8 rounded-full flex items-center justify-center text-[#7c3aed] opacity-0 group-hover:opacity-100 transition-all">
-                            <span class="material-symbols-outlined text-sm">bolt</span>
-                        </div>
-                    </div>
-                    <h4 class="font-bold text-slate-900 text-sm mb-1 line-clamp-1">{{ book.title }}</h4>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
-
-{# Deep Learning + Mood AI Bento #}
-<div class="max-w-[1440px] mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 pb-24">
-    {% if deep_learning_books %}
-    <div class="bg-slate-900 rounded-[40px] p-12 text-white relative overflow-hidden group">
-        <div class="absolute top-0 right-0 p-12 opacity-10">
-            <span class="material-symbols-outlined text-[120px]">psychology</span>
-        </div>
-        <div class="relative z-10">
-            <span class="text-primary font-black text-[10px] tracking-widest uppercase mb-4 block">Deep Learning Engine</span>
-            <h2 class="text-4xl font-black mb-8 font-headline">Pattern Recognition</h2>
-            <div class="grid grid-cols-2 gap-6">
-                {% for book in deep_learning_books[:4] %}
-                <div class="flex items-center gap-4 bg-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
-                    <div class="w-12 h-16 bg-white/10 rounded overflow-hidden flex-shrink-0">
-                        <img src="{{ book.cover_url or 'https://placehold.co/100x150/ffffff/000000?text=DL' }}" class="w-full h-full object-cover">
-                    </div>
-                    <p class="text-xs font-bold line-clamp-2 opacity-80">{{ book.title }}</p>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if mood_ai_books %}
-    <div class="bg-[#fdf2d7] rounded-[40px] p-12 border border-[#f5e1b9] group">
-        <span class="text-[#a86e24] font-black text-[10px] tracking-widest uppercase mb-4 block">Mood AI Analysis</span>
-        <h2 class="text-4xl font-black mb-8 font-headline text-[#5e4518]">Emotional Curation</h2>
-        <div class="space-y-4">
-            {% for book in mood_ai_books[:3] %}
-            <div class="flex items-center justify-between p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-14 bg-slate-100 rounded overflow-hidden">
-                        <img src="{{ book.cover_url or 'https://placehold.co/100x150/fdf2d7/a86e24?text=MOOD' }}" class="w-full h-full object-cover">
-                    </div>
-                    <div>
-                        <p class="text-sm font-black text-[#1a1a1a] mb-0.5">{{ book.title }}</p>
-                        <p class="text-[10px] text-[#8b6e3f] font-bold uppercase tracking-wider">{{ book.author }}</p>
-                    </div>
-                </div>
-                <span class="material-symbols-outlined text-[#a86e24] opacity-0 group-hover:opacity-100 transition-opacity">auto_awesome</span>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-</div>
