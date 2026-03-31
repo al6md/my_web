@@ -3,7 +3,7 @@
     <article class="group relative bg-surface-container-lowest rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col sm:flex-row gap-8 p-6 border border-outline/5 hover:border-primary/20">
         <!-- Image Section -->
         <div class="w-full sm:w-56 aspect-[3/4] flex-shrink-0 relative overflow-hidden rounded-lg cursor-pointer shadow-md group-hover:shadow-2xl transition-all duration-500" 
-             onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+             onclick="var burl = `{{ url_for('public.book_detail', gid=book.id) }}`; var c= `{{ book.cover or '' }}`; window.location.href = burl + (c ? '?cover=' + encodeURIComponent(c) : '');">
             <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                  src="{{ book.cover or 'https://placehold.co/400x600/f8fafc/ea580c?text=Book' }}"
                  alt="{{ book.title }}"
@@ -24,7 +24,7 @@
                         <span class="text-[10px] font-black uppercase tracking-[0.25em] bg-tertiary/10 text-tertiary px-3 py-1 rounded-sm">{{ src_name }} ARCHIVE</span>
                     </div>
                     <h3 class="text-3xl font-black font-headline text-on-background leading-tight group-hover:text-primary transition-colors cursor-pointer line-clamp-2"
-                        onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
+                        onclick="var burl = `{{ url_for('public.book_detail', gid=book.id) }}`; var c= `{{ book.cover or '' }}`; window.location.href = burl + (c ? '?cover=' + encodeURIComponent(c) : '');">
                         {{ book.title }}
                     </h3>
                     <p class="text-on-surface-variant font-body text-lg font-medium">{{ book.author or "Unknown Master" }}</p>
@@ -48,7 +48,7 @@
                             <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">add</span>
                         </button>
                     </form>
-                    <a href="{{ url_for('public.book_detail', gid=book.id) }}" 
+                    <a href="#" onclick="var burl = `{{ url_for('public.book_detail', gid=book.id) }}`; var c= `{{ book.cover or '' }}`; window.location.href = burl + (c ? '?cover=' + encodeURIComponent(c) : ''); return false;" 
                        class="bg-surface-container-high text-on-surface-variant hover:bg-secondary hover:text-on-secondary px-8 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 text-center w-full lg:w-auto">
                         Explore Work
                     </a>

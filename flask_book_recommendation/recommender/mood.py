@@ -9,6 +9,7 @@ from flask_login import current_user
 
 from ..models import SearchHistory
 from ..utils import fetch_google_books
+from ..extensions import db
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def get_mood_based_recommendations(mood_key, limit=12):
     personalization_reason = None
     if current_user and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
         try:
-            last_search = SearchHistory.query.filter_by(user_id=current_user.id)\
+            last_search = db.session.query(SearchHistory).filter_by(user_id=current_user.id)\
                 .order_by(SearchHistory.created_at.desc()).first()
             
             if last_search and last_search.query:

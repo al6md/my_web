@@ -11,8 +11,8 @@
             <p class="text-[#8b6e3f] text-lg font-medium mb-10 max-w-md leading-relaxed">
                 We noticed you're on a journey of improvement. These hand-picked titles might be the next step in your evolution.
             </p>
-            <button class="px-10 py-5 bg-[#7b541d] text-white rounded-2xl font-bold text-lg hover:bg-[#634317] transition-all hover:shadow-xl hover:-translate-y-1">
-                Refine My Journey
+            <button class="px-10 py-5 bg-[#7b541d] text-white rounded-2xl font-bold text-lg hover:bg-[#634317] transition-all hover:shadow-xl hover:-translate-y-1" onclick="window.location.href='{{ url_for('public.list_books', q=last_search_term) }}';">
+                Discover More
             </button>
         </div>
 
@@ -41,69 +41,80 @@
 
 <!-- Binge-Worthy Series / Folio Groups -->
 {% if featured_lists is defined and featured_lists and featured_lists|length > 0 %}
-<section class="max-w-[1800px] mx-auto px-8 py-20">
-    <div class="flex flex-col md:flex-row items-end justify-between mb-16 gap-4">
-        <div>
-            <h2 class="text-3xl font-black text-on-surface tracking-tight font-headline uppercase">Curated Collections</h2>
-            <p class="text-on-surface-variant mt-2 font-medium">Immerse yourself in handpicked worlds that don't end on the last page.</p>
+<section class="max-w-[1800px] mx-auto px-8 py-32" id="curated-collections-section">
+    <div class="flex flex-col md:flex-row items-end justify-between mb-20 gap-8">
+        <div class="max-w-2xl">
+            <h2 class="text-5xl font-black text-on-surface tracking-tighter font-headline uppercase leading-none mb-6">Curated Collections</h2>
+            <p class="text-on-surface-variant/70 text-lg font-medium leading-relaxed">Immerse yourself in handpicked worlds that don't end on the last page. Every volume is a doorway to a new dimension.</p>
         </div>
-        <a href="{{ url_for('public.list_books') }}" class="text-primary font-bold hover:gap-2 transition-all flex items-center">
+        <a href="{{ url_for('public.list_books') }}" class="group flex items-center gap-3 px-8 py-4 bg-surface-container-high rounded-full font-black text-sm uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm">
             <span>Explore All</span>
-            <span class="material-symbols-outlined text-sm ml-1" data-icon="arrow_forward">arrow_forward</span>
+            <span class="material-symbols-outlined transition-transform group-hover:translate-x-1" data-icon="arrow_forward">arrow_forward</span>
         </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-        {% for flist in featured_lists[:3] %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-20">
+        {% for flist in featured_lists[:6] %}
         <!-- Series Card -->
-        <div class="group cursor-pointer" onclick="window.location.href='{{ flist.url }}';">
-            <div class="flex items-end justify-center h-72 mb-8 relative rounded-2xl bg-surface-container-high group-hover:bg-primary-container/30 transition-colors border border-surface-container-highest">
+        <div class="group cursor-pointer flex flex-col" onclick="window.location.href='{{ flist.url }}';">
+            <div class="relative h-80 mb-10 rounded-[40px] transition-all duration-700 overflow-visible flex items-center justify-center" 
+                 style="background-color: {{ flist.color or '#f1f5f9' }}20; border: 1px solid {{ flist.color or '#cbd5e1' }}40;">
+                
+                <!-- Background Decorative Shape -->
+                <div class="absolute inset-0 rounded-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-3xl -z-10" 
+                     style="background: radial-gradient(circle at center, {{ flist.color }}40 0%, transparent 70%);"></div>
+
                 {% if flist.covers and flist.covers|length >= 1 %}
                     {% set c1 = flist.covers[0] %}
                     {% set c2 = flist.covers[1] if flist.covers|length > 1 else c1 %}
                     {% set c3 = flist.covers[2] if flist.covers|length > 2 else c2 %}
                     
-                    <img alt="Series Cover 1" class="h-56 w-36 object-cover rounded-lg shadow-2xl relative z-30 translate-x-12 translate-y-4 group-hover:translate-y-0 transition-all duration-500" src="{{ c1 }}">
-                    <img alt="Series Cover 2" class="h-52 w-32 object-cover rounded-lg shadow-xl relative z-20 translate-x-4 opacity-80" src="{{ c2 }}">
-                    <img alt="Series Cover 3" class="h-48 w-28 object-cover rounded-lg shadow-lg relative z-10 -translate-x-4 opacity-60" src="{{ c3 }}">
+                    <!-- Cover Stack with Premium Aesthetics -->
+                    <div class="relative w-44 h-64 perspective-1000">
+                        <!-- Third Cover (Back) -->
+                        <img alt="Series Cover 3" 
+                             class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-56 w-36 object-cover rounded-xl shadow-lg brightness-75 -rotate-12 -translate-x-16 group-hover:-translate-x-24 group-hover:-rotate-[18deg] transition-all duration-700 z-10 opacity-60" 
+                             src="{{ c3 }}">
+                        
+                        <!-- Second Cover (Middle) -->
+                        <img alt="Series Cover 2" 
+                             class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-60 w-40 object-cover rounded-xl shadow-xl brightness-90 rotate-6 translate-x-12 group-hover:translate-x-20 group-hover:rotate-[12deg] transition-all duration-700 z-20 opacity-80" 
+                             src="{{ c2 }}">
+                        
+                        <!-- First Cover (Front-Center) -->
+                        <img alt="Series Cover 1" 
+                             class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-44 object-cover rounded-2xl shadow-2xl z-30 group-hover:scale-110 group-hover:-translate-y-4 transition-all duration-700" 
+                             src="{{ c1 }}">
+                    </div>
                 {% else %}
-                    <!-- Fallbacks if no covers -->
-                    <div class="h-56 w-36 bg-surface-variant rounded-lg shadow-2xl relative z-30 translate-x-12 translate-y-4 group-hover:translate-y-0 transition-all duration-500"></div>
+                    <!-- Fallback if no covers -->
+                    <div class="h-64 w-44 bg-surface-variant rounded-2xl shadow-2xl flex items-center justify-center border border-dashed border-on-surface-variant/30">
+                        <span class="material-symbols-outlined text-4xl opacity-20">library_books</span>
+                    </div>
                 {% endif %}
             </div>
             
-            <h3 class="text-2xl font-black text-on-surface mb-2 font-headline group-hover:text-primary transition-colors">{{ flist.title }}</h3>
-            <p class="text-on-surface-variant font-bold text-sm flex items-center gap-2">
-                <span class="px-3 py-1 bg-surface-container text-xs rounded-full uppercase tracking-widest">{{ flist.count }} Volumes</span>
-            </p>
-        </div>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
-
-{# Readers Like You (Similar Minds) #}
-{% if similar_minds is defined and similar_minds and similar_minds|length > 0 %}
-<section class="max-w-[1800px] mx-auto px-8 py-20 border-t border-surface-container-highest mt-12">
-    <div class="text-center mb-16">
-        <span class="text-primary font-black text-[10px] tracking-[0.2em] uppercase mb-4 block">Parallel Curators</span>
-        <h2 class="text-4xl font-black text-on-surface font-headline">Because You Both Read...</h2>
-    </div>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        {% for book in similar_minds[:6] %}
-        <div class="group cursor-pointer flex flex-col" onclick="window.location.href='{{ url_for('public.book_detail', gid=book.id) }}';">
-            <div class="aspect-[2/3] bg-surface-container overflow-hidden rounded-xl shadow-md mb-4 relative">
-                <img src="{{ book.cover_url or book.cover or 'https://placehold.co/200x300/f8fafc/ea580c?text=كتاب' }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                <div class="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors flex items-center justify-center">
-                    <span class="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-primary backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-sm" data-icon="visibility">visibility</span></span>
+            <div class="px-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-8 h-[2px] bg-primary group-hover:w-16 transition-all duration-500"></span>
+                    <span class="text-primary font-black text-[10px] uppercase tracking-[0.3em]">{{ flist.count }}+ VOLUMES</span>
                 </div>
+                <h3 class="text-3xl font-black text-on-surface font-headline group-hover:text-primary transition-colors leading-tight mb-2 uppercase">{{ flist.title }}</h3>
+                <p class="text-on-surface-variant/60 text-sm font-medium line-clamp-1">Discover the definitive collection of {{ flist.title|lower }}.</p>
             </div>
-            <h4 class="font-bold text-on-surface text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">{{ book.title }}</h4>
-            <p class="text-on-surface-variant text-xs">{{ book.author }}</p>
         </div>
         {% endfor %}
     </div>
+
+    {% if featured_lists|length > 6 %}
+    <div class="mt-24 text-center">
+        <button class="px-12 py-5 bg-on-surface text-surface rounded-full font-black text-sm uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-2xl hover:-translate-y-1 active:scale-95">
+            Load More Series
+        </button>
+    </div>
+    {% endif %}
 </section>
 {% endif %}
+
+{# Section Removed #}
 

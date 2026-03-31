@@ -53,6 +53,8 @@ def _book_to_dict(book, source="Local", reason=None, extra_meta=None):
 
     cover_url = getattr(book, "cover_url", None)
     if cover_url:
+        if cover_url.startswith("http://"):
+            cover_url = "https://" + cover_url[7:]
         if 'books.google.com' in cover_url and '&edge=curl' in cover_url:
             cover_url = cover_url.replace('&edge=curl', '').replace('&edge=curl&', '&')
         if 'via.placeholder.com' in cover_url:
@@ -62,10 +64,16 @@ def _book_to_dict(book, source="Local", reason=None, extra_meta=None):
         "id": getattr(book, "google_id", None) or f"local_{book.id}",
         "title": getattr(book, "title", None),
         "author": getattr(book, "author", None),
+        "desc": getattr(book, "description", None),
         "cover": cover_url,
         "source": source,
         "reason": reason,
         "rating": getattr(book, "average_rating", None) or getattr(book, "rating", None),
+        "pageCount": getattr(book, "page_count", None),
+        "publishedDate": getattr(book, "published_date", None),
+        "isbn": getattr(book, "isbn", None),
+        "language": getattr(book, "language", None),
+        "categories": getattr(book, "categories", None).split(",") if (getattr(book, "categories", None) and isinstance(getattr(book, "categories", None), str)) else getattr(book, "categories", []),
     }
     
     # Add AI Metadata if provided

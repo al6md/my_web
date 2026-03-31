@@ -12,6 +12,11 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     onboarding_completed = db.Column(db.Boolean, default=False)  # هل اختار اهتماماته؟
     profile_picture = db.Column(db.String(500), nullable=True)  # مسار صورة الملف الشخصي
+    bio = db.Column(db.Text, nullable=True)  # نبذة عن المستخدم
+    reading_goal = db.Column(db.Integer, default=0)  # هدف القراءة السنوي
+    rank = db.Column(db.String(50), default="Novice Reader")  # رتبة المستخدم (مثلاً: قارئ مبتدئ، محترف، إلخ)
+    last_active_date = db.Column(db.Date, nullable=True)  # آخر تاريخ نشاط للمستخدم
+    current_streak = db.Column(db.Integer, default=0)  # سلسلة النشاط الحالية بالايام
 
 class Book(db.Model):
     __tablename__ = "books"

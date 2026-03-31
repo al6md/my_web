@@ -423,19 +423,65 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             # Combine all positive interaction book IDs
             interaction_ids = list(set(view_bids + rating_bids + status_bids))
             
-            behavioral_time = (time.perf_counter() - behavioral_start) * 1000
-            pipeline_log.log_stage("behavioral", time_ms=behavioral_time, results=len(interaction_ids))
+            # Capture User Search History semantics
+            from flask_book_recommendation.models import SearchHistory
+            from flask_book_recommendation.extensions import db
+            from flask_book_recommendation.utils import get_text_embedding, translate_to_english_with_gemini
+            from concurrent.futures import ThreadPoolExecutor, as_completed
             
-            if not interaction_ids:
-                pipeline_log.log_fallback(f"No interactions found for user {user_id} (views={len(view_bids)}, ratings={len(rating_bids)}, statuses={len(status_bids)})")
+            searches = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(5).all()
+            search_queries = [s.query for s in searches if s.query]
+            search_hists = []
+            
+            if search_queries:
+                def process_search(q):
+                    try:
+                        eng_query = translate_to_english_with_gemini(q) or q
+                        emb = get_text_embedding(eng_query)
+                        if emb and len(emb) == 384:
+                            return np.array(emb, dtype=np.float32)
+                    except Exception as e:
+                        logger.error(f"Error processing search query '{q}': {e}")
+                    return None
+
+                from concurrent.futures import wait, FIRST_COMPLETED
+                executor = ThreadPoolExecutor(max_workers=5)
+                try:
+                    future_to_query = {executor.submit(process_search, q): q for q in search_queries}
+                    # Wait for up to 8s
+                    done, not_done = wait(future_to_query.keys(), timeout=8)
+                    
+                    for future in done:
+                        try:
+                            res = future.result()
+                            if res is not None:
+                                search_hists.append(res)
+                        except Exception as e:
+                            logger.error(f"[DL-Rec] Search result error: {e}")
+                    
+                    if not_done:
+                        logger.warning(f"[DL-Rec] {len(not_done)} search processes timed out for user {user_id}")
+                finally:
+                    # shutdown(wait=False) is key: it won't wait for the hanging Gemini threads
+                    executor.shutdown(wait=False)
+                        
+            behavioral_time = (time.perf_counter() - behavioral_start) * 1000
+            
+            total_interactions = len(interaction_ids) + len(search_hists)
+            pipeline_log.log_stage("behavioral", time_ms=behavioral_time, results=total_interactions)
+            
+            if not interaction_ids and not search_hists:
+                pipeline_log.log_fallback(f"No interactions found for user {user_id} (views={len(view_bids)}, ratings={len(rating_bids)}, statuses={len(status_bids)}, searches=0)")
                 pipeline_log.set_final_count(0)
                 return get_trending(limit=limit)
                 
             embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(interaction_ids)).all()
             hists = [np.array(__import__("pickle").loads(e.vector) if isinstance(e.vector, bytes) else e.vector, dtype=np.float32) for e in embs if e.vector is not None]
             
+            hists.extend(search_hists)
+            
             if not hists:
-                pipeline_log.log_fallback(f"User {user_id} has {len(interaction_ids)} interactions but 0 matching embeddings")
+                pipeline_log.log_fallback(f"User {user_id} has interactions but 0 matching embeddings")
                 pipeline_log.set_final_count(0)
                 return get_trending(limit=limit)
                 

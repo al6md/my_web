@@ -37,7 +37,7 @@ except ImportError:
 
 # Model Imports
 from .models.collaborative_filtering import MatrixFactorization
-from .models.two_tower_v2 import TwoTowerV2
+from flask_book_recommendation.advanced_recommender.neural_model import TwoTowerModel
 from .models.graph_recommender import GraphRecommender
 from .models.neural_reranker import NeuralReranker
 from .models.context_ranker import ContextAwareRanker
@@ -126,6 +126,9 @@ class UnifiedRecommendationPipeline:
     executes the complete 9-step pipeline with no step skipped.
     """
 
+    # Class-level storage for last pipeline execution metadata
+    _last_pipeline_meta = {}
+
     def __init__(self, load_all_models: bool = True):
         logger.info("🚀 [Pipeline] Initializing UnifiedRecommendationPipeline...")
         start = time.time()
@@ -153,14 +156,31 @@ class UnifiedRecommendationPipeline:
 
         # 1. Ensemble Ranker — weighted fusion
         self.ensemble = EnsembleRanker(weights=EnsembleWeights(
-            two_tower=0.30,
-            graph=0.20,
-            collaborative=0.20,
+            collaborative=0.15,
+            two_tower=0.40,
             semantic=0.15,
-            popularity=0.10,
+            graph=0.10,
+            behavioral=0.15,  # Increased weighting for direct behavioral intent (searches/views)
+            popularity=0.05,
             diversity=0.03,
-            novelty=0.02,
+            novelty=0.02
         ))
+
+        # 1.5. Two-Tower Deep Learning Model
+        self.two_tower = TwoTowerModel()
+        tt_path = os.path.join(os.getcwd(), "instance", "models", "two_tower_model.pt")
+        if os.path.exists(tt_path):
+            try:
+                state = torch.load(tt_path, map_location=self.device, weights_only=True)
+                self.two_tower.load_state_dict(state)
+                self.two_tower.to(self.device).eval()
+                logger.info("✅ [Pipeline] Two-Tower model loaded")
+            except Exception as e:
+                logger.warning(f"⚠️ [Pipeline] Two-Tower model load failed: {e}")
+                self.two_tower = None
+        else:
+            logger.warning("⚠️ [Pipeline] Two-Tower model file not found")
+            self.two_tower = None
 
         # 2. Neural Reranker
         self.reranker = NeuralReranker(
@@ -228,6 +248,99 @@ class UnifiedRecommendationPipeline:
             except Exception as e:
                 logger.warning(f"⚠️ [Pipeline] Checkpoint {filename} failed: {e}")
 
+    def _get_real_user_embedding(self, user_id: int) -> np.ndarray:
+        """
+        Generate a real user embedding vector based on user history and TwoTower user_tower.
+        """
+        if not user_id or getattr(self, 'two_tower', None) is None or getattr(self, 'flask_app', None) is None:
+            return None
+            
+        try:
+            with self.flask_app.app_context():
+                from flask_book_recommendation.models import UserRatingCF, UserBookView, BookStatus, BookEmbedding, Book, SearchHistory
+                
+                recent_books = []
+                search_vectors = []
+                
+                from flask_book_recommendation.extensions import db
+                # 1. Fetch search history and convert to embeddings
+                searches = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(5).all()
+                if searches:
+                    from flask_book_recommendation.utils import get_text_embedding, translate_to_english_with_gemini
+                    for s in searches:
+                        if s.query:
+                            eng_query = translate_to_english_with_gemini(s.query) or s.query
+                            emb = get_text_embedding(eng_query)
+                            if emb and len(emb) == 384:
+                                search_vectors.append(np.array(emb, dtype=np.float32))
+                
+                # 2. Fetch Ratings
+                ratings = UserRatingCF.query.filter_by(user_id=user_id).order_by(UserRatingCF.created_at.desc()).limit(15).all()
+                for r in ratings:
+                    b = Book.query.filter_by(google_id=r.google_id).first()
+                    if b and b.id not in recent_books:
+                        recent_books.append(b.id)
+                
+                # 3. Fetch Views/Clicks
+                views = UserBookView.query.filter_by(user_id=user_id).order_by(UserBookView.last_viewed_at.desc()).limit(15).all()
+                for v in views:
+                    bid = v.book_id
+                    if not bid and v.google_id:
+                        b = Book.query.filter_by(google_id=v.google_id).first()
+                        if b: bid = b.id
+                    if bid and bid not in recent_books:
+                        recent_books.append(bid)
+                        
+                # 4. Fetch Book Statuses (Favorites)
+                statuses = BookStatus.query.filter_by(user_id=user_id).limit(10).all()
+                for s in statuses:
+                    if s.book_id not in recent_books:
+                        recent_books.append(s.book_id)
+                        
+                if not recent_books and not search_vectors:
+                    return None
+                    
+                embeds = []
+                if recent_books:
+                    embeds = BookEmbedding.query.filter(BookEmbedding.book_id.in_(recent_books[:10])).all()
+                
+                vectors = []
+                import pickle
+                for e in embeds:
+                    if e.vector is not None:
+                        v = pickle.loads(e.vector) if isinstance(e.vector, bytes) else e.vector
+                        v = np.array(v, dtype=np.float32)
+                        if v.shape == (384,):
+                            vectors.append(v)
+                            
+                all_vectors = vectors + search_vectors
+                            
+                if not all_vectors:
+                    # Return zeroed 128d vector if no history but model exists
+                    return np.zeros(128, dtype=np.float32)
+                    
+                hist = vectors[-10:] if vectors else search_vectors[-10:]
+                while len(hist) < 10:
+                    hist.append(np.zeros(384, dtype=np.float32))
+                hist_vec = np.array(hist)
+                
+                # Mean across all behavior vectors (clicks, ratings, statuses, AND searches)
+                int_vec = np.mean(np.array(all_vectors), axis=0) if all_vectors else np.zeros(384, dtype=np.float32)
+                
+                with torch.no_grad():
+                    u_tensor = torch.tensor([user_id % 10000], dtype=torch.long, device=self.device)
+                    hist_tensor = torch.tensor(np.array([hist_vec]), dtype=torch.float32, device=self.device)
+                    int_tensor = torch.tensor(np.array([int_vec]), dtype=torch.float32, device=self.device)
+                    
+                    user_input = (u_tensor, hist_tensor, int_tensor)
+                    u_emb = self.two_tower.user_tower(*user_input)
+                    return u_emb.squeeze(0).cpu().numpy()
+                    
+        except Exception as e:
+            logger.error(f"❌ [Pipeline] Error getting real user embedding: {e}")
+            # Ensure we return a 128d vector even on error for tensor compatibility
+            return np.zeros(128, dtype=np.float32)
+
     # ─────────────────────────────────────────────────────────────────────
     # MAIN PIPELINE: recommend_full_stack
     # ─────────────────────────────────────────────────────────────────────
@@ -257,6 +370,7 @@ class UnifiedRecommendationPipeline:
         pipeline_start = time.time()
         context = context or {}
         timings = {}
+        stage_meta = []  # Track metadata for each stage
 
         # ── Cache check ──
         cache_key = self._cache_key("full_stack", user_id, context)
@@ -272,62 +386,84 @@ class UnifiedRecommendationPipeline:
         candidates = self._step1_hybrid_retrieval(user_id)
         timings["retrieval"] = time.time() - t0
         logger.info(f"📥 [Step 1] Retrieved {len(candidates)} candidates in {timings['retrieval']:.3f}s")
+        stage_meta.append({"id": 1, "name": "Hybrid Retrieval", "name_ar": "الاسترجاع الهجين", "icon": "database", "color": "#6366f1", "time_ms": round(timings['retrieval']*1000, 1), "candidates_in": 0, "candidates_out": len(candidates), "model": "FAISS + CF + Content", "status": "done"})
 
         if not candidates:
             logger.warning("⚠️ [Pipeline] No candidates retrieved, returning empty")
             return []
 
+        # ── Pre-compute Real User Embedding for later steps ──
+        t_user_emb = time.time()
+        self.real_user_emb = self._get_real_user_embedding(user_id)
+        if self.real_user_emb is not None:
+            logger.info(f"👤 [Pipeline] Generated real user embedding in {time.time() - t_user_emb:.3f}s")
+        else:
+            logger.info("👤 [Pipeline] Using fallback/random user embedding")
+
         # ═══════════════════════════════════════════════════════════════
         # STEP 2: Two-Tower Scoring
         # ═══════════════════════════════════════════════════════════════
+        step2_in = len(candidates)
         t0 = time.time()
         candidates = self._step2_two_tower_scoring(candidates, user_id)
         timings["two_tower"] = time.time() - t0
         logger.info(f"🏗️  [Step 2] Two-Tower scoring in {timings['two_tower']:.3f}s")
+        stage_meta.append({"id": 2, "name": "Two-Tower Scoring", "name_ar": "التقييم ثنائي البرج", "icon": "account_tree", "color": "#8b5cf6", "time_ms": round(timings['two_tower']*1000, 1), "candidates_in": step2_in, "candidates_out": len(candidates), "model": "TwoTower v3.0", "status": "done"})
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 3: Transformer Contextual Encoding
         # ═══════════════════════════════════════════════════════════════
+        step3_in = len(candidates)
         t0 = time.time()
         candidates = self._step3_transformer_encoding(candidates)
         timings["transformer"] = time.time() - t0
         logger.info(f"🔤 [Step 3] Transformer encoding in {timings['transformer']:.3f}s")
+        stage_meta.append({"id": 3, "name": "Transformer Encoding", "name_ar": "ترميز المحولات", "icon": "memory", "color": "#a855f7", "time_ms": round(timings['transformer']*1000, 1), "candidates_in": step3_in, "candidates_out": len(candidates), "model": "Transformer 8H×2L", "status": "done"})
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 4: Graph-Based Boosting
         # ═══════════════════════════════════════════════════════════════
+        step4_in = len(candidates)
         t0 = time.time()
         candidates = self._step4_graph_boosting(candidates, user_id)
         timings["graph"] = time.time() - t0
         logger.info(f"🕸️  [Step 4] Graph boosting in {timings['graph']:.3f}s")
+        stage_meta.append({"id": 4, "name": "Graph Boosting", "name_ar": "تعزيز الرسم البياني", "icon": "hub", "color": "#d946ef", "time_ms": round(timings['graph']*1000, 1), "candidates_in": step4_in, "candidates_out": len(candidates), "model": "GraphRec GNN", "status": "done"})
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 5: Ensemble Weighted Fusion
         # ═══════════════════════════════════════════════════════════════
+        step5_in = len(candidates)
         t0 = time.time()
         candidates = self._step5_ensemble_fusion(candidates)
         timings["ensemble"] = time.time() - t0
         logger.info(f"🎼 [Step 5] Ensemble fusion in {timings['ensemble']:.3f}s")
+        stage_meta.append({"id": 5, "name": "Ensemble Fusion", "name_ar": "الدمج المتعدد", "icon": "merge", "color": "#ec4899", "time_ms": round(timings['ensemble']*1000, 1), "candidates_in": step5_in, "candidates_out": len(candidates), "model": "Weighted Ensemble", "status": "done"})
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 6: Neural Reranker Final Scoring
         # ═══════════════════════════════════════════════════════════════
+        step6_in = len(candidates)
         t0 = time.time()
         candidates = self._step6_neural_reranker(candidates, user_id)
         timings["reranker"] = time.time() - t0
         logger.info(f"🎯 [Step 6] Neural Reranker in {timings['reranker']:.3f}s")
+        stage_meta.append({"id": 6, "name": "Neural Reranker", "name_ar": "إعادة الترتيب العصبي", "icon": "neurology", "color": "#f43f5e", "time_ms": round(timings['reranker']*1000, 1), "candidates_in": step6_in, "candidates_out": len(candidates), "model": "NeuralReranker MLP", "status": "done"})
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 7: Context Ranker Reordering
         # ═══════════════════════════════════════════════════════════════
+        step7_in = len(candidates)
         t0 = time.time()
         candidates = self._step7_context_ranking(candidates, context)
         timings["context"] = time.time() - t0
         logger.info(f"🕐 [Step 7] Context ranking in {timings['context']:.3f}s")
+        stage_meta.append({"id": 7, "name": "Context Ranker", "name_ar": "ترتيب السياق", "icon": "schedule", "color": "#f97316", "time_ms": round(timings['context']*1000, 1), "candidates_in": step7_in, "candidates_out": len(candidates), "model": "ContextAwareRanker", "status": "done"})
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 8: Apply Online Learning Adjustments & Sort
         # ═══════════════════════════════════════════════════════════════
+        step8_in = len(candidates)
         t0 = time.time()
         for c in candidates:
             # Apply real-time learned preference adjustment
@@ -338,6 +474,7 @@ class UnifiedRecommendationPipeline:
         candidates.sort(key=lambda x: x.get("final_score", 0), reverse=True)
         candidates = candidates[:top_k]
         timings["sort_and_learn"] = time.time() - t0
+        stage_meta.append({"id": 8, "name": "Final Sort", "name_ar": "الترتيب النهائي", "icon": "sort", "color": "#eab308", "time_ms": round(timings['sort_and_learn']*1000, 1), "candidates_in": step8_in, "candidates_out": len(candidates), "model": "BPR Sort + Adjust", "status": "done"})
 
         # ═══════════════════════════════════════════════════════════════
         # STEP 9: Online Learning User Embedding Update
@@ -345,6 +482,7 @@ class UnifiedRecommendationPipeline:
         t0 = time.time()
         self._step9_online_learning_update(candidates, user_id, context)
         timings["online_learning"] = time.time() - t0
+        stage_meta.append({"id": 9, "name": "Online Learning", "name_ar": "التعلم الفوري", "icon": "model_training", "color": "#22c55e", "time_ms": round(timings['online_learning']*1000, 1), "candidates_in": len(candidates), "candidates_out": len(candidates), "model": "OnlineLearner v2", "status": "done"})
 
         # ── Format final output ──
         results = self._format_output(candidates)
@@ -354,6 +492,15 @@ class UnifiedRecommendationPipeline:
             f"✅ [Pipeline] Full stack completed: {len(results)} results in {total_time:.3f}s "
             f"| Timings: {json.dumps({k: round(v*1000, 1) for k, v in timings.items()})}ms"
         )
+
+        # ── Store pipeline metadata for frontend visualization ──
+        UnifiedRecommendationPipeline._last_pipeline_meta = {
+            "stages": stage_meta,
+            "total_time_ms": round(total_time * 1000, 1),
+            "final_books_count": len(results),
+            "timestamp": datetime.now().isoformat(),
+            "user_id": user_id,
+        }
 
         # ── Cache results ──
         self.cache.set(cache_key, results, ttl_seconds=120)
@@ -416,6 +563,23 @@ class UnifiedRecommendationPipeline:
                 _safe_source, "Trending",
                 _run_in_context, get_trending, limit=80
             )
+            
+            # 🔥 New: Direct search-query based retrieval for immediate behavior matching
+            from flask_book_recommendation.extensions import db
+            from flask_book_recommendation.models import SearchHistory
+            from flask_book_recommendation.utils import translate_to_english_with_gemini
+            searches = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(1).all()
+            logger.info(f"🔎 [Retrieval] Search history found: {len(searches)} entries for user {user_id}")
+            if searches and searches[0].query:
+                q_raw = searches[0].query
+                # Added timeout=3 to avoid 30s hangs
+                q = translate_to_english_with_gemini(q_raw, timeout=3) or q_raw
+                logger.info(f"🔎 [Retrieval] Injecting search query: '{q_raw}' -> '{q}'")
+                from .retrieval.hybrid_retrieval import get_vector_search_results
+                futures["Recent Search"] = self._executor.submit(
+                    _safe_source, "Recent Search",
+                    _run_in_context, get_vector_search_results, q, top_n=50
+                )
 
             for key, future in futures.items():
                 try:
@@ -477,14 +641,84 @@ class UnifiedRecommendationPipeline:
 
     def _step2_two_tower_scoring(self, candidates: List[Dict], user_id: Optional[int]) -> List[Dict]:
         """Step 2: Score all candidates with Two-Tower model embeddings."""
-        # Note: In a real production system, we would use the self.two_tower model.
-        # Here we blend existing scores with a "quality" signal to move away from random.
-        for c in candidates:
-            if "two_tower" not in c["scores"]:
-                # If we have real embeddings in the future, we'd use dot product here
-                base_score = np.mean([v for v in c["scores"].values()]) if c["scores"] else 0.5
-                tt_score = float(np.clip(base_score + 0.1, 0, 1)) # Slight optimistic boost
-                c["scores"]["two_tower"] = tt_score
+        try:
+            if getattr(self, 'two_tower', None) is None or getattr(self, 'flask_app', None) is None:
+                raise ValueError("TwoTower model not available")
+            
+            # If user embedding is missing or wrong shape, use a neutral one
+            u_emb = self.real_user_emb
+            if u_emb is None or u_emb.shape != (128,):
+                u_emb = np.zeros(128, dtype=np.float32)
+                
+            emb_map = {}
+            with self.flask_app.app_context():
+                bids = [c["book_id"] for c in candidates if c.get("book_id")]
+                if bids:
+                    from flask_book_recommendation.models import BookEmbedding, Book
+                    import pickle
+                    
+                    google_ids = [b for b in bids if isinstance(b, str) and not b.isdigit()]
+                    local_ids = [int(b) for b in bids if isinstance(b, int) or (isinstance(b, str) and b.isdigit())]
+                    
+                    # Map google_id to books.id
+                    google_to_local = {}
+                    local_to_google = {}
+                    if google_ids:
+                        mapped = Book.query.filter(Book.google_id.in_(google_ids)).all()
+                        for b in mapped:
+                            local_ids.append(b.id)
+                            google_to_local[b.google_id] = b.id
+                            local_to_google[b.id] = b.google_id
+                            
+                    local_ids = list(set(local_ids))
+                    rows = BookEmbedding.query.filter(BookEmbedding.book_id.in_(local_ids)).all()
+                    for r in rows:
+                        if r.vector is not None:
+                            vec = pickle.loads(r.vector) if isinstance(r.vector, bytes) else r.vector
+                            # Put it under local id
+                            emb_map[str(r.book_id)] = np.asarray(vec, dtype=np.float32)
+                            # And also under google id so candidate loop finds it
+                            if r.book_id in local_to_google:
+                                emb_map[local_to_google[r.book_id]] = np.asarray(vec, dtype=np.float32)
+                            
+            item_embs = []
+            valid_indices = []
+            for i, c in enumerate(candidates):
+                bid = str(c.get("book_id", ""))
+                if bid in emb_map and emb_map[bid].shape == (384,):
+                    item_embs.append(emb_map[bid])
+                    valid_indices.append(i)
+                    
+            if not item_embs:
+                raise ValueError("No item embeddings found")
+                
+            with torch.no_grad():
+                # Enforce float32 and check shape
+                u_array = np.array([u_emb], dtype=np.float32)
+                item_array = np.array(item_embs, dtype=np.float32)
+                
+                u_tensor = torch.tensor(u_array, device=self.device)
+                item_tensor = torch.tensor(item_array, device=self.device)
+                
+                item_tower_embs = self.two_tower.item_tower(item_tensor)
+                scores = (u_tensor * item_tower_embs).sum(dim=1).cpu().numpy()
+                
+            for idx, list_idx in enumerate(valid_indices):
+                score = float(np.clip(scores[idx], 0, 1))
+                candidates[list_idx]["scores"]["two_tower"] = score
+                
+            for i, c in enumerate(candidates):
+                if i not in valid_indices:
+                    base_score = np.mean([v for v in c["scores"].values()]) if c["scores"] else 0.5
+                    c["scores"]["two_tower"] = float(np.clip(base_score - 0.1, 0, 1))
+                    
+        except Exception as e:
+            logger.error(f"❌ [Step 2] Two-Tower fallback: {e}")
+            for c in candidates:
+                if "two_tower" not in c["scores"]:
+                    base_score = np.mean([v for v in c["scores"].values()]) if c["scores"] else 0.5
+                    c["scores"]["two_tower"] = float(np.clip(base_score + 0.1, 0, 1))
+                    
         return candidates
 
     def _step3_transformer_encoding(self, candidates: List[Dict]) -> List[Dict]:
@@ -595,13 +829,12 @@ class UnifiedRecommendationPipeline:
     def _step5_ensemble_fusion(self, candidates: List[Dict]) -> List[Dict]:
         """Step 5: Combine all model scores via weighted ensemble."""
         weights = {
-            "collaborative": 0.20,
-            "two_tower": 0.25,
-            "transformer": 0.18,
-            "graph": 0.12,
-            "content": 0.10,
-            "popularity": 0.08,
-            "behavioral": 0.07,
+            "collaborative": 0.15,
+            "two_tower": 0.40,
+            "semantic": 0.15,
+            "graph": 0.10,
+            "behavioral": 0.15,  # Real-time search/view boost
+            "popularity": 0.05,
         }
 
         for c in candidates:
@@ -634,15 +867,17 @@ class UnifiedRecommendationPipeline:
                 return candidates
 
             with torch.no_grad():
-                # Create user embedding (random if no trained model)
-                user_emb = torch.randn(1, 128, device=self.device) * 0.1
-                if user_id:
-                    # Seed with user_id for consistency
-                    rng = np.random.RandomState(user_id % (2**31))
-                    user_emb = torch.tensor(
-                        rng.randn(1, 128).astype(np.float32) * 0.1,
-                        device=self.device
-                    )
+                # Use real user embedding if available
+                if getattr(self, 'real_user_emb', None) is not None:
+                    user_emb = torch.tensor([self.real_user_emb], dtype=torch.float32, device=self.device)
+                else:
+                    user_emb = torch.randn(1, 128, device=self.device) * 0.1
+                    if user_id:
+                        rng = np.random.RandomState(user_id % (2**31))
+                        user_emb = torch.tensor(
+                            rng.randn(1, 128).astype(np.float32) * 0.1,
+                            device=self.device
+                        )
 
                 # Create item embeddings from transformer embeddings or scores
                 item_embs = []
@@ -704,7 +939,10 @@ class UnifiedRecommendationPipeline:
                 if n == 0:
                     return candidates
 
-                user_emb = torch.randn(1, 128, device=self.device) * 0.1
+                if getattr(self, 'real_user_emb', None) is not None:
+                    user_emb = torch.tensor([self.real_user_emb], dtype=torch.float32, device=self.device)
+                else:
+                    user_emb = torch.randn(1, 128, device=self.device) * 0.1
 
                 item_embs = []
                 base_scores_list = []
@@ -782,6 +1020,23 @@ class UnifiedRecommendationPipeline:
 
             # Decay exploration rate
             self.online_learner.decay_exploration()
+            
+            # 🔥 Persist updated embedding to DB (Step 9 Goal)
+            from flask_book_recommendation.models import UserEmbedding
+            from flask_book_recommendation.extensions import db
+            import pickle
+            
+            with self.flask_app.app_context():
+                ue = UserEmbedding.query.filter_by(user_id=user_id).first()
+                if not ue:
+                    ue = UserEmbedding(user_id=user_id, interaction_count=0)
+                    db.session.add(ue)
+                
+                # int_vec is 384d, u_emb is 128d. We store the latent 128d for future sessions.
+                ue.vector = pickle.dumps(self.real_user_emb)
+                ue.interaction_count += 1
+                db.session.commit()
+                logger.info(f"💾 [Step 9] Persisted updated user embedding for user {user_id}")
 
         except Exception as e:
             logger.error(f"❌ [Step 9] Online learning update failed: {e}")
@@ -924,18 +1179,37 @@ class UnifiedRecommendationPipeline:
         if "collaborative" in name or "cf" in name:
             return "collaborative"
         if "content" in name or "vector" in name:
-            return "content"
+            return "semantic"
         if "hybrid" in name or "semantic" in name:
-            return "content"
+            return "semantic"
         if "trending" in name or "popular" in name:
             return "popularity"
-        if "behavior" in name:
-            return "behavioral"
-        if "view" in name:
+        if "behavior" in name or "search" in name or "view" in name:
             return "behavioral"
         if "interest" in name:
             return "popularity"
         return "popularity"
+
+    @classmethod
+    def get_pipeline_meta(cls) -> Dict[str, Any]:
+        """Return the last pipeline execution metadata for frontend display."""
+        return cls._last_pipeline_meta or {
+            "stages": [
+                {"id": 1, "name": "Hybrid Retrieval", "name_ar": "الاسترجاع الهجين", "icon": "database", "color": "#6366f1", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "FAISS + CF", "status": "pending"},
+                {"id": 2, "name": "Two-Tower Scoring", "name_ar": "التقييم ثنائي البرج", "icon": "account_tree", "color": "#8b5cf6", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "TwoTower v3.0", "status": "pending"},
+                {"id": 3, "name": "Transformer Encoding", "name_ar": "ترميز المحولات", "icon": "memory", "color": "#a855f7", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "Transformer 8H×2L", "status": "pending"},
+                {"id": 4, "name": "Graph Boosting", "name_ar": "تعزيز الرسم البياني", "icon": "hub", "color": "#d946ef", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "GraphRec GNN", "status": "pending"},
+                {"id": 5, "name": "Ensemble Fusion", "name_ar": "الدمج المتعدد", "icon": "merge", "color": "#ec4899", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "Weighted Ensemble", "status": "pending"},
+                {"id": 6, "name": "Neural Reranker", "name_ar": "إعادة الترتيب العصبي", "icon": "neurology", "color": "#f43f5e", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "NeuralReranker MLP", "status": "pending"},
+                {"id": 7, "name": "Context Ranker", "name_ar": "ترتيب السياق", "icon": "schedule", "color": "#f97316", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "ContextAwareRanker", "status": "pending"},
+                {"id": 8, "name": "Final Sort", "name_ar": "الترتيب النهائي", "icon": "sort", "color": "#eab308", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "BPR Sort", "status": "pending"},
+                {"id": 9, "name": "Online Learning", "name_ar": "التعلم الفوري", "icon": "model_training", "color": "#22c55e", "time_ms": 0, "candidates_in": 0, "candidates_out": 0, "model": "OnlineLearner v2", "status": "pending"},
+            ],
+            "total_time_ms": 0,
+            "final_books_count": 0,
+            "timestamp": datetime.now().isoformat(),
+            "user_id": None,
+        }
 
     def _cache_key(self, strategy: str, user_id: Optional[int], context: Dict) -> str:
         """Generate a unique cache key."""

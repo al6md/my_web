@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Curatorial Oversight | The Digital Curator{% endblock %}
+{% block title %}Admin Dashboard | Elham{% endblock %}
 
 {% block content %}
 <main class="min-h-screen pt-32 bg-surface">
@@ -10,8 +10,8 @@
         <header class="flex flex-col md:flex-row justify-between items-end gap-8 pb-12 border-b border-on-surface/10">
             <div class="space-y-4">
                 <span class="font-label text-xs uppercase tracking-[0.6em] text-primary">System Administration</span>
-                <h1 class="font-headline text-7xl font-black tracking-tighter text-on-surface leading-none">Oversight</h1>
-                <p class="font-body text-on-surface-variant max-w-lg">Technical parameters and network activity monitoring for the digital archives.</p>
+                <h1 class="font-headline text-7xl font-black tracking-tighter text-on-surface leading-none">Dashboard</h1>
+                <p class="font-body text-on-surface-variant max-w-lg">Monitor system metrics and user activity across the platform.</p>
             </div>
             
             <div class="flex gap-4">
@@ -29,7 +29,7 @@
                     <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">analytics</span>
                     <div>
                         <h3 class="font-headline font-black text-xl">Metrics</h3>
-                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Network Vitals</p>
+                        <p class="font-label text-xs uppercase font-bold text-on-surface/30">System Vitals</p>
                     </div>
                 </div>
             </a>
@@ -37,8 +37,8 @@
                 <div class="space-y-6">
                     <span class="material-symbols-outlined text-4xl text-secondary group-hover:scale-110 transition-transform">inventory_2</span>
                     <div>
-                        <h3 class="font-headline font-black text-xl">Inventory</h3>
-                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Personal Folios</p>
+                        <h3 class="font-headline font-black text-xl">Library</h3>
+                        <p class="font-label text-xs uppercase font-bold text-on-surface/30">User Collections</p>
                     </div>
                 </div>
             </a>
@@ -46,8 +46,8 @@
                 <div class="space-y-6">
                     <span class="material-symbols-outlined text-4xl text-on-surface/40 group-hover:scale-110 transition-transform">fingerprint</span>
                     <div>
-                        <h3 class="font-headline font-black text-xl">Identity</h3>
-                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Curator Profile</p>
+                        <h3 class="font-headline font-black text-xl">Account</h3>
+                        <p class="font-label text-xs uppercase font-bold text-on-surface/30">Admin Profile</p>
                     </div>
                 </div>
             </a>
@@ -55,8 +55,8 @@
                 <div class="space-y-6">
                     <span class="material-symbols-outlined text-4xl text-on-surface/40 group-hover:scale-110 transition-transform">architecture</span>
                     <div>
-                        <h3 class="font-headline font-black text-xl">Frontier</h3>
-                        <p class="font-label text-[10px] uppercase font-bold text-on-surface/30">Return Home</p>
+                        <h3 class="font-headline font-black text-xl">Home</h3>
+                        <p class="font-label text-xs uppercase font-bold text-on-surface/30">Go to Homepage</p>
                     </div>
                 </div>
             </a>
@@ -66,55 +66,55 @@
         <section class="grid grid-cols-1 md:grid-cols-3 gap-12">
             <!-- Global Users -->
             <div class="bg-surface-container-low p-12 shadow-2xl space-y-8 relative overflow-hidden group">
-                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">NODES</div>
+                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">USERS</div>
                 <div class="flex justify-between items-start">
-                    <span class="font-label text-[10px] uppercase font-black text-primary tracking-widest leading-none">Active Nodes</span>
+                    <span class="font-label text-xs uppercase font-black text-primary tracking-widest leading-none">Total Users</span>
                     <span class="material-symbols-outlined text-primary/20">hub</span>
                 </div>
                 <h3 class="font-headline text-6xl font-black text-on-surface">{{ stats.total_users if stats else 0 }}</h3>
-                <div class="pt-4 border-t border-on-surface/5 flex items-center gap-2 text-[10px] font-black uppercase text-secondary">
+                <div class="pt-4 border-t border-on-surface/5 flex items-center gap-2 text-xs font-black uppercase text-secondary">
                     <span class="w-1.5 h-1.5 bg-secondary rounded-full animate-pulse"></span>
-                    Verified Identities
+                    Registered Accounts
                 </div>
             </div>
 
             <!-- Global Volumes -->
             <div class="bg-surface-container-low p-12 shadow-2xl space-y-8 relative overflow-hidden group">
-                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">FOLIOS</div>
+                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">BOOKS</div>
                 <div class="flex justify-between items-start">
-                    <span class="font-label text-[10px] uppercase font-black text-secondary tracking-widest leading-none">Cataloged Volumes</span>
+                    <span class="font-label text-xs uppercase font-black text-secondary tracking-widest leading-none">Total Books</span>
                     <span class="material-symbols-outlined text-secondary/20">menu_book</span>
                 </div>
                 <h3 class="font-headline text-6xl font-black text-on-surface">{{ stats.total_books if stats else 0 }}</h3>
-                <div class="pt-4 border-t border-on-surface/5 text-[10px] font-black uppercase text-on-surface/40">Architectural Complexity Scaled</div>
+                <div class="pt-4 border-t border-on-surface/5 text-xs font-black uppercase text-on-surface/40">Cataloged in Database</div>
             </div>
 
             <!-- Global Reviews -->
             <div class="bg-surface-container-low p-12 shadow-2xl space-y-8 relative overflow-hidden group">
-                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">LOGS</div>
+                <div class="absolute -top-12 -right-12 font-headline text-8xl font-black text-on-surface/[0.03] select-none pointer-events-none">REVIEWS</div>
                 <div class="flex justify-between items-start">
-                    <span class="font-label text-[10px] uppercase font-black text-on-surface/40 tracking-widest leading-none">Curatorial Annotations</span>
+                    <span class="font-label text-xs uppercase font-black text-on-surface/40 tracking-widest leading-none">User Reviews</span>
                     <span class="material-symbols-outlined text-on-surface/10" style="font-variation-settings: 'FILL' 1;">star</span>
                 </div>
                 <h3 class="font-headline text-6xl font-black text-on-surface">{{ stats.total_reviews if stats else 0 }}</h3>
-                <div class="pt-4 border-t border-on-surface/5 text-[10px] font-black uppercase text-on-surface/40">Network Intelligence Density</div>
+                <div class="pt-4 border-t border-on-surface/5 text-xs font-black uppercase text-on-surface/40">Community Activity</div>
             </div>
         </section>
 
         <!-- Historical Ledger (Activity) -->
         <section class="space-y-12">
             <div class="flex items-center justify-between pb-8 border-b border-on-surface/10">
-                <h2 class="font-headline text-4xl font-black tracking-tight text-on-surface">Historical Ledger</h2>
-                <span class="font-label text-[10px] uppercase font-bold text-on-surface/30">Sequential Action Tracking</span>
+                <h2 class="font-headline text-4xl font-black tracking-tight text-on-surface">Recent Activity</h2>
+                <span class="font-label text-xs uppercase font-bold text-on-surface/30">Latest system events</span>
             </div>
             
             <div class="bg-surface border border-on-surface/5 overflow-hidden">
                 <table class="w-full text-left font-body">
                     <thead>
                         <tr class="bg-surface-container-high border-b border-on-surface/10">
-                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface">Originating Node</th>
-                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface">Action Signature</th>
-                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface text-right">Verification</th>
+                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface">User</th>
+                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface">Action</th>
+                            <th class="px-12 py-6 font-headline font-black text-xs uppercase tracking-widest text-on-surface text-right">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-on-surface/5">
@@ -127,8 +127,8 @@
                                             {{ (activity.user_name or 'U')[0]|upper }}
                                         </div>
                                         <div>
-                                            <span class="font-headline font-black text-on-surface block">{{ activity.user_name or 'Unidentified Node' }}</span>
-                                            <span class="font-label text-[10px] uppercase font-bold text-on-surface/30">Authenticated Unit</span>
+                                            <span class="font-headline font-black text-on-surface block">{{ activity.user_name or 'Anonymous User' }}</span>
+                                            <span class="font-label text-xs uppercase font-bold text-on-surface/30">Active User</span>
                                         </div>
                                     </div>
                                 </td>
@@ -136,9 +136,9 @@
                                     {{ activity.action or 'System task executed' }}
                                 </td>
                                 <td class="px-12 py-8 text-right">
-                                    <span class="inline-flex items-center gap-2 px-6 py-2 bg-on-surface/5 text-on-surface/60 font-label text-[10px] uppercase font-black group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                    <span class="inline-flex items-center gap-2 px-6 py-2 bg-on-surface/5 text-on-surface/60 font-label text-xs uppercase font-black group-hover:bg-primary/10 group-hover:text-primary transition-all">
                                         <span class="w-1.5 h-1.5 bg-primary/40 rounded-full"></span>
-                                        Committed
+                                        Completed
                                     </span>
                                 </td>
                             </tr>
@@ -147,7 +147,7 @@
                             <tr>
                                 <td colspan="3" class="px-12 py-32 text-center text-on-surface/20 space-y-6">
                                     <span class="material-symbols-outlined text-6xl block">history</span>
-                                    <p class="font-headline font-bold text-xl">No ledger entries detected in the current epoch.</p>
+                                    <p class="font-headline font-bold text-xl">No activities found in the current period.</p>
                                 </td>
                             </tr>
                         {% endif %}

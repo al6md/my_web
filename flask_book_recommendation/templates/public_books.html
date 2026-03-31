@@ -79,17 +79,26 @@
 
         <!-- Book List Section -->
         <div class="flex-grow w-full">
-            {% if total > 0 or shown > 0 %}
-            <div id="book-list-container" class="flex flex-col gap-10" data-start="{{ start + per }}" data-per="{{ per }}" data-q="{{ q }}" data-cat="{{ cat }}">
-                {% set sources = [('Google', items), ('Gutenberg', gut_items), ('Archive', ia_items), ('OpenLib', ol_items), ('ITBook', it_items)] %}
-                {% for src_name, source in sources %}
-                    {% include "public_books_items.html" %}
-                {% endfor %}
+            {% if total > 0 or shown > 0 or deferred_load %}
+            <div id="book-list-container" class="flex flex-col gap-10" data-start="{{ start + (per if not deferred_load else 0) }}" data-per="{{ per }}" data-q="{{ q }}" data-cat="{{ cat }}">
+                {% if deferred_load %}
+                    <!-- Ghost / Loading Skeleton while fetching starts -->
+                    <div id="loading-skeleton" class="space-y-12 opacity-40 animate-pulse">
+                        <div class="h-64 bg-surface-container-high rounded-[2.5rem]"></div>
+                        <div class="h-64 bg-surface-container-high rounded-[2.5rem]"></div>
+                        <div class="h-64 bg-surface-container-high rounded-[2.5rem]"></div>
+                    </div>
+                {% else %}
+                    {% set sources = [('Google', items), ('Gutenberg', gut_items), ('Archive', ia_items), ('OpenLib', ol_items), ('ITBook', it_items)] %}
+                    {% for src_name, source in sources %}
+                        {% include "public_books_items.html" %}
+                    {% endfor %}
+                {% endif %}
             </div>
             
             <!-- Scroll Sentinel -->
             <div id="infinite-scroll-sentinel" class="h-40 flex flex-col items-center justify-center mt-12 mb-20 text-center">
-                <div id="loading-spinner" class="hidden flex flex-col items-center gap-6">
+                <div id="loading-spinner" class="{% if not deferred_load %}hidden{% endif %} flex flex-col items-center gap-6">
                     <div class="animate-spin rounded-full h-16 w-16 border-[5px] border-primary border-t-transparent shadow-xl"></div>
                     <p class="text-sm font-black text-primary uppercase tracking-[0.4em] opacity-40">Syncing more volumes...</p>
                 </div>
@@ -100,6 +109,7 @@
                     const container = document.getElementById('book-list-container');
                     const sentinel = document.getElementById('infinite-scroll-sentinel');
                     const spinner = document.getElementById('loading-spinner');
+                    const skeleton = document.getElementById('loading-skeleton');
                     
                     if (!container || !sentinel) return;
             
@@ -107,6 +117,8 @@
                     const per = parseInt(container.dataset.per);
                     const q = container.dataset.q;
                     const cat = container.dataset.cat;
+                    const deferred = {% if deferred_load %}true{% else %}false{% endif %};
+                    
                     let loading = false;
                     let exhausted = false;
             
@@ -133,6 +145,7 @@
                             url.searchParams.set('start', start);
                             url.searchParams.set('per', per);
                             url.searchParams.set('partial', '1');
+                            url.searchParams.set('async_load', '1'); // Ensure backend doesn't return shell
             
                             const response = await fetch(url);
                             if (!response.ok) throw new Error('Fetch failed');
@@ -140,11 +153,31 @@
                             const html = await response.text();
                             const trimmedHtml = html.trim();
                             
+                            // If we were in deferred mode and got results, remove skeleton
+                            if (deferred && skeleton) {
+                                skeleton.remove();
+                            }
+
                             if (!trimmedHtml || trimmedHtml.length < 100) { 
                                 exhausted = true;
                                 observer.disconnect();
-                                spinner.innerHTML = '<div class="h-px bg-outline/10 w-32 mx-auto mb-8"></div><p class="text-outline/30 font-black text-xs uppercase tracking-[0.5em]">Horizon Reached</p>';
-                                spinner.classList.remove('hidden');
+                                
+                                // Specific check: if no books found at ALL
+                                if (start === 0 && (!trimmedHtml || trimmedHtml.length < 50)) {
+                                    container.innerHTML = `
+                                        <div class="py-40 text-center bg-surface-container-low rounded-[3rem] border-4 border-dashed border-outline-variant/10 flex flex-col justify-center items-center">
+                                            <span class="material-symbols-outlined text-[10rem] text-outline-variant/20 mb-10">auto_stories</span>
+                                            <h3 class="text-4xl font-black text-on-surface mb-6 font-headline tracking-tighter uppercase">No matching results found</h3>
+                                            <p class="text-lg text-on-surface-variant max-w-md mx-auto font-medium opacity-60">
+                                                We couldn't find any matches for your selection in our archive. Please try different keywords.
+                                            </p>
+                                        </div>
+                                    `;
+                                    spinner.classList.add('hidden');
+                                } else {
+                                    spinner.innerHTML = '<div class="h-px bg-outline/10 w-32 mx-auto mb-8"></div><p class="text-outline/30 font-black text-xs uppercase tracking-[0.5em]">Horizon Reached</p>';
+                                    spinner.classList.remove('hidden');
+                                }
                             } else {
                                 container.insertAdjacentHTML('beforeend', trimmedHtml);
                                 start += per;
@@ -160,13 +193,13 @@
                 })();
             </script>
             
-            {% else %}
+            {% elif not deferred_load %}
             <!-- Empty State -->
             <div class="py-40 text-center bg-surface-container-low rounded-[3rem] border-4 border-dashed border-outline-variant/10 flex flex-col justify-center items-center">
                 <span class="material-symbols-outlined text-[10rem] text-outline-variant/20 mb-10">auto_stories</span>
-                <h3 class="text-4xl font-black text-on-surface mb-6 font-headline tracking-tighter uppercase" dir="rtl">لا توجد نتائج مطابقة</h3>
-                <p class="text-lg text-on-surface-variant max-w-md mx-auto font-medium opacity-60" dir="rtl">
-                    لم نتمكن من العثور على أية تطابقات لاختيارك ضمن الأرشيف. جرب توسيع معايير البحث.
+                <h3 class="text-4xl font-black text-on-surface mb-6 font-headline tracking-tighter uppercase">No matching results found</h3>
+                <p class="text-lg text-on-surface-variant max-w-md mx-auto font-medium opacity-60">
+                    We couldn't find any matches for your selection in our archive. Please try different keywords.
                 </p>
             </div>
             {% endif %}

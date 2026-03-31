@@ -1,593 +1,78 @@
 {% extends "base.html" %}
 
-{% block title %}{{ book.title }} | The Digital Curator{% endblock %}
+{% block title %}
+    {% if deferred_load %}Loading... | Elham{% else %}{{ book.title }} | Elham{% endif %}
+{% endblock %}
 
 {% block content %}
-<main class="pt-24 bg-background min-h-screen">
-    <!-- Hero Section -->
-    <section class="relative min-h-[819px] flex items-center overflow-hidden bg-gradient-to-br from-slate-900 via-[#30007c] to-[#6f26f6] text-white py-20 px-8">
-        <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDwgkC_cgKneCJu3L5F51pdugw_Kh-tpsSnvxSO6DiMRKAs0JIBdY2IJG9sKXmG3LtFd5s9daKUe9hO83VJftIB5gj_oiMWvRZyt0J3fAUmTzefj8Sd8LvQg4-nlEjqA8MmnT1H6Bq-Hf5GsBSSz-yFHv-xCCZDIlZ53BXD9sHuYu9kSTfR5A6Wbm-tgqQhhFXLRYuChQyteziY17Q1BCuDmLS_KY38_yDBeTMaCKiZVKziJ4UmDaKhmjHFVMABycHlc-7LooTZ9yI');"></div>
-        <div class="max-w-[1440px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center relative z-10">
-            <!-- Left: Book Cover -->
-            <div class="lg:col-span-5 relative group">
-                <div class="absolute -inset-4 bg-primary/20 blur-3xl rounded-full"></div>
-                <div class="relative transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-                    {% if book.cover %}
-                    <img alt="{{ book.title }}" class="rounded-lg shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] w-full max-w-md mx-auto aspect-[2/3] object-cover border-4 border-white/10" src="{{ book.cover }}" onerror="this.onerror=null; this.src='{{ url_for('public.generate_book_cover', title=book.title, author=book.author) }}';">
-                    {% else %}
-                    <img alt="{{ book.title }}" class="rounded-lg shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] w-full max-w-md mx-auto aspect-[2/3] object-cover border-4 border-white/10" src="{{ url_for('public.generate_book_cover', title=book.title, author=book.author) }}">
-                    {% endif %}
-                    <div class="absolute bottom-6 right-[-20px] bg-secondary px-6 py-3 rounded-xl shadow-xl animate-bounce">
-                        <p class="text-xs font-bold uppercase tracking-widest text-on-secondary">Digital Edition</p>
+<div id="book-detail-container" 
+     {% if deferred_load %}
+     hx-get="{{ url_for('public.book_detail', gid=gid, async_load=1) }}" 
+     hx-trigger="load" 
+     hx-swap="innerHTML"
+     {% endif %}>
+    
+    {% if deferred_load %}
+    <!-- Skeleton Loader -->
+    <main class="pt-24 bg-background min-h-screen animate-pulse">
+        <!-- Hero Skeleton -->
+        <section class="relative min-h-[819px] flex items-center overflow-hidden bg-slate-800 py-20 px-8">
+            <div class="max-w-[1440px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+                <div class="lg:col-span-5">
+                    <div class="w-full max-w-md mx-auto aspect-[2/3] bg-slate-700 rounded-lg shadow-2xl"></div>
+                </div>
+                <div class="lg:col-span-7 space-y-8">
+                    <div class="space-y-4">
+                        <div class="w-32 h-6 bg-slate-700 rounded-full"></div>
+                        <div class="w-full h-24 bg-slate-700 rounded-lg"></div>
+                        <div class="w-64 h-8 bg-slate-700 rounded-lg"></div>
+                    </div>
+                    <div class="w-full h-20 bg-slate-700 rounded-lg"></div>
+                    <div class="flex gap-8">
+                        <div class="w-24 h-12 bg-slate-700/50 rounded-lg"></div>
+                        <div class="w-24 h-12 bg-slate-700/50 rounded-lg"></div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="w-48 h-12 bg-slate-700 rounded-xl"></div>
+                        <div class="w-48 h-12 bg-slate-700 rounded-xl"></div>
                     </div>
                 </div>
             </div>
-            <!-- Right: Content -->
-            <div class="lg:col-span-7 space-y-8">
-                <div class="space-y-4">
-                    <div class="flex items-center gap-3">
-                        {% if book.categories %}
-                        {% set cats = book.categories if book.categories is iterable and book.categories is not string else [book.categories] %}
-                        <span class="px-4 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/20">{{ cats[0] }}</span>
-                        {% endif %}
-                        <div class="flex items-center text-tertiary-fixed">
-                            {% set display_rating = avg_rating if reviews else (book.rating or 4.5)|float %}
-                            {% for i in range(5) %}
-                            <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' {{ 1 if display_rating > i else 0 }};">star</span>
-                            {% endfor %}
-                            <span class="ml-2 text-white/80 text-sm">({{ display_rating }} Rating)</span>
-                        </div>
-                    </div>
-                    <h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-none">{{ book.title }}</h1>
-                    <p class="text-2xl text-primary-fixed font-medium">by {{ book.author or 'Unidentified' }}</p>
-                </div>
-                <div class="text-xl text-slate-300 max-w-2xl leading-relaxed line-clamp-3">
-                    {{ book.desc|striptags|truncate(250) if book.desc else 'A curated volume from the Digital Archive.' }}
-                </div>
-                <div class="flex items-center gap-8 py-4">
-                    <div>
-                        <p class="text-sm text-slate-400 uppercase tracking-widest font-bold">Volume</p>
-                        <p class="text-4xl font-black">{{ book.pageCount or '320' }} <span class="text-lg opacity-50">Pgs</span></p>
-                    </div>
-                    <div class="h-12 w-[1px] bg-white/20"></div>
-                    <div>
-                        <p class="text-sm text-slate-400 uppercase tracking-widest font-bold">Release</p>
-                        <p class="text-4xl font-black text-primary-fixed">{{ (book.publishedDate or '2024')[:4] }}</p>
+        </section>
+
+        <!-- Content Skeleton -->
+        <section class="max-w-[1440px] mx-auto px-8 -mt-16 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white rounded-xl p-12 shadow-xl border border-outline-variant/10 min-h-[600px]">
+                    <div class="w-48 h-8 bg-slate-200 rounded-full mb-8"></div>
+                    <div class="space-y-4">
+                        <div class="w-full h-4 bg-slate-100 rounded"></div>
+                        <div class="w-full h-4 bg-slate-100 rounded"></div>
+                        <div class="w-3/4 h-4 bg-slate-100 rounded"></div>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-4 pt-4">
-                    {% if book.preview %}
-                    <a href="{{ book.preview }}" target="_blank" class="bg-primary text-on-primary px-10 py-5 rounded-xl text-lg font-bold hover:shadow-[0_20px_40px_rgba(111,38,246,0.3)] transition-all active:scale-95 flex items-center gap-3">
-                        <span class="material-symbols-outlined">auto_stories</span>
-                        Inaugurate Session
-                    </a>
-                    {% endif %}
-                    
-                    {% if current_user.is_authenticated %}
-                    <button onclick="updateShelf(this, 'later')" id="btn-later" class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-5 rounded-xl text-lg font-bold hover:bg-white/20 transition-all active:scale-95 flex items-center gap-3">
-                        <span class="material-symbols-outlined">{{ 'check_circle' if current_status == 'later' else 'library_add' }}</span>
-                        {{ 'Archived in Library' if current_status == 'later' else 'Add to Library' }}
-                    </button>
-                    {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-10 py-5 rounded-xl text-lg font-bold hover:bg-white/20 transition-all active:scale-95 flex items-center gap-3">
-                        <span class="material-symbols-outlined">login</span>
-                        Authenticate to Archive
-                    </a>
-                    {% endif %}
+                <div class="space-y-8">
+                    <div class="bg-slate-200 rounded-xl h-64"></div>
+                    <div class="bg-slate-100 rounded-xl h-48"></div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Content Section -->
-    <section class="max-w-[1440px] mx-auto px-8 -mt-16 relative z-10">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Description Card -->
-            <div class="lg:col-span-2 bg-white rounded-xl p-12 shadow-xl border border-outline-variant/10">
-                <h2 class="text-3xl font-bold mb-8 flex items-center gap-4">
-                    <span class="w-12 h-1 bg-primary rounded-full"></span>
-                    Abstract Reconnaissance
-                </h2>
-                <div class="prose prose-lg text-on-surface-variant space-y-6 leading-relaxed selection:bg-primary/10">
-                    {{ book.desc|safe if book.desc else 'The archival record for this volume is currently being synthesized. Full telemetry will be integrated shortly.' }}
-                </div>
-                
-                <!-- AI HUB Interface -->
-                <div class="mt-16 pt-16 border-t border-slate-100">
-                    <h3 class="text-xl font-bold mb-8 flex items-center gap-3">
-                        <span class="material-symbols-outlined text-primary">psychology</span>
-                        Neural Interface Hub
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <button onclick="openChatModal()" class="flex items-center justify-between p-6 bg-surface-container-low hover:bg-surface-container-high rounded-xl transition-all group">
-                            <div class="text-left">
-                                <p class="font-bold text-on-surface">Semantic Dialogue</p>
-                                <p class="text-xs text-on-surface-variant">Inquire with Neural Engine</p>
-                            </div>
-                            <span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">chat_bubble</span>
-                        </button>
-                        <button onclick="generateSummary()" class="flex items-center justify-between p-6 bg-surface-container-low hover:bg-surface-container-high rounded-xl transition-all group">
-                            <div class="text-left">
-                                <p class="font-bold text-on-surface">Cognitive Synthesis</p>
-                                <p class="text-xs text-on-surface-variant">Condensed Data Extraction</p>
-                            </div>
-                            <span class="material-symbols-outlined text-secondary group-hover:scale-110 transition-transform">summarize</span>
-                        </button>
-                        <button onclick="openCoachModal()" class="md:col-span-2 flex items-center justify-between p-6 bg-primary/5 hover:bg-primary/10 rounded-xl transition-all group border border-primary/10">
-                            <div class="text-left">
-                                <p class="font-bold text-primary">Acquisition Protocol</p>
-                                <p class="text-xs text-primary/60">Strategic Reading Path Generator</p>
-                            </div>
-                            <span class="material-symbols-outlined text-primary group-hover:translate-x-1 transition-transform">auto_graph</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Meta Info Side Column -->
-            <div class="space-y-8">
-                <!-- Stats Grid -->
-                <div class="bg-primary text-on-primary rounded-xl p-8 shadow-lg">
-                    <h3 class="text-xl font-bold mb-6">Key Specifications</h3>
-                    <div class="grid grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Protocol</p>
-                            <p class="text-xl font-bold">Discovery</p>
-                        </div>
-                        <div>
-                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Language</p>
-                            <p class="text-xl font-bold">Global</p>
-                        </div>
-                        <div>
-                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Origin</p>
-                            <p class="text-lg font-bold leading-tight uppercase">{{ book.source or 'Google' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-primary-fixed text-xs font-bold uppercase tracking-widest">Status</p>
-                            <p class="text-lg font-bold leading-tight">Verified</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Author Spotlight -->
-                <div class="bg-white rounded-xl p-8 border border-outline-variant/10 shadow-lg">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary border border-primary/10">
-                            <span class="material-symbols-outlined text-3xl">person</span>
-                        </div>
-                        <div>
-                            <h4 class="font-bold">{{ book.author or 'Unidentified author' }}</h4>
-                            <p class="text-sm text-slate-500">Principal Contributor</p>
-                        </div>
-                    </div>
-                    <p class="text-sm text-on-surface-variant leading-relaxed mb-4">
-                        Curated intelligence volume indexed within the Digital Curator framework.
-                    </p>
-                    <a class="text-primary font-bold text-sm flex items-center gap-2 hover:gap-3 transition-all" href="#">
-                        View Author Portal
-                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                    </a>
-                </div>
-
-                <!-- Feedback / Reviews -->
-                <div class="bg-surface-container-low rounded-xl p-8 border border-outline-variant/5">
-                    <h3 class="font-bold text-on-surface mb-6 flex items-center justify-between">
-                        Voices of Inspiration
-                        {% if reviews %}
-                        <span class="text-xs font-normal text-on-surface-variant bg-surface-container px-2 py-1 rounded">{{ reviews|length }} Reviews</span>
-                        {% endif %}
-                    </h3>
-                    
-                    <div class="space-y-8 max-h-[400px] overflow-y-auto no-scrollbar pr-2">
-                        {% if reviews %}
-                            {% for review in reviews %}
-                            <div class="space-y-2 border-b border-on-surface/5 pb-6 last:border-0">
-                                <div class="flex text-secondary scale-75 origin-left mb-1">
-                                    {% for i in range(5) %}
-                                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' {{ 1 if review.rating > i else 0 }};">star</span>
-                                    {% endfor %}
-                                </div>
-                                <p class="text-sm italic text-on-surface-variant leading-relaxed">"{{ review.review_text }}"</p>
-                                <div class="flex items-center gap-2 mt-2">
-                                    <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                                        {{ review.user.name[0]|upper if review.user.name else '?' }}
-                                    </div>
-                                    <p class="text-[10px] font-bold text-slate-400">— {{ review.user.name }}</p>
-                                    <span class="text-[8px] text-slate-300 uppercase ml-auto">{{ review.created_at.strftime('%b %d, %Y') }}</span>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center py-12 opacity-40">
-                                <span class="material-symbols-outlined text-4xl mb-2">rate_review</span>
-                                <p class="text-xs italic">No echoes yet. Be the first to share your perspective.</p>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Submit Review Button -->
-                    <div class="mt-8 pt-8 border-t border-on-surface/10 text-center">
-                        {% if current_user.is_authenticated %}
-                            <button onclick="toggleReviewForm()" class="w-full py-4 bg-on-surface text-surface rounded-xl font-bold text-sm hover:bg-primary transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-sm">edit_note</span>
-                                {{ 'Edit Your Perspective' if user_review else 'Contribute a Review' }}
-                            </button>
-                        {% else %}
-                            <a href="{{ url_for('auth.login') }}" class="text-primary text-xs font-bold hover:underline">Authenticate to contribute a review</a>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Review Form -->
-                <div id="review-form-container" class="hidden bg-white rounded-xl p-8 border-2 border-primary/20 shadow-2xl animate-fade-in">
-                    <div class="flex justify-between items-center mb-6">
-                        <h4 class="font-black text-on-surface uppercase tracking-widest text-xs">Your Perspective</h4>
-                        <button onclick="toggleReviewForm()" class="text-slate-400 hover:text-on-surface"><span class="material-symbols-outlined text-sm">close</span></button>
-                    </div>
-                    <form action="{{ url_for('public.submit_review', gid=book.id) }}" method="POST" class="space-y-6">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <div class="flex items-center justify-center gap-4 py-4 bg-surface-container-low rounded-xl">
-                            {% for i in range(1, 6) %}
-                            <label class="cursor-pointer group">
-                                <input type="radio" name="rating" value="{{ i }}" class="hidden rating-input" {{ 'checked' if user_review and user_review.rating == i else '' }} required>
-                                <span class="material-symbols-outlined text-3xl text-slate-300 group-hover:text-secondary transition-colors rating-star" data-rating="{{ i }}" style="font-variation-settings: 'FILL' {{ 1 if user_review and user_review.rating >= i else 0 }}; {{ 'color: #ea580c !important;' if user_review and user_review.rating >= i else '' }}">star</span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                        <textarea name="review_text" rows="4" class="w-full bg-surface-container border-none p-6 rounded-xl font-body text-sm italic focus:ring-2 focus:ring-primary outline-none" placeholder="Share your intellectual findings..." required>{{ user_review.review_text if user_review else '' }}</textarea>
-                        <button type="submit" class="w-full py-5 bg-primary text-on-primary rounded-xl font-black text-xs uppercase tracking-widest hover:shadow-lg transition-all active:scale-95">
-                            Submit Protocol
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Related Books Section -->
-    {% if similar %}
-    <section class="max-w-[1440px] mx-auto px-8 py-24">
-        <div class="flex items-center justify-between mb-12">
-            <div>
-                <h2 class="text-4xl font-black tracking-tight">Expand Your Library</h2>
-                <p class="text-slate-500">Similar Nodes Detected</p>
-            </div>
-            <div class="flex gap-4">
-                <button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all shadow-sm">
-                    <span class="material-symbols-outlined">chevron_left</span>
-                </button>
-                <button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all shadow-sm">
-                    <span class="material-symbols-outlined">chevron_right</span>
-                </button>
-            </div>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-            {% for b in similar[:5] %}
-            <a href="{{ url_for('public.book_detail', gid=b.id) }}" class="group cursor-pointer">
-                <div class="aspect-[2/3] overflow-hidden rounded-lg mb-4 shadow-md group-hover:shadow-2xl transition-all group-hover:-translate-y-2 duration-300 relative bg-surface-container">
-                    <img alt="{{ b.title }}" class="w-full h-full object-cover" src="{{ b.cover or b.cover_url or 'https://placehold.co/300x450/fbfbe2/a04100?text=Node' }}">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-                <h4 class="font-bold group-hover:text-primary transition-colors truncate text-sm">{{ b.title }}</h4>
-                <p class="text-xs text-slate-500 truncate">{{ b.author or 'Unknown' }}</p>
-            </a>
-            {% endfor %}
-        </div>
-    </section>
+        </section>
+    </main>
+    {% else %}
+        {% include "public_book_detail_content.html" %}
     {% endif %}
-
-    <!-- Unified Modal Container -->
-    <div id="modalOverlay" class="fixed inset-0 bg-on-surface/90 backdrop-blur-3xl z-[100] hidden flex items-center justify-center p-8 transition-all duration-700 opacity-0 overflow-hidden">
-        <div id="modalContainer" class="bg-surface w-full max-w-3xl shadow-[0_100px_200px_rgba(0,0,0,0.5)] transform scale-95 transition-all duration-700 relative h-[85vh] md:h-auto md:max-h-[85vh] flex flex-col">
-            <!-- Content Injected Here -->
-        </div>
-    </div>
-</main>
+</div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    {% if book %}
-    const bookId = "{{ book.id }}";
-    const bookTitle = "{{ book.title | replace('\"', '\\\"') }}";
+    {% if not deferred_load %}
+        {% include "public_book_detail_scripts.html" %}
+    {% else %}
+        <script>
+            // Scripts will be loaded when hx-swap happens if we wrap them in a specific way, 
+            // but HTMX by default doesn't execute scripts in swapped content unless hx-ext="ajax-header" etc.
+            // Better: HTMX -will- execute <script> tags in the innerHTML swap.
+            // So I should ensure public_book_detail_content.html includes its scripts.
+        </script>
     {% endif %}
-    let chatHistory = [];
-
-    const overlay = document.getElementById('modalOverlay');
-    const container = document.getElementById('modalContainer');
-
-    function openModal(content) {
-        container.innerHTML = content;
-        overlay.classList.remove('hidden');
-        setTimeout(() => {
-            overlay.classList.remove('opacity-0');
-            container.classList.remove('scale-95');
-        }, 50);
-    }
-    
-    function closeModal() {
-        overlay.classList.add('opacity-0');
-        container.classList.add('scale-95');
-        setTimeout(() => {
-            overlay.classList.add('hidden');
-        }, 700);
-    }
-    
-    overlay.onclick = (e) => { if(e.target === overlay) closeModal(); };
-
-    function openChatModal() {
-        openModal(`
-            <div class="flex flex-col h-full bg-surface">
-                <div class="p-12 border-b border-on-surface/5 flex justify-between items-center bg-surface-container-low">
-                    <div class="space-y-2">
-                        <span class="font-label text-[8px] uppercase tracking-[0.6em] text-primary font-black">Neural Link Established</span>
-                        <h3 class="font-headline font-black text-2xl text-on-surface tracking-tighter uppercase whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">Node Discussion: ${bookTitle}</h3>
-                    </div>
-                    <button onclick="closeModal()" class="w-12 h-12 bg-on-surface text-white flex items-center justify-center hover:bg-primary transition-all shadow-2xl">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-                
-                <div id="chatMessages" class="flex-grow overflow-y-auto p-12 space-y-8 bg-surface no-scrollbar">
-                    <div class="flex justify-start">
-                        <div class="bg-surface-container-high p-8 max-w-[85%] border-r-4 border-primary">
-                            <p class="font-headline font-black text-[9px] uppercase tracking-widest text-primary mb-4">Neural Assistant</p>
-                            <p class="font-body text-lg text-on-surface/70 leading-relaxed italic">The analytic core is online. I have indexed the semantic structure of "${bookTitle}". How shall we proceed with the deconstruction?</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-8 bg-surface-container-high border-t border-on-surface/5">
-                    <div class="relative flex items-center gap-6">
-                        <input type="text" id="chatInput" placeholder="Enter Analytic Query..." 
-                            class="flex-grow bg-surface border-none p-6 font-headline font-black text-xs uppercase tracking-widest focus:ring-2 focus:ring-primary outline-none shadow-inner"/>
-                        <button onclick="sendChatMessage()" class="w-16 h-16 bg-on-surface text-white flex items-center justify-center transition-all shadow-2xl hover:bg-primary">
-                            <span class="material-symbols-outlined transform -scale-x-100">keyboard_arrow_left</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `);
-        document.getElementById('chatInput').onkeypress = (e) => { if(e.key === 'Enter') sendChatMessage(); };
-    }
-
-    async function sendChatMessage() {
-        const input = document.getElementById('chatInput');
-        const msg = input.value.trim();
-        if(!msg) return;
-        const chatBox = document.getElementById('chatMessages');
-        
-        chatBox.innerHTML += `
-            <div class="flex justify-end">
-                <div class="bg-on-surface text-white p-8 max-w-[85%] shadow-2xl relative">
-                    <div class="absolute right-0 top-0 w-1 h-full bg-primary/40"></div>
-                    <p class="font-body text-lg italic leading-relaxed">${msg}</p>
-                </div>
-            </div>`;
-        
-        input.value = '';
-        chatBox.scrollTop = chatBox.scrollHeight;
-        
-        const typingId = 'typing-' + Date.now();
-        chatBox.innerHTML += `
-            <div id="${typingId}" class="flex justify-start">
-                <div class="bg-surface-container-low p-8 flex items-center gap-4 border border-on-surface/5">
-                    <span class="w-1.5 h-1.5 bg-primary rounded-full animate-ping"></span>
-                    <span class="font-label text-[8px] uppercase tracking-widest text-on-surface/30">Analyzing Node...</span>
-                </div>
-            </div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        try {
-            const res = await fetch(`/public/books/${bookId}/chat`, { 
-                method: 'POST', 
-                headers:{'Content-Type':'application/json'}, 
-                body: JSON.stringify({message:msg, history:chatHistory}) 
-            });
-            const data = await res.json();
-            document.getElementById(typingId).remove();
-            
-            chatBox.innerHTML += `
-                <div class="flex justify-start">
-                    <div class="bg-surface-container-high p-8 max-w-[85%] border-r-4 border-primary">
-                        <p class="font-headline font-black text-[9px] uppercase tracking-widest text-primary mb-4">Neural Synthesis</p>
-                        <p class="font-body text-lg text-on-surface/70 leading-relaxed italic">${data.reply.replace(/\n/g, '<br>')}</p>
-                    </div>
-                </div>`;
-            
-            chatHistory.push({role:'user',content:msg},{role:'assistant',content:data.reply});
-            chatBox.scrollTop = chatBox.scrollHeight;
-        } catch(e) { 
-            document.getElementById(typingId).remove();
-            chatBox.innerHTML += `<div class="p-6 bg-primary/10 text-primary font-headline font-black text-[9px] uppercase tracking-widest text-center">Neural Link Dropout: Terminal Failure</div>`;
-        }
-    }
-
-    async function generateSummary() {
-        openModal(`
-            <div class="p-24 text-center space-y-12">
-                <div class="relative w-24 h-24 mx-auto">
-                    <div class="absolute inset-0 bg-primary/10 rounded-full animate-ping"></div>
-                    <div class="relative w-24 h-24 border-[12px] border-on-surface/5 border-t-primary rounded-full animate-spin"></div>
-                </div>
-                <div class="space-y-4">
-                    <h3 class="font-headline font-black text-3xl text-on-surface tracking-tighter uppercase font-black">Synthesizing Semantic Core</h3>
-                    <p class="font-label text-[10px] text-on-surface/30 uppercase tracking-[0.5em] font-black">Phase 1: Volume Deconstruction</p>
-                </div>
-            </div>
-        `);
-        try {
-            const res = await fetch(`/public/books/${bookId}/ai-summary`, {method:'POST'});
-            const data = await res.json();
-            openModal(`
-                <div class="flex flex-col h-full bg-surface">
-                    <div class="p-12 border-b border-on-surface/5 flex justify-between items-center bg-surface-container-low">
-                        <div class="space-y-2">
-                            <span class="font-label text-[8px] uppercase tracking-[0.6em] text-secondary font-black">Data Synthesis Complete</span>
-                            <h3 class="font-headline font-black text-2xl text-on-surface tracking-tighter uppercase whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">Abstract Reconnaissance</h3>
-                        </div>
-                        <button onclick="closeModal()" class="w-12 h-12 bg-on-surface text-white flex items-center justify-center hover:bg-primary transition-all shadow-2xl">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
-                    </div>
-                    <div class="flex-grow overflow-y-auto p-16 bg-surface no-scrollbar">
-                        <div class="max-w-prose mx-auto font-body text-xl text-on-surface/70 leading-relaxed italic border-r-8 border-on-surface/5 pr-12">
-                            ${data.summary.replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
-                </div>
-            `);
-        } catch(e) { 
-            closeModal();
-            alert('Analytical error during synthesis.'); 
-        }
-    }
-
-    function openCoachModal() {
-        openModal(`
-            <div class="p-16 space-y-16">
-                <div class="flex justify-between items-center">
-                    <div class="space-y-2">
-                        <span class="font-label text-[8px] uppercase tracking-[0.6em] text-primary font-black">Acquisition Protocol Config</span>
-                        <h3 class="font-headline font-black text-4xl text-on-surface tracking-tighter uppercase">Define Temporal Scope</h3>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-3 gap-8">
-                    ${[{d:7,l:'Rapid'}, {d:14,l:'Standard'}, {d:30,l:'Measured'}].map(p=>`
-                    <button onclick="generateReadingPlan(${p.d})" class="group bg-surface-container-high border-2 border-transparent p-10 transition-all hover:bg-on-surface hover:text-white flex flex-col items-center gap-2 shadow-2xl">
-                        <span class="font-headline font-black text-4xl group-hover:text-primary transition-colors">${p.d}</span>
-                        <span class="font-label text-[10px] uppercase font-black tracking-widest opacity-40 group-hover:opacity-100">${p.l} Pulse</span>
-                    </button>`).join('')}
-                </div>
-                
-                <div class="pt-12 border-t border-on-surface/5 space-y-8">
-                    <span class="font-label text-[9px] font-black text-on-surface/20 uppercase tracking-[0.4em]">Override Temporal Constraint:</span>
-                    <div class="flex gap-6">
-                        <input type="number" id="customDays" placeholder="7" class="w-32 bg-surface-container-high border-none p-6 font-headline font-black text-lg text-center outline-none focus:ring-2 focus:ring-primary shadow-inner"/>
-                        <button onclick="generateReadingPlan(document.getElementById('customDays').value)" class="flex-grow bg-on-surface text-white py-6 font-headline font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-primary transition-all">Initialize Blueprint</button>
-                    </div>
-                </div>
-            </div>
-        `);
-    }
-
-    async function generateReadingPlan(days) {
-        if(!days||days<1) return;
-        openModal(`
-            <div class="p-24 text-center space-y-12">
-                <div class="w-16 h-16 border-[8px] border-on-surface/5 border-t-primary rounded-full animate-spin mx-auto"></div>
-                <h3 class="font-headline font-black text-3xl text-on-surface tracking-tighter uppercase">Mapping Blueprint</h3>
-            </div>
-        `);
-        try {
-            const res = await fetch('/public/api/coach/plan', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({
-                    title:bookTitle,
-                    pages:parseInt("{{ book.pageCount or 320 }}"),
-                    days:parseInt(days)
-                })
-            });
-            const data = await res.json();
-            
-            let milestonesHTML = '';
-            if(data.schedule && data.schedule.length > 0) {
-                milestonesHTML = data.schedule.map(m=>`
-                    <div class="flex items-start gap-8 p-8 bg-surface-container-low border border-on-surface/5 group hover:bg-surface-container-high transition-all">
-                        <div class="w-16 h-16 bg-surface-container-high font-headline font-black text-xs flex items-center justify-center text-primary border border-on-surface/5 group-hover:bg-primary group-hover:text-white transition-all">DAY ${m.day}</div>
-                        <div class="flex-1 pt-2">
-                             <p class="font-body text-lg italic text-on-surface/70 leading-relaxed">${m.task}</p>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                milestonesHTML = `<div class="p-12 bg-surface-container-low text-on-surface/40 font-body text-xl italic text-center">Neural logic failed to generate specific milestones.</div>`;
-            }
-            
-            openModal(`
-                <div class="flex flex-col h-full bg-surface">
-                    <div class="p-12 border-b border-on-surface/5 flex justify-between items-center bg-surface-container-low">
-                        <div class="space-y-2">
-                            <span class="font-label text-[8px] uppercase tracking-[0.6em] text-primary font-black">Acquisition Blueprint Generated</span>
-                            <h3 class="font-headline font-black text-2xl text-on-surface tracking-tighter uppercase">Temporal Path: ${days} Units</h3>
-                        </div>
-                        <button onclick="closeModal()" class="w-12 h-12 bg-on-surface text-white flex items-center justify-center hover:bg-primary transition-all shadow-2xl">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
-                    </div>
-                    <div class="flex-grow overflow-y-auto p-12 space-y-6 bg-surface no-scrollbar">
-                        ${milestonesHTML}
-                    </div>
-                    ${data.advice ? `
-                    <div class="p-12 border-t border-on-surface/5 bg-surface-container-low">
-                        <div class="flex items-start gap-6">
-                            <span class="material-symbols-outlined text-primary text-3xl">light_mode</span>
-                            <p class="font-body text-lg text-on-surface/60 italic leading-relaxed">${data.advice}</p>
-                        </div>
-                    </div>` : ''}
-                </div>
-            `);
-        } catch(e) { closeModal(); alert('Blueprint generation failure.'); }
-    }
-
-    async function updateShelf(btn, status) {
-        const isAuth = {{ 'true' if current_user.is_authenticated else 'false' }};
-        if(!isAuth) return window.location.href = "{{ url_for('auth.login') }}";
-        
-        const originalHTML = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-outlined animate-spin mr-4">sync</span> Syncing Telemetry';
-        
-        try {
-            const res = await fetch(`{{ url_for('public.add_to_shelf', gid=book.id, status='') }}${status}`, {method:'POST'});
-            const data = await res.json();
-            if(data.success) {
-                window.location.reload();
-            } else { 
-                alert('Synchronization Failed'); 
-                btn.disabled=false; 
-                btn.innerHTML = originalHTML;
-            }
-        } catch(e) { 
-            alert('Analytic Stream Error'); 
-            btn.disabled=false; 
-            btn.innerHTML = originalHTML;
-        }
-    }
-
-    function toggleReviewForm() {
-        const container = document.getElementById('review-form-container');
-        container.classList.toggle('hidden');
-        if (!container.classList.contains('hidden')) {
-            container.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }
-
-    document.querySelectorAll('.rating-star').forEach(star => {
-        star.parentElement.onmouseenter = () => {
-            const r = parseInt(star.dataset.rating);
-            document.querySelectorAll('.rating-star').forEach(s => {
-                if (parseInt(s.dataset.rating) <= r) {
-                    s.style.fontVariationSettings = "'FILL' 1";
-                    s.style.color = "#ea580c";
-                }
-            });
-        };
-        star.parentElement.onmouseleave = () => {
-            const checked = document.querySelector('.rating-input:checked');
-            const r = checked ? parseInt(checked.value) : 0;
-            document.querySelectorAll('.rating-star').forEach(s => {
-                if (parseInt(s.dataset.rating) <= r) {
-                    s.style.fontVariationSettings = "'FILL' 1";
-                    s.style.color = "#ea580c";
-                } else {
-                    s.style.fontVariationSettings = "'FILL' 0";
-                    s.style.color = "";
-                }
-            });
-        };
-    });
-</script>
 {% endblock %}

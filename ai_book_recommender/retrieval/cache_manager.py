@@ -200,12 +200,24 @@ class CacheManager:
         self.backend = backend
         self.default_ttl = default_ttl
         
+        self.backend = backend
+        self.default_ttl = default_ttl
+        
         if backend == "redis":
-            self._cache = RedisCache(url=redis_url)
+            try:
+                import redis
+                # Quick connection check
+                test_client = redis.from_url(redis_url, socket_connect_timeout=1)
+                test_client.ping()
+                self._cache = RedisCache(url=redis_url)
+                logger.info(f"CacheManager initialized with redis backend at {redis_url}")
+            except Exception as e:
+                logger.warning(f"⚠️ CacheManager: Redis connection failed ({e}). Falling back to memory backend.")
+                self.backend = "memory"
+                self._cache = MemoryCache(max_size=max_memory_size)
         else:
             self._cache = MemoryCache(max_size=max_memory_size)
-        
-        logger.info(f"CacheManager initialized with {backend} backend")
+            logger.info("CacheManager initialized with memory backend")
     
     @staticmethod
     def make_key(*args, **kwargs) -> str:

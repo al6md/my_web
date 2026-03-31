@@ -1,11 +1,12 @@
 import os
 import uuid
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from datetime import datetime, timedelta
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from ..extensions import db, csrf, cache
-from ..models import User, UserPreference, BookReview
+from ..models import User, UserPreference, BookReview, BookStatus, UserBookView, Book
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -157,34 +158,10 @@ def profile():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip().lower()
+        bio = (request.form.get("bio") or "").strip()
+        reading_goal = request.form.get("reading_goal")
         current_password = request.form.get("current_password") or ""
         new_password = request.form.get("new_password") or ""
-        
-        # معالجة صورة الملف الشخصي
-        if 'profile_picture' in request.files:
-            file = request.files['profile_picture']
-            if file and file.filename and allowed_file(file.filename):
-                # إنشاء اسم فريد للملف
-                ext = file.filename.rsplit('.', 1)[1].lower()
-                filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
-                
-                # مسار الحفظ
-                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
-                os.makedirs(upload_folder, exist_ok=True)
-                
-                # حذف الصورة القديمة إن وجدت
-                if current_user.profile_picture:
-                    old_path = os.path.join(current_app.root_path, 'static', current_user.profile_picture.lstrip('/static/'))
-                    if os.path.exists(old_path):
-                        try:
-                            os.remove(old_path)
-                        except:
-                            pass
-                
-                # حفظ الصورة الجديدة
-                filepath = os.path.join(upload_folder, filename)
-                file.save(filepath)
-                current_user.profile_picture = f"/static/uploads/profiles/{filename}"
         
         # تحديث الاسم
         if name and name != current_user.name:
@@ -192,36 +169,150 @@ def profile():
         
         # تحديث البريد الإلكتروني
         if email and email != current_user.email:
-            # تحقق من عدم وجود البريد لمستخدم آخر
             existing = User.query.filter_by(email=email).first()
             if existing and existing.id != current_user.id:
                 flash("هذا البريد الإلكتروني مستخدم بالفعل", "error")
                 return redirect(url_for("auth.profile"))
             current_user.email = email
+            
+        # تحديث النبذة الشخصية
+        current_user.bio = bio
+        
+        # تحديث هدف القراءة
+        if reading_goal:
+            try:
+                current_user.reading_goal = int(reading_goal)
+            except ValueError:
+                pass
+        
+        # معالجة صورة الملف الشخصي
+        if 'profile_picture' in request.files:
+            file = request.files['profile_picture']
+            if file and file.filename and allowed_file(file.filename):
+                ext = file.filename.rsplit('.', 1)[1].lower()
+                filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
+                os.makedirs(upload_folder, exist_ok=True)
+                if current_user.profile_picture:
+                    old_path = os.path.join(current_app.root_path, 'static', current_user.profile_picture.lstrip('/static/'))
+                    if os.path.exists(old_path):
+                        try: os.remove(old_path)
+                        except: pass
+                filepath = os.path.join(upload_folder, filename)
+                file.save(filepath)
+                current_user.profile_picture = f"/static/uploads/profiles/{filename}"
         
         # تغيير كلمة المرور
         if new_password:
             if not current_password:
                 flash("أدخل كلمة المرور الحالية", "error")
                 return redirect(url_for("auth.profile"))
-            
             if not check_password_hash(current_user.password_hash, current_password):
                 flash("كلمة المرور الحالية غير صحيحة", "error")
                 return redirect(url_for("auth.profile"))
-            
             current_user.password_hash = generate_password_hash(new_password)
+        
+        # تحديث الرتبة بناءً على الإنجازات
+        finished_count = BookStatus.query.filter_by(user_id=current_user.id, status='finished').count()
+        if finished_count >= 50: current_user.rank = "Legendary Reader"
+        elif finished_count >= 20: current_user.rank = "Elite Bibliophile"
+        elif finished_count >= 10: current_user.rank = "Avid Reader"
+        elif finished_count >= 5: current_user.rank = "Dedicated Explorer"
+        else: current_user.rank = "Novice Reader"
         
         db.session.commit()
         flash("تم تحديث معلومات الحساب بنجاح ✅", "success")
         return redirect(url_for("auth.profile"))
     
-    # جلب اهتمامات المستخدم
-    interests = UserPreference.query.filter_by(user_id=current_user.id).all()
-    
     # جلب المراجعات الخاصة بالمستخدم
     user_reviews = current_user.reviews.order_by(BookReview.created_at.desc()).limit(6).all()
     
-    return render_template("profile.html", interests=interests, user_reviews=user_reviews)
+    # === تحديث سلسلة النشاط (Reading Streak) ===
+    today = datetime.utcnow().date()
+    if not current_user.last_active_date:
+        current_user.current_streak = 1
+        current_user.last_active_date = today
+    else:
+        last_active = current_user.last_active_date
+        delta = (today - last_active).days
+        
+        if delta == 1:
+            # النشاط كان بالأمس، نزيد السلسلة
+            current_user.current_streak += 1
+            current_user.last_active_date = today
+        elif delta > 1:
+            # انقطاع النشاط لأكثر من يوم، نعيد السلسلة إلى 1
+            current_user.current_streak = 1
+            current_user.last_active_date = today
+        # إذا كان delta == 0 (النشاط اليوم)، لا نفعل شيئاً
+    
+    db.session.commit()
+    
+    # === إحصائيات القراءة ===
+    total_books = BookStatus.query.filter_by(user_id=current_user.id).count()
+    books_finished = BookStatus.query.filter_by(user_id=current_user.id, status='finished').count()
+    books_reading = BookStatus.query.filter_by(user_id=current_user.id, status='reading').count()
+    books_later = BookStatus.query.filter_by(user_id=current_user.id, status='later').count()
+    books_favorite = BookStatus.query.filter_by(user_id=current_user.id, status='favorite').count()
+    total_reviews = current_user.reviews.count()
+    
+    # عدد الكتب المشاهدة
+    total_views = UserBookView.query.filter_by(user_id=current_user.id).count()
+    
+    # حساب مدة العضوية
+    member_since = current_user.created_at or datetime.utcnow()
+    days_member = (datetime.utcnow() - member_since).days
+    
+    # آخر الكتب المشاهدة
+    recent_views = (
+        db.session.query(UserBookView, Book)
+        .join(Book, UserBookView.book_id == Book.id, isouter=True)
+        .filter(UserBookView.user_id == current_user.id)
+        .order_by(UserBookView.last_viewed_at.desc())
+        .limit(8)
+        .all()
+    )
+    
+    # حساب متوسط التقييم
+    avg_rating = None
+    if total_reviews > 0:
+        from sqlalchemy import func
+        avg_result = db.session.query(func.avg(BookReview.rating)).filter_by(user_id=current_user.id).scalar()
+        avg_rating = round(float(avg_result), 1) if avg_result else None
+    
+    stats = {
+        'total_books': total_books,
+        'books_finished': books_finished,
+        'books_reading': books_reading,
+        'books_later': books_later,
+        'books_favorite': books_favorite,
+        'total_reviews': total_reviews,
+        'total_views': total_views,
+        'days_member': days_member,
+        'member_since': member_since,
+        'avg_rating': avg_rating,
+        'streak': current_user.current_streak
+    }
+    
+    return render_template("profile.html", user_reviews=user_reviews, stats=stats, recent_views=recent_views)
+
+
+# إزالة صورة البروفايل
+@auth_bp.route("/profile/remove-picture", methods=["POST"])
+@login_required
+def remove_profile_picture():
+    if current_user.profile_picture:
+        # حذف الملف القديم
+        old_path = os.path.join(current_app.root_path, 'static', current_user.profile_picture.lstrip('/static/'))
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except Exception:
+                pass
+        current_user.profile_picture = None
+        db.session.commit()
+        flash("Profile picture removed successfully", "success")
+    return redirect(url_for("auth.profile"))
 
 # مستخدم تجريبي جاهز للاختبار
 @auth_bp.route("/seed/demo")

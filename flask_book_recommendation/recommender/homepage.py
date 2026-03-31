@@ -5,7 +5,7 @@ Homepage sections — get_homepage_sections, get_discovery_picks, get_all_librar
 import logging
 import random
 
-from ..extensions import cache
+from ..extensions import cache, db
 from ..utils import (
     fetch_google_books, fetch_gutenberg_books,
     fetch_openlib_books, fetch_archive_books,
@@ -54,7 +54,7 @@ def get_user_context(user_id) -> dict:
             unfinished = [s for s in statuses if s.reading_progress and 0 < s.reading_progress < 100]
             has_unfinished = len(unfinished) > 0
 
-            last_search = SearchHistory.query.filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).first()
+            last_search = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).first()
             if last_search and last_search.query:
                 last_genre = last_search.query
             else:

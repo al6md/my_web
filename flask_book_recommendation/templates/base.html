@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://books.google.com" crossorigin>
     
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries,typography,aspect-ratio"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
     <!-- Performance: Reduced font weights (removed 500/600 unused), added display=swap -->
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
     <!-- Performance: Lazy-load Material Symbols (heavy ~300KB font) -->
@@ -91,15 +92,36 @@
             display: inline-block;
             vertical-align: middle;
         }
-        html { font-size: 112.5% !important; } /* 18px base - unified, removed duplicate from html tag */
+        html { font-size: 125% !important; } /* Increased base font size (20px) */
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         h1, h2, h3 { font-family: 'Be Vietnam Pro', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Instant Loading SPA Progress Bar */
+        #global-loader {
+            position: fixed; top: 0; left: 0; height: 4px; width: 0%;
+            background: linear-gradient(90deg, #6f26f6, #9e79ff);
+            z-index: 99999;
+            opacity: 0;
+            transition: width 300ms ease-out, opacity 100ms ease-out;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(111,38,246,0.5);
+        }
+        .htmx-request #global-loader {
+            opacity: 1;
+            width: 80%;
+            transition: width 2s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 100ms ease-in;
+        }
+
+
     </style>
     {% block head %}{% endblock %}
 </head>
-<body class="bg-background font-body text-on-background selection:bg-primary-container selection:text-on-primary-container antialiased">
+<body hx-boost="true" class="bg-background font-body text-on-background selection:bg-primary-container selection:text-on-primary-container antialiased">
+    <!-- Global SPA Loading Indicator -->
+    <div id="global-loader"></div>
+
     
     <!-- Flash Messages Container -->
     <div class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 pointer-events-none">
@@ -126,7 +148,7 @@
                 <div class="hidden md:flex items-center gap-4">
                     <a class="px-6 py-3 rounded-xl text-xl font-bold transition-all {{ 'bg-primary text-white shadow-lg shadow-primary/20' if request.endpoint == 'main.home' else 'text-on-surface-variant hover:bg-primary hover:text-white' }}" href="{{ url_for('main.home') }}">Discover</a>
                     <a class="px-6 py-3 rounded-xl text-xl font-bold transition-all {{ 'bg-primary text-white shadow-lg shadow-primary/20' if request.endpoint == 'public.list_books' else 'text-on-surface-variant hover:bg-primary hover:text-white' }}" href="{{ url_for('public.list_books') }}">Public Library</a>
-                    <a class="px-6 py-3 rounded-xl text-xl font-bold transition-all {{ 'bg-primary text-white shadow-lg shadow-primary/20' if request.endpoint == 'main.books' else 'text-on-surface-variant hover:bg-primary hover:text-white' }}" href="{{ url_for('main.books') }}">Personal Library</a>
+                    <a class="px-6 py-3 rounded-xl text-xl font-bold transition-all {{ 'bg-primary text-white shadow-lg shadow-primary/20' if request.endpoint == 'main.books' else 'text-on-surface-variant hover:bg-primary hover:text-white' }}" href="{{ url_for('main.books') }}">My Book</a>
                 </div>
             </div>
             <div class="flex items-center gap-5">
@@ -145,7 +167,7 @@
                     {% else %}
                         <a href="{{ url_for('auth.login') }}" class="text-on-surface-variant font-bold text-sm hover:text-primary transition-colors mx-2">Login</a>
                         <a href="{{ url_for('auth.register') }}" class="ml-2 px-6 py-2.5 bg-primary text-on-primary rounded-full font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all">
-                            Subscribe
+                            Register
                         </a>
                     {% endif %}
                 </div>

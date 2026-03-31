@@ -36,26 +36,50 @@ class UserEmbeddingManager:
                 logger.debug(f"No vector found for book {book_id or google_id}")
                 return False
 
-            new_vector = np.array(book_emb.vector)
+            import pickle
+            
+            # De-serialize the vector
+            vec_data = book_emb.vector
+            if isinstance(vec_data, bytes):
+                vec_data = pickle.loads(vec_data)
+            elif isinstance(vec_data, str):
+                import json
+                try:
+                    vec_data = json.loads(vec_data)
+                except:
+                    vec_data = eval(vec_data)
+                    
+            new_vector = np.array(vec_data, dtype=np.float32)
 
             # 2. Get/Create User Embedding
             user_emb = UserEmbedding.query.filter_by(user_id=user_id).first()
             if not user_emb:
                 user_emb = UserEmbedding(
                     user_id=user_id,
-                    vector=new_vector,
+                    vector=pickle.dumps(new_vector.tolist()),
                     interaction_count=1
                 )
                 db.session.add(user_emb)
             else:
                 # update using running mean
                 n = user_emb.interaction_count
-                old_vector = np.array(user_emb.vector)
+                
+                u_vec_data = user_emb.vector
+                if isinstance(u_vec_data, bytes):
+                    u_vec_data = pickle.loads(u_vec_data)
+                elif isinstance(u_vec_data, str):
+                    import json
+                    try:
+                        u_vec_data = json.loads(u_vec_data)
+                    except:
+                        u_vec_data = eval(u_vec_data)
+                
+                old_vector = np.array(u_vec_data, dtype=np.float32)
                 
                 # running mean formula
                 updated_vector = (old_vector * n + new_vector) / (n + 1)
                 
-                user_emb.vector = updated_vector
+                user_emb.vector = pickle.dumps(updated_vector.tolist())
                 user_emb.interaction_count = n + 1
             
             db.session.commit()

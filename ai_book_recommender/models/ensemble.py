@@ -24,12 +24,13 @@ logger = logging.getLogger(__name__)
 class EnsembleWeights:
     """Default weights for ensemble components."""
     two_tower: float = 0.30
-    graph: float = 0.20
+    graph: float = 0.15
     collaborative: float = 0.15
     semantic: float = 0.15
-    popularity: float = 0.10
-    diversity: float = 0.05
-    novelty: float = 0.05
+    behavioral: float = 0.15
+    popularity: float = 0.05
+    diversity: float = 0.03
+    novelty: float = 0.02
 
 
 class EnsembleRanker:
@@ -106,6 +107,7 @@ class EnsembleRanker:
             "graph": self.weights.graph,
             "collaborative": self.weights.collaborative,
             "semantic": self.weights.semantic,
+            "behavioral": self.weights.behavioral,
             "popularity": self.weights.popularity,
         }
         

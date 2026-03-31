@@ -118,7 +118,7 @@ def analyze_user_profile_with_ai(user_id):
         
         ratings = UserRatingCF.query.filter_by(user_id=user_id).filter(UserRatingCF.rating >= 4).limit(10).all()
 
-        searches = SearchHistory.query.filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(10).all()
+        searches = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(10).all()
         search_terms = [s.query for s in searches if s.query]
 
         if not viewed_books and not search_terms:

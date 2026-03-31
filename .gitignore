@@ -1,32 +1,47 @@
-venv/
+# Python
 __pycache__/
-*.pyc
-.env
-instance/
-.pytest_cache/
-.DS_Store
-*.db
-*.log
-.vscode/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Project Specific Data and Debug Files
-BX-CSV-Dump.zip
-bx_data/
-ai_engine/data/
-debug_*.py
-home_feed_output*.html
-output.txt
-output_recs*.txt
-temp_plan.txt
-logs/
-*.txt
-*.log
-image.png
-*.png
-old_*.html
-old_*.txt
-old_*.py
-test_*.py
-tmp/
-ai_models/
-final_audit_check.py
+# Virtual Environment
+venv/
+ENV/
+
+# Environment Variables
+.env
+.flaskenv
+
+# IDEs
+.vscode/
+.idea/
+
+# Database
+*.sqlite3
+instance/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS generated files
+.DS_Store
+Thumbs.db

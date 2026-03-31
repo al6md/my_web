@@ -378,3 +378,69 @@ class HybridRetriever:
         
         best_source = min(ranks.items(), key=lambda x: x[1])
         return best_source[0] if best_source[1] <= 10 else "hybrid"
+
+
+def get_vector_search_results(query: str, top_n: int = 50) -> List[Dict]:
+    """
+    Standalone helper for vectorized search.
+    Used by the unified pipeline for immediate behavioral retrieval.
+    """
+    from .vector_index import VectorIndexService
+    from flask_book_recommendation.utils import get_text_embedding
+    from flask_book_recommendation.models import Book
+    import os
+    
+    # 1. Get embedding for the query
+    emb = get_text_embedding(query)
+    if emb is None:
+        return []
+    
+    # 2. Search FAISS index
+    index_service = VectorIndexService(index_dir=os.path.join("instance", "indexes"))
+    results = index_service.search(np.array(emb, dtype=np.float32), k=top_n, index_name="books")
+    
+    if not results:
+        return []
+        
+    # 3. Resolve IDs to book metadata
+    book_candidates = []
+    ids = [r[0] for r in results]
+    
+    # Check if they are google_ids or local ids
+    google_ids = [bid for bid in ids if not str(bid).isdigit()]
+    local_ids = [int(bid) for bid in ids if str(bid).isdigit()]
+    
+    books_map = {}
+    from flask_book_recommendation.extensions import db
+    from flask import current_app
+    
+    def _fetch_books():
+        if google_ids:
+            found = Book.query.filter(Book.google_id.in_(google_ids)).all()
+            for b in found: books_map[b.google_id] = b
+        if local_ids:
+            found = Book.query.filter(Book.id.in_(local_ids)).all()
+            for b in found: books_map[str(b.id)] = b
+            
+    if current_app:
+        with current_app.app_context():
+            _fetch_books()
+    else:
+        # Fallback if no app context (rare in production)
+        _fetch_books()
+        
+    for bid, score in results:
+        book = books_map.get(str(bid))
+        if book:
+            book_candidates.append({
+                "id": str(bid),
+                "google_id": book.google_id,
+                "title": book.title,
+                "author": book.author,
+                "cover": book.cover_url,
+                "score": float(score),
+                "source": "Recent Search"
+            })
+            
+    return book_candidates
+

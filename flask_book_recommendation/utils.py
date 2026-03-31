@@ -44,21 +44,74 @@ def clean_book_title(title):
 # @cache.memoize(timeout=1800) # DISABLED: We need completely fresh books for FreshInject
 @cache.memoize(timeout=86400)
 def fetch_google_books(query, max_results=12, start_index=0, order_by="relevance"):
+    # Google Books API supports max 40 results per request
+    safe_max = min(max_results, 40)
+    
     params = {
-        "q": query, "maxResults": max_results,
+        "q": query, "maxResults": safe_max,
         "startIndex": start_index, "orderBy": order_by, "printType": "books",
         "key": os.environ.get("GOOGLE_BOOKS_API_KEY")
     }
+    headers = {"User-Agent": "Elham-Platform/1.0 (Book Discovery)"}
+    
     try:
-        r = requests.get(API_URL, params=params, timeout=2.5) # Fast timeout to prevent blocking FreshInject pool
+        print(f"[Google] Searching for: '{query}'")
+        r = requests.get(API_URL, params=params, headers=headers, timeout=5.0) # Increased to 5s
         if r.ok:
             data = r.json()
-            return data.get("items", []), data.get("totalItems", 0)
+            items = data.get("items", [])
+            total = data.get("totalItems", 0)
+            print(f"[Google] ✅ Found {len(items)} results (Total: {total})")
+            return items, total
+        elif r.status_code == 429:
+            print(f"[Google] ❌ API Error: 429 Quota Exceeded. Falling back to OpenLibrary...")
+            return fetch_openlibrary_fallback(query, max_results)
+        else:
+            print(f"[Google] ❌ API Error: {r.status_code} - {r.text[:100]}")
 
+    except requests.exceptions.Timeout:
+        print(f"[Google] ⏱️ Timeout for '{query}' (5s limit)")
     except Exception as e:
-        print(f"Google Books Error: {e}")
+        print(f"[Google] ⚠️ Error: {e}")
     
-    # في حال حدوث أي خطأ أو عدم نجاح الطلب، نرجع قيم فارغة بدلاً من None
+    return [], 0
+
+def fetch_openlibrary_fallback(query, max_results=12):
+    try:
+        url = "https://openlibrary.org/search.json"
+        params = {"q": query, "limit": max_results}
+        r = requests.get(url, params=params, timeout=5.0)
+        if r.ok:
+            data = r.json()
+            docs = data.get("docs", [])
+            items = []
+            for doc in docs:
+                item = {
+                    "id": doc.get("key", "").replace("/works/", ""),
+                    "source": "openlibrary",
+                    "volumeInfo": {
+                        "title": doc.get("title", ""),
+                        "authors": doc.get("author_name", []),
+                        "description": "",
+                        "publishedDate": str(doc.get("first_publish_year", "")),
+                        "pageCount": doc.get("number_of_pages_median", 0),
+                        "categories": doc.get("subject", [])[:3] if doc.get("subject") else [],
+                        "imageLinks": {},
+                        "industryIdentifiers": []
+                    }
+                }
+                if doc.get("cover_i"):
+                    item["volumeInfo"]["imageLinks"]["thumbnail"] = f"https://covers.openlibrary.org/b/id/{doc['cover_i']}-M.jpg"
+                if doc.get("isbn"):
+                    item["volumeInfo"]["industryIdentifiers"].append({"type": "ISBN_13", "identifier": doc["isbn"][0]})
+                
+                items.append(item)
+            
+            print(f"[OpenLib] ✅ Fallback returned {len(items)} results")
+            return items, data.get("numFound", len(items))
+    except Exception as e:
+        print(f"[OpenLib] ⚠️ Fallback Error: {e}")
+        
     return [], 0
 
 @cache.memoize(timeout=172800)
@@ -197,8 +250,10 @@ def generate_ai_description(title: str, author: str = "") -> str:
 def fetch_gutenberg_books(query, page=1, limit=12, **kwargs):
     api_url = "https://gutendex.com/books"
     params = {"search": query, "page": page}
+    headers = {"User-Agent": "Elham-Platform/1.0 (Library Integration)"}
     try:
-        r = requests.get(api_url, params=params, timeout=4)
+        print(f"[Gutenberg] Searching for: '{query}'")
+        r = requests.get(api_url, params=params, headers=headers, timeout=7) # Increased to 7s
         if r.ok:
             results = r.json().get("results", [])
             books = []
@@ -212,8 +267,14 @@ def fetch_gutenberg_books(query, page=1, limit=12, **kwargs):
                     "id": f"gut_{b.get('id')}", "title": clean_book_title(title), "author": authors,
                     "cover": b.get("formats", {}).get("image/jpeg"), "source": "gutenberg"
                 })
+            print(f"[Gutenberg] ✅ Found {len(books)} books")
             return books[:limit]
-    except: pass
+        else:
+            print(f"[Gutenberg] ❌ API Error: {r.status_code}")
+    except requests.exceptions.Timeout:
+        print(f"[Gutenberg] ⏱️ Timeout for '{query}'")
+    except Exception as e:
+        print(f"[Gutenberg] ⚠️ Error: {e}")
     return []
 
 @cache.memoize(timeout=172800)
@@ -230,7 +291,8 @@ def fetch_gutenberg_detail(gut_id):
                 "desc": "كلاسيكيات عالمية (Public Domain).",
                 "cover": formats.get("image/jpeg"),
                 "preview": formats.get("text/html") or formats.get("text/plain"),
-                "source": "gutenberg"
+                "source": "gutenberg",
+                "publishedDate": str(b.get("authors")[0].get("birth_year")) if b.get("authors") else "N/A" # Fallback to author birth if nothing else
             }
     except: pass
     return None
@@ -259,65 +321,52 @@ def fetch_openlib_rating(isbn=None, olid=None, title=None):
 @cache.memoize(timeout=3600)
 def fetch_openlib_books(query, limit=12, offset=0, **kwargs):
     """جلب كتب من OpenLibrary مع تحسين جلب الأغلفة"""
+    headers = {"User-Agent": "Elham-Platform/1.0 (Book Search Engine)"}
     try:
+        print(f"[OpenLib] Searching for: '{query}'")
         r = requests.get("https://openlibrary.org/search.json",
-                 params={"q": query, "limit": limit, "offset": offset}, timeout=4)
+                 params={"q": query, "limit": limit, "offset": offset}, headers=headers, timeout=7) # Increased to 7s
 
         if r.ok:
             docs = r.json().get("docs", [])
             books = []
             for doc in docs:
+                # ... same logic ...
                 key = doc.get("key", "").replace("/works/", "")
-                if not key: 
-                    continue
-                
-                # محاولة الحصول على الغلاف بطرق متعددة
+                if not key: continue
                 cover = None
-                
-                # 1. أولاً: استخدام cover_i (الأكثر موثوقية)
                 if doc.get("cover_i"):
                     cover = f"https://covers.openlibrary.org/b/id/{doc.get('cover_i')}-M.jpg"
-                
-                # 2. ثانياً: استخدام ISBN إذا متوفر
                 elif doc.get("isbn"):
                     isbn_list = doc.get("isbn", [])
                     if isbn_list:
                         cover = f"https://covers.openlibrary.org/b/isbn/{isbn_list[0]}-M.jpg"
-                
-                # 3. ثالثاً: استخدام OLID (Open Library ID)
                 elif doc.get("cover_edition_key"):
                     cover = f"https://covers.openlibrary.org/b/olid/{doc.get('cover_edition_key')}-M.jpg"
                 
                 author = doc.get("author_name")
-                if isinstance(author, list): 
-                    author = ", ".join(author[:2])  # أول مؤلفين فقط
+                if isinstance(author, list): author = ", ".join(author[:2])
                 
                 title = doc.get("title")
-                if not title:
-                    continue
+                if not title: continue
+                if not cover: cover = "https://placehold.co/300x450/stone/white?text=OpenLibrary"
                 
-                # صورة افتراضية إذا لم يوجد غلاف
-                if not cover:
-                    cover = "https://placehold.co/300x450/stone/white?text=OpenLibrary"
-                
-                # ⭐️ محاولة قراءة التقييم من نتيجة البحث
                 rating = doc.get("ratings_average")
-                if rating:
-                    rating = round(float(rating), 1)
+                if rating: rating = round(float(rating), 1)
 
                 books.append({
-                    "id": f"ol_{key}", 
-                    "title": title, 
-                    "author": author or "مؤلف غير معروف",
-                    "cover": cover, 
-                    "rating": rating,
-                    "source": "openlibrary"
+                    "id": f"ol_{key}", "title": title, "author": author or "مؤلف غير معروف",
+                    "cover": cover, "rating": rating, "source": "openlibrary"
                 })
             
-            print(f"[OpenLibrary] Found {len(books)} books for '{query}'")
+            print(f"[OpenLib] ✅ Found {len(books)} books")
             return books
+        else:
+            print(f"[OpenLib] ❌ API Error: {r.status_code}")
+    except requests.exceptions.Timeout:
+        print(f"[OpenLib] ⏱️ Timeout for '{query}'")
     except Exception as e:
-        print(f"[OpenLib] Error: {e}")
+        print(f"[OpenLib] ⚠️ Error: {e}")
     return []
 
 @cache.memoize(timeout=172800)
@@ -330,6 +379,19 @@ def fetch_openlib_detail(ol_id):
             desc = data.get("description")
             if isinstance(desc, dict): desc = desc.get("value")
             cover = f"https://covers.openlibrary.org/b/id/{data['covers'][0]}-L.jpg" if data.get("covers") else None
+
+            # إذا لم يوجد غلاف في العمل الرئيسي، نبحث في الطبعات (editions)
+            if not cover:
+                try:
+                    ed_r = requests.get(f"https://openlibrary.org/works/{clean_id}/editions.json", timeout=3)
+                    if ed_r.ok:
+                        entries = ed_r.json().get("entries", [])
+                        for entry in entries:
+                            if entry.get("covers"):
+                                cover = f"https://covers.openlibrary.org/b/id/{entry['covers'][0]}-L.jpg"
+                                break
+                except:
+                    pass
             
             # Fetch Rating explicitly
             rating = fetch_openlib_rating(olid=clean_id)
@@ -339,6 +401,8 @@ def fetch_openlib_detail(ol_id):
                 "desc": desc or "No description.", "cover": cover,
                 "preview": f"https://openlibrary.org/works/{clean_id}", 
                 "rating": rating,
+                "pageCount": data.get("number_of_pages"),
+                "publishedDate": data.get("publish_date"),
                 "source": "openlibrary"
             }
     except: pass
@@ -542,7 +606,10 @@ def fetch_itbook_detail(isbn):
             data = r.json()
             return {
                 "id": data.get("isbn13"), "title": clean_book_title(data.get("title")), "author": data.get("authors"),
-                "desc": data.get("desc"), "cover": data.get("image"), "preview": data.get("url"), "source": "itbook"
+                "desc": data.get("desc"), "cover": data.get("image"), "preview": data.get("url"), 
+                "pageCount": data.get("pages"),
+                "publishedDate": data.get("year"),
+                "source": "itbook"
             }
     except: pass
     return None
@@ -552,32 +619,34 @@ def fetch_itbook_detail(isbn):
 # ... (باقي الكود في الأعلى كما هو) ...
 
 @cache.memoize(timeout=86400)
-def fetch_itbook_books(query, page=1, limit=8, **kwargs): # 👈 أضفنا متغير page
+def fetch_itbook_books(query, page=1, limit=8, **kwargs):
+    headers = {"User-Agent": "Elham-Platform/1.0 (Tech Books)"}
     try:
-        # 👈 نضع رقم الصفحة في الرابط بدلاً من الرقم 1 الثابت
         url = f"https://api.itbook.store/1.0/search/{query}/{page}"
-        r = requests.get(url, timeout=4)
-        if not r.ok: return []
+        print(f"[ITBook] Searching for: '{query}'")
+        r = requests.get(url, headers=headers, timeout=7) # Increased to 7s
+        if not r.ok: 
+            print(f"[ITBook] ❌ API Error: {r.status_code}")
+            return []
 
         data = r.json()
-        books_raw = data.get("books", [])
-        # هذا الـ API يعيد 10 نتائج دائماً، فنقوم بقصها حسب الـ limit
-        books_raw = books_raw[:limit] 
+        books_raw = data.get("books", [])[:limit]
         
         books = []
         for b in books_raw:
             isbn13 = b.get("isbn13")
             if not isbn13: continue
-            title = b.get("title") or "Untitled"
-            subtitle = b.get("subtitle") or ""
-            author = subtitle or "IT Book"
+            author = b.get("subtitle") or "IT Book"
             books.append({
-                "id": isbn13, "title": clean_book_title(title), "author": author,
+                "id": isbn13, "title": clean_book_title(b.get("title") or "Untitled"), "author": author,
                 "cover": b.get("image"), "source": "itbook"
             })
+        print(f"[ITBook] ✅ Found {len(books)} tech books")
         return books
+    except requests.exceptions.Timeout:
+        print(f"[ITBook] ⏱️ Timeout for '{query}'")
     except Exception as e:
-        print(f"ITBook Error: {e}")
+        print(f"[ITBook] ⚠️ Error: {e}")
     return []
 
 # ... (باقي الكود في الأسفل كما هو) ...
@@ -605,6 +674,7 @@ def fetch_archive_detail(archive_id, max_results=1): # تم تعديل التو�
                         "desc": desc,
                         "cover": f"https://archive.org/services/img/{clean_id}",
                         "preview": f"https://archive.org/details/{clean_id}",
+                        "publishedDate": meta.get("date"),
                         "source": "archive"
                     }
         except Exception as e:
@@ -667,22 +737,23 @@ def fetch_archive_books(query, limit=12, **kwargs):
                     "cover": f"https://archive.org/services/img/{identifier}", 
                     "source": "archive"
                 })
-            print(f"[Archive] Found {len(books)} books for '{clean_query}'")
+            print(f"[Archive] ✅ Found {len(books)} books")
             if books:
                 return books
     except requests.exceptions.Timeout:
-        print(f"[Archive] Timeout for '{clean_query}' - using fallback")
+        print(f"[Archive] ⏱️ Timeout for '{query}'")
     except Exception as e:
-        print(f"[Archive] Error: {e} - using fallback")
+        print(f"[Archive] ⚠️ Error: {e}")
     
     # Fallback: لا نعرض كتب عشوائية - أفضل عدم عرض شيء من عرض كتب غير متعلقة
     print(f"[Archive] ⚠️ No results for '{clean_query}' - returning empty")
     return []
 
 # -----------------------------------------------------------
-# 6. AI Helpers (Gemini)
-# -----------------------------------------------------------
-def analyze_search_intent_with_ai(text: str) -> dict:
+from functools import lru_cache
+
+@lru_cache(maxsize=500)
+def analyze_search_intent_with_ai(text: str, timeout: int = 10) -> dict:
     """
     تحليل نية البحث باستخدام الذكاء الاصطناعي.
     Input: "أبي روايات بوليسية تشبه شارلوك هولمز"
@@ -738,7 +809,7 @@ def analyze_search_intent_with_ai(text: str) -> dict:
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {"response_mime_type": "application/json"}
                 },
-                timeout=5
+                timeout=timeout
             )
             if response.ok:
                 data = response.json()
@@ -751,9 +822,9 @@ def analyze_search_intent_with_ai(text: str) -> dict:
     # في حال الفشل، نعيد النص كما هو
     return {"query": text, "is_tech": False}
 
-def translate_to_english_with_gemini(text: str) -> str:
+def translate_to_english_with_gemini(text: str, timeout: int = 10) -> str:
     """Wrapper for backward compatibility"""
-    res = analyze_search_intent_with_ai(text)
+    res = analyze_search_intent_with_ai(text, timeout=timeout)
     return res.get("query", text)
 
 def generate_reading_plan_with_ai(book_title, pages, days):
@@ -1008,9 +1079,11 @@ def extract_interests_from_text_ai(title: str, author: str, review_text: str = "
 
 import time
 from functools import lru_cache
+import threading
 
 # Global cache for the model
 _embedding_model = None
+_embedding_model_lock = threading.Lock()
 
 @lru_cache(maxsize=1000)
 def get_text_embedding(text, max_retries=3):
@@ -1023,11 +1096,14 @@ def get_text_embedding(text, max_retries=3):
     global _embedding_model
     try:
         if _embedding_model is None:
-            from sentence_transformers import SentenceTransformer
-            # تحميل النموذج مرة واحدة فقط
-            print("[Embedding] 🔄 Loading SentenceTransformer model...")
-            _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-            print("[Embedding] ✅ Model loaded successfully")
+            with _embedding_model_lock:
+                # Double-check after acquiring lock
+                if _embedding_model is None:
+                    from sentence_transformers import SentenceTransformer
+                    # تحميل النموذج مرة واحدة فقط
+                    print("[Embedding] 🔄 Loading SentenceTransformer model...")
+                    _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+                    print("[Embedding] ✅ Model loaded successfully")
         
         embedding = _embedding_model.encode(text)
         return embedding.tolist()
@@ -1961,7 +2037,7 @@ def analyze_reading_habits(user_id: int) -> dict:
         
         # عمليات البحث الأخيرة (آخر 30 يوم)
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        stats["recent_searches"] = SearchHistory.query.filter(
+        stats["recent_searches"] = db.session.query(SearchHistory).filter(
             SearchHistory.user_id == user_id,
             SearchHistory.created_at >= thirty_days_ago
         ).count()

@@ -46,9 +46,19 @@ class InterestFetcherService:
         self.redis = None
         try:
             import redis
-            self.redis = redis.Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+            # Use short timeout for initial check
+            client = redis.Redis.from_url(
+                os.getenv("REDIS_URL", "redis://localhost:6379/0"), 
+                decode_responses=True,
+                socket_connect_timeout=1
+            )
+            if client.ping():
+                self.redis = client
+                logger.info("✅ [InterestFetcher] Redis connected")
+            else:
+                logger.warning("⚠️ [InterestFetcher] Redis ping failed, operating in memory-only mode")
         except Exception as e:
-            logger.warning(f"⚠️ [InterestFetcher] Redis not available: {e}")
+            logger.warning(f"⚠️ [InterestFetcher] Redis not available (skipping): {e}")
 
         # Initial background update
         self.start_background_update()

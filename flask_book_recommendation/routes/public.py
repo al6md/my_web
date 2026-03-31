@@ -109,6 +109,31 @@ def background_record_feedback(app, user_id, books):
     with app.app_context():
         try:
             from ai_book_recommender.engine import get_engine
+            from ..models import Book
+            from ..extensions import db
+            from ..utils import generate_book_embedding_if_missing
+            
+            # 🔥 Save top 3 books to database so FAISS can find them later 
+            for book_data in books[:3]:
+                gid = book_data.get("google_id") or book_data.get("id")
+                if gid:
+                    local_book = Book.query.filter_by(google_id=gid).first()
+                    if not local_book:
+                        local_book = Book(
+                            google_id=gid,
+                            title=book_data.get("title", "")[:200],
+                            author=book_data.get("author", "")[:100],
+                            description=book_data.get("desc", ""),
+                            cover_url=book_data.get("cover", ""),
+                            categories=",".join(book_data.get("categories", [])) if isinstance(book_data.get("categories"), list) else book_data.get("categories", ""),
+                            owner_id=None
+                        )
+                        db.session.add(local_book)
+                        db.session.commit()
+                    
+                    # Generate embedding so it enters FAISS indexing ecosystem
+                    generate_book_embedding_if_missing(local_book)
+
             engine = get_engine()
             for book in books[:15]: # تقليل العدد قليلاً
                 bid = book.get("google_id") or book.get("id")
@@ -354,9 +379,10 @@ def list_books():
             ]
             
             try:
-                for future in as_completed(futures, timeout=6):  # ⚡ Phase 5: Reduced from 10s to 6s
+                # ⚡ Phase 5: Increased from 6s to 12s to support slower API responses
+                for future in as_completed(futures, timeout=12):  
                     try:
-                        source, items = future.result(timeout=5)  # ⚡ Phase 5: Reduced from 8s to 5s
+                        source, items = future.result(timeout=10) # Individual result timeout
                         if source == "google":
                             clean_items = items
                         elif source == "gutenberg":
@@ -382,17 +408,10 @@ def list_books():
     if current_user.is_authenticated and not q.startswith("special:"):
         clean_items = rerank_search_results(current_user.id, clean_items)
 
-    # display_total = max(raw_total, 100) # ❌ This masked errors
-    display_total = raw_total
-    
-    # If 0 results for special sections, try to fetch generic trending
-    if display_total == 0 and q.startswith("special:") and not clean_items:
-         from ..recommender import get_trending
-         clean_items = get_trending(limit=per)
-         display_total = len(clean_items)
-         # We can add a flash message or handle it in template
-         
     shown = len(clean_items) + len(gut_items) + len(ia_items) + len(ol_items) + len(it_items)
+    
+    # display_total = max(raw_total, 100) # ❌ This masked errors
+    display_total = max(raw_total, shown)
 
     # 🛑 Infinite Scroll: Return partial template if requested
     if request.args.get('partial'):
@@ -414,6 +433,14 @@ def list_books():
 
 @public_bp.get("/books/<gid>", endpoint="book_detail")
 def book_detail(gid):
+    # Check if we should load the full page with a skeleton or just the content
+    is_async = request.args.get('async_load') == '1'
+    is_deferred = request.args.get('deferred') == '1' or not is_async
+
+    if is_deferred and not is_async:
+        # Return the skeleton page immediately
+        return render_template("public_book_detail.html", gid=gid, deferred_load=True)
+
     # ⚡ Phase 4: Cache book data + similar books for 30 minutes
     detail_cache_key = f"book_detail_data_{gid}"
     cached_detail = cache.get(detail_cache_key)
@@ -440,6 +467,35 @@ def book_detail(gid):
                 book = Book.query.get(local_id)
                 if book:
                     book_data = _book_to_dict(book)
+                    # Supplement missing metadata from API if the book has a google_id
+                    if book_data and book.google_id and (not book_data.get("pageCount") and not book_data.get("publishedDate")):
+                        d = fetch_book_details(book.google_id)
+                        if d:
+                            if not book_data.get("pageCount"):
+                                book_data["pageCount"] = d.get("pageCount")
+                            if not book_data.get("publishedDate"):
+                                book_data["publishedDate"] = d.get("publishedDate")
+                            if not book_data.get("publisher"):
+                                book_data["publisher"] = d.get("publisher")
+                            if not book_data.get("language"):
+                                book_data["language"] = d.get("language")
+                            if not book_data.get("isbn"):
+                                book_data["isbn"] = d.get("isbn")
+                            # Update local DB record
+                            try:
+                                if d.get("pageCount") and not book.page_count:
+                                    book.page_count = d.get("pageCount")
+                                if d.get("publishedDate") and not book.published_date:
+                                    book.published_date = d.get("publishedDate")
+                                if d.get("publisher") and not book.publisher:
+                                    book.publisher = d.get("publisher")
+                                if d.get("language") and not book.language:
+                                    book.language = d.get("language")
+                                if d.get("isbn") and not book.isbn:
+                                    book.isbn = d.get("isbn")
+                                db.session.commit()
+                            except Exception:
+                                db.session.rollback()
             except Exception as e:
                 print(f"Error fetching local book {gid}: {e}")
         elif gid.isdigit() and len(gid) == 13:
@@ -456,32 +512,84 @@ def book_detail(gid):
             if book:
                 book_data = _book_to_dict(book)
             
-            if not book_data:
+            # If book exists locally but is missing key metadata (pageCount/publishedDate),
+            # fetch full details from the API to fill in the gaps
+            needs_api_fetch = (not book_data) or (not book_data.get("pageCount") and not book_data.get("publishedDate"))
+            
+            if needs_api_fetch:
                 d = fetch_book_details(gid)
                 if d:
                     cover = d.get("cover") or ""
                     if cover and cover.startswith("http://"):
                         cover = "https://" + cover[7:]
         
-                    book_data = {
-                        "id": gid, 
-                        "title": d.get("title") or "عنوان غير متوفر",
-                        "author": d.get("author") or "مؤلف غير معروف",
-                        "desc": d.get("description") or "لا يوجد وصف متاح لهذا الكتاب.", 
-                        "cover": cover,
-                        "preview": d.get("preview"),
-                        "source": d.get("source", "google"),
-                        "publishedDate": d.get("publishedDate"),
-                        "pageCount": d.get("pageCount"),
-                        "categories": d.get("categories") or [],
-                        "rating": d.get("rating"),
-                        "publisher": d.get("publisher"),
-                        "language": d.get("language"),
-                        "isbn": d.get("isbn"),
-                    }
+                    if book_data:
+                        # Supplement existing local data with missing API fields
+                        if not book_data.get("pageCount"):
+                            book_data["pageCount"] = d.get("pageCount")
+                        if not book_data.get("publishedDate"):
+                            book_data["publishedDate"] = d.get("publishedDate")
+                        if not book_data.get("publisher"):
+                            book_data["publisher"] = d.get("publisher")
+                        if not book_data.get("language"):
+                            book_data["language"] = d.get("language")
+                        if not book_data.get("isbn"):
+                            book_data["isbn"] = d.get("isbn")
+                        if not book_data.get("rating"):
+                            book_data["rating"] = d.get("rating")
+                        if not book_data.get("categories") or book_data.get("categories") == []:
+                            book_data["categories"] = d.get("categories") or []
+                        if not book_data.get("preview"):
+                            book_data["preview"] = d.get("preview")
+                        if not book_data.get("desc") or book_data["desc"] == "لا يوجد وصف متاح لهذا الكتاب.":
+                            book_data["desc"] = d.get("description") or book_data.get("desc")
+                        if not book_data.get("cover"):
+                            book_data["cover"] = cover
+                        
+                        # Update the local DB record so future views have complete data
+                        if book:
+                            try:
+                                if d.get("pageCount") and not book.page_count:
+                                    book.page_count = d.get("pageCount")
+                                if d.get("publishedDate") and not book.published_date:
+                                    book.published_date = d.get("publishedDate")
+                                if d.get("publisher") and not book.publisher:
+                                    book.publisher = d.get("publisher")
+                                if d.get("language") and not book.language:
+                                    book.language = d.get("language")
+                                if d.get("isbn") and not book.isbn:
+                                    book.isbn = d.get("isbn")
+                                db.session.commit()
+                                print(f"[BookDetail] Updated local book {gid} with API metadata")
+                            except Exception as e:
+                                db.session.rollback()
+                                print(f"[BookDetail] Failed to update local book: {e}")
+                    else:
+                        # No local data at all, build from API
+                        book_data = {
+                            "id": gid, 
+                            "title": d.get("title") or "عنوان غير متوفر",
+                            "author": d.get("author") or "مؤلف غير معروف",
+                            "desc": d.get("description") or "لا يوجد وصف متاح لهذا الكتاب.", 
+                            "cover": cover,
+                            "preview": d.get("preview"),
+                            "source": d.get("source", "google"),
+                            "publishedDate": d.get("publishedDate"),
+                            "pageCount": d.get("pageCount"),
+                            "categories": d.get("categories") or [],
+                            "rating": d.get("rating"),
+                            "publisher": d.get("publisher"),
+                            "language": d.get("language"),
+                            "isbn": d.get("isbn"),
+                        }
 
     if not book_data: abort(404)
     book_data.setdefault("google_id", gid)
+
+    # 🌟 Fallback cover parameter from list view
+    cover_param = request.args.get("cover")
+    if cover_param and not book_data.get("cover"):
+        book_data["cover"] = cover_param
 
     # -------------------------------------------------
     #   توليد وصف AI تلقائي إذا لم يتوفر وصف
@@ -827,18 +935,33 @@ def book_detail(gid):
     if reviews:
         avg_rating = sum(r.rating for r in reviews) / len(reviews)
 
+    # 🛑 If HTMX request for content only
+    if is_async:
+        return render_template(
+            "public_book_detail_content.html",
+            book=book_data,
+            similar=similar,
+            author_books=author_books,
+            reviews=reviews,
+            avg_rating=round(avg_rating, 1),
+            user_review=user_review,
+            current_status=current_status,
+            total_views=total_views,
+            unique_viewers=unique_viewers
+        )
+
     return render_template(
         "public_book_detail.html",
         book=book_data,
         similar=similar,
-        author_books=author_books,  # 🆕 كتب من نفس المؤلف
-        personal_recs=personal_recs,
-        current_status=current_status,
-        total_views=total_views,  # 🆕 إجمالي المشاهدات
-        unique_viewers=unique_viewers,  # 🆕 عدد القراء الفريدين
+        author_books=author_books,
         reviews=reviews,
+        avg_rating=round(avg_rating, 1),
         user_review=user_review,
-        avg_rating=round(avg_rating, 1)
+        current_status=current_status,
+        total_views=total_views,
+        unique_viewers=unique_viewers,
+        deferred_load=False
     )
 
 
@@ -891,6 +1014,8 @@ def add_to_shelf(gid, status):
                 author=author or "Unknown",
                 description=desc,
                 cover_url=cover,
+                page_count=data.get("pageCount") or data.get("page_count"),
+                published_date=data.get("publishedDate") or data.get("published_date"),
                 owner_id=current_user.id,
                 google_id=gid
             )

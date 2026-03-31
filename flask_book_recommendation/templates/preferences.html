@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Curation Preferences | The Digital Curator{% endblock %}
+{% block title %}Preferences | Elham{% endblock %}
 
 {% block content %}
 <main class="min-h-screen pt-32 flex items-center justify-center bg-surface px-8 pb-24">
@@ -8,9 +8,9 @@
         
         <!-- Preferences Header -->
         <div class="text-center space-y-4">
-            <span class="font-label text-xs uppercase tracking-[0.6em] text-primary">Algorithm Calibration</span>
-            <h1 class="font-headline text-7xl font-black tracking-tighter">Preferences</h1>
-            <p class="font-body text-on-surface-variant max-w-xl mx-auto">Define the architectural parameters of your intellectual inquiry. This data calibrates our recommendation engine.</p>
+            <span class="font-label text-xs uppercase tracking-[0.6em] text-primary">Personalize Your Experience</span>
+            <h1 class="font-headline text-7xl font-black tracking-tighter">Your Interests</h1>
+            <p class="font-body text-on-surface-variant max-w-xl mx-auto">Select the genres you enjoy reading. We'll use these to recommend books you will love.</p>
         </div>
 
         <!-- Configuration Card -->
@@ -58,11 +58,11 @@
 
                 <div class="flex flex-col sm:flex-row gap-8 justify-center pt-8 border-t border-on-surface/5">
                     <a href="{{ url_for('main.home') }}" class="font-headline font-black text-on-surface/40 hover:text-primary transition-all px-12 py-6 text-sm uppercase tracking-widest">
-                        Bypass Calibration
+                        Skip for now
                     </a>
                     <button type="submit" class="bg-primary hover:bg-on-surface text-white font-headline font-black px-12 py-6 text-xl transition-all active:scale-[0.98] shadow-2xl flex items-center justify-center gap-3">
                         <span class="material-symbols-outlined">save</span>
-                        Commit Parameters
+                        Save Preferences
                     </button>
                 </div>
             </form>

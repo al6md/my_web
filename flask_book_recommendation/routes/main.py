@@ -113,14 +113,14 @@ def home():
     if not most_viewed or len(most_viewed) < 3:
         # Use featured as fallback for most viewed
         most_viewed = featured[:10]
-
+ 
     # قائمة التصنيفات الأساسية
     categories = [
         "Programming", "Artificial Intelligence", "Science", 
         "History", "Philosophy", "Art", "Fiction",
         "Psychology", "Business", "Self-Help", "Travel", "Religion"
     ]
-
+ 
     # Fetch real project algorithm recommendations for the showcase
     ai_algo_books = []
     mind_metrics_percentage = 68
@@ -153,13 +153,16 @@ def home():
                 ai_algo_books.append({
                     "id": bid,
                     "title": b.get('title'),
-                    "author": b.get('author') or b.get('authors', ["Unknown"])[0],
+                    "author": b.get('author') or (b.get('authors') or ["Unknown"])[0],
                     "cover_url": b.get('cover_url') or b.get('cover'),
                     "categories": b.get('categories', []),
-                    "algorithm_tag": "NEURAL HYBRID",
+                    "algorithm_tag": b.get('algo_tag', 'NEURAL HYBRID'),
+                    "algo_tag": b.get('algo_tag', 'Neural Full Stack'),
+                    "confidence": b.get('confidence', 0),
+                    "score": b.get('score', 0),
                     "rating": b.get('rating', 4.8)
                 })
-
+ 
         # Supporters (DL, CF, etc.)
         candidates = []
         for b in dl_recs: candidates.append((b, "DEEP LEARNING"))
@@ -169,7 +172,7 @@ def home():
         if len(ai_algo_books) + len(candidates) < 100:
             trending = get_trending(limit=100)
             for b in trending: candidates.append((b, "TRENDING"))
-
+ 
         for b, tag in candidates:
             if len(ai_algo_books) >= 100: break
             bid = b.get('id') if isinstance(b, dict) else (b.google_id or b.id)
@@ -179,10 +182,13 @@ def home():
                     ai_algo_books.append({
                         "id": bid,
                         "title": b.get('title'),
-                        "author": b.get('author') or b.get('authors', ["Unknown"])[0],
+                        "author": b.get('author') or (b.get('authors') or ["Unknown"])[0],
                         "cover_url": b.get('cover_url') or b.get('cover'),
                         "categories": b.get('categories', []),
                         "algorithm_tag": tag,
+                        "algo_tag": b.get('algo_tag', tag),
+                        "confidence": b.get('confidence', 0),
+                        "score": b.get('score', 0),
                         "rating": b.get('rating', 4.5)
                     })
                 else:
@@ -193,10 +199,15 @@ def home():
                         "cover_url": b.cover_url,
                         "categories": b.categories.split(",") if b.categories else [],
                         "algorithm_tag": tag,
+                        "algo_tag": tag,
+                        "confidence": 0,
+                        "score": 0,
                         "rating": 4.5
                     })
-
+ 
     except Exception as e:
+        import traceback
+        logger.error(f"Error fetching AI recommendations: {str(e)}\n{traceback.format_exc()}")
         # Fallback logic to ensure we have data even if AI fails
         if not ai_algo_books:
             logger.warning("No AI recommendations fetched, falling back to trending for this section")
@@ -211,7 +222,11 @@ def home():
                     "algorithm_tag": "TRENDING",
                     "rating": 4.5
                 })
-
+ 
+    # Get pipeline metadata for frontend visualization
+    from ai_book_recommender.unified_pipeline import UnifiedRecommendationPipeline
+    pipeline_meta = UnifiedRecommendationPipeline.get_pipeline_meta()
+ 
     resp = make_response(render_template(
         "home.html",
         featured_books=featured,
@@ -224,6 +239,7 @@ def home():
         featured_book=featured[0] if featured else None,
         ai_algo_books=ai_algo_books,
         mind_metrics_percentage=mind_metrics_percentage,
+        pipeline_meta=pipeline_meta,
         current_filters={'query': '', 'sort': 'ai_relevance', 'debug_ts': time.time()}
     ))
     # ⚡ Cache-Control: allow browser caching for 3 minutes
@@ -232,6 +248,14 @@ def home():
     # ⚡ Store in server cache for 3 minutes
     cache.set(cache_key, resp, timeout=180)
     return resp
+
+@main_bp.route("/api/pipeline-status")
+def pipeline_status():
+    """API endpoint: returns the last pipeline execution metadata for frontend visualization."""
+    from flask import jsonify
+    from ai_book_recommender.unified_pipeline import UnifiedRecommendationPipeline
+    meta = UnifiedRecommendationPipeline.get_pipeline_meta()
+    return jsonify(meta)
 
 @main_bp.route("/feed/home")
 def home_feed():
@@ -390,13 +414,13 @@ def home_feed():
         if not last_search_term or len(last_search_term) < 2:
             last_search_term = "Self Growth"
 
-        # Search in categories and title
+        # Search in categories and title, ordered randomly to show different books
         dynamic_search_books = Book.query.filter(
             db.or_(
                 Book.categories.ilike(f'%{last_search_term}%'),
                 Book.title.ilike(f'%{last_search_term}%')
             )
-        ).limit(4).all()
+        ).order_by(db.func.random()).limit(4).all()
         
         # Fallback if no specific books found or search term was default
         if not dynamic_search_books or len(dynamic_search_books) < 4:
@@ -475,7 +499,7 @@ def _build_featured_lists():
     import requests as _requests
     
     # Using a fresh cache key
-    cache_key = 'home_featured_lists_google_v3'
+    cache_key = 'home_featured_lists_v7'
     try:
         cached_lists = cache.get(cache_key)
         if cached_lists:
@@ -487,17 +511,26 @@ def _build_featured_lists():
     colors = ['#b8a9e8', '#c8e6c9', '#ffe0b2', '#b3e5fc', '#f8bbd0', '#d1c4e9', '#c5cae9', '#dcedc8', '#a5d6a7', '#ffcc80', '#90caf9']
 
     category_configs = [
-        {'title': 'سلسلة هاري بوتر', 'subject': 'Harry Potter', 'cat': 'Harry Potter'},
-        {'title': 'كتب خيالية',    'subject': 'fiction',      'cat': 'Fiction'},
-        {'title': 'كتب تاريخية',   'subject': 'history',      'cat': 'History'},
-        {'title': 'كتب علمية',     'subject': 'science',      'cat': 'Science'},
-        {'title': 'تطوير الذات',  'subject': 'self-help',    'cat': 'Self Help'},
-        {'title': 'كتب أعمال',     'subject': 'business',     'cat': 'Business'},
-        {'title': 'كتب فلسفة',     'subject': 'philosophy',   'cat': 'Philosophy'},
-        {'title': 'كتب فنون',      'subject': 'art',          'cat': 'Art'},
-        {'title': 'كتب رومانسية',  'subject': 'romance',      'cat': 'Romance'},
-        {'title': 'كتب غموض',      'subject': 'mystery',      'cat': 'Mystery'},
-        {'title': 'كتب تكنولوجيا', 'subject': 'technology',   'cat': 'Technology'},
+        {'title': 'العوالم الخيالية', 'subject': 'epic fantasy', 'cat': 'Fantasy'},
+        {'title': 'أسرار الكون', 'subject': 'astrophysics', 'cat': 'Science'},
+        {'title': 'فلسفة الحياة', 'subject': 'philosophy', 'cat': 'Philosophy'},
+        {'title': 'عبقرية التصميم', 'subject': 'architecture design', 'cat': 'Art'},
+        {'title': 'مستقبل الذكاء', 'subject': 'artificial intelligence', 'cat': 'Technology'},
+        {'title': 'سيكولوجية الإنسان', 'subject': 'psychology', 'cat': 'Psychology'},
+        {'title': 'روائع الأدب العربي', 'subject': 'arabic literature', 'cat': 'Fiction'},
+        {'title': 'تاريخ الحضارات', 'subject': 'ancient history', 'cat': 'History'},
+        {'title': 'ريادة الأعمال', 'subject': 'entrepreneurship', 'cat': 'Business'},
+        {'title': 'عالم الجريمة', 'subject': 'crime thriller', 'cat': 'Mystery'},
+        {'title': 'النمو الشخصي', 'subject': 'personal growth', 'cat': 'Self-Help'},
+        {'title': 'أدب الرحلات', 'subject': 'travel literature', 'cat': 'Travel'},
+        {'title': 'كلاسيكيات الأدب', 'subject': 'classic literature', 'cat': 'Fiction'},
+        {'title': 'عالم الطبخ', 'subject': 'culinary arts', 'cat': 'Cooking'},
+        {'title': 'التحف المعمارية', 'subject': 'modern architecture', 'cat': 'Art'},
+        {'title': 'عالم البرمجة', 'subject': 'software engineering', 'cat': 'Technology'},
+        {'title': 'الطب البديل', 'subject': 'holistic health', 'cat': 'Health'},
+        {'title': 'الفضاء العميق', 'subject': 'space exploration', 'cat': 'Science'},
+        {'title': 'الذكاء العاطفي', 'subject': 'emotional intelligence', 'cat': 'Psychology'},
+        {'title': 'أساطير الأولين', 'subject': 'mythology', 'cat': 'History'},
     ]
 
     app_obj = current_app._get_current_object()
@@ -505,25 +538,23 @@ def _build_featured_lists():
     GOOGLE_API_KEY = app_obj.config.get('GOOGLE_BOOKS_API_KEY') or __import__('os').environ.get('GOOGLE_BOOKS_API_KEY')
 
     def _fetch_category(idx, cfg):
+        covers = []
+        total_items = 0
         with app_obj.app_context():
             from ..models import Book
             from ..extensions import db
-            search_query = f"subject:{cfg['subject']}" if cfg['subject'] != 'Harry Potter' else 'Harry Potter'
-            covers = []
-            total_items = 0
-
-            # ── Google Books API (direct call to extract covers properly) ──
             try:
+                # Broader search for thematic collections - search in title or general terms
                 params = {
-                    "q": search_query,
-                    "maxResults": 20,
+                    "q": cfg['subject'],
+                    "maxResults": 40,
                     "orderBy": "relevance",
                     "printType": "books",
                 }
                 if GOOGLE_API_KEY:
                     params["key"] = GOOGLE_API_KEY
 
-                r = _requests.get(GOOGLE_API_URL, params=params, timeout=8)
+                r = _requests.get(GOOGLE_API_URL, params=params, timeout=10)
                 if r.ok:
                     data = r.json()
                     items = data.get("items", [])
@@ -531,26 +562,27 @@ def _build_featured_lists():
                     for item in items:
                         vi = item.get("volumeInfo", {}) or {}
                         imgs = vi.get("imageLinks", {}) or {}
-                        # Try multiple image sizes
+                        # Try multiple image sizes for highest quality
                         cover = (
-                            imgs.get("thumbnail")
-                            or imgs.get("smallThumbnail")
-                            or imgs.get("medium")
+                            imgs.get("medium")
                             or imgs.get("large")
+                            or imgs.get("thumbnail")
+                            or imgs.get("smallThumbnail")
                         )
                         if cover:
-                            # Upgrade to https and zoom=1
+                            # Upgrade to https and zoom=1 (higher res), remove curl edge
                             if cover.startswith("http://"):
                                 cover = "https://" + cover[7:]
-                            cover = cover.replace("zoom=5", "zoom=1")
-                            covers.append(cover)
-                        if len(covers) >= 4:
+                            cover = cover.replace("zoom=5", "zoom=1").replace("&edge=curl", "")
+                            if cover not in covers:
+                                covers.append(cover)
+                        if len(covers) >= 3:
                             break
             except Exception as e:
                 current_app.logger.warning(f"[FeaturedLists] Google API error for {cfg['subject']}: {e}")
 
-            # ── Fallback: local DB if Google didn't give enough covers ──
-            if len(covers) < 4:
+            # ── Fallback 1: Local DB ──
+            if len(covers) < 3:
                 try:
                     db_query = f"%{cfg['subject']}%"
                     db_books = Book.query.filter(
@@ -564,8 +596,25 @@ def _build_featured_lists():
                     for b in db_books:
                         if b.cover_url and b.cover_url.startswith('http') and b.cover_url not in covers:
                             covers.append(b.cover_url)
-                        if len(covers) >= 4:
+                        if len(covers) >= 3:
                             break
+                except Exception:
+                    pass
+
+            # ── Fallback 2: General Relevant fallback if still empty ──
+            if len(covers) < 3:
+                try:
+                    # Just search for the category title itself (often in Arabic) or general books
+                    fallback_params = {"q": cfg['title'], "maxResults": 10}
+                    if GOOGLE_API_KEY: fallback_params["key"] = GOOGLE_API_KEY
+                    r2 = _requests.get(GOOGLE_API_URL, params=fallback_params, timeout=5)
+                    if r2.ok:
+                        for item in r2.json().get("items", []):
+                            vi = item.get("volumeInfo", {}) or {}
+                            c = (vi.get("imageLinks", {}) or {}).get("thumbnail")
+                            if c and c not in covers:
+                                covers.append(c.replace("http://", "https://").replace("&edge=curl", ""))
+                            if len(covers) >= 3: break
                 except Exception:
                     pass
 
@@ -582,9 +631,9 @@ def _build_featured_lists():
 
     try:
         results = []
-        with ThreadPoolExecutor(max_workers=6) as ex:
+        with ThreadPoolExecutor(max_workers=10) as ex:
             futs = [ex.submit(_fetch_category, i, cfg) for i, cfg in enumerate(category_configs)]
-            for f in as_completed(futs, timeout=15):
+            for f in as_completed(futs, timeout=30):
                 res = f.result()
                 if res:
                     results.append(res)
@@ -595,6 +644,26 @@ def _build_featured_lists():
             del r['index']
             lists.append(r)
             
+        # Ensure we have at least 6 lists by adding generic ones if needed
+        if len(lists) < 6:
+            try:
+                from ..models import Book
+                from ..extensions import db
+                import random
+                # Add a "Popular Picks" list from DB
+                pop_books = Book.query.filter(Book.cover_url.isnot(None), Book.cover_url != '').limit(50).all()
+                while len(lists) < 6 and len(pop_books) >= 3:
+                    chosen = random.sample(pop_books, 3)
+                    lists.append({
+                        'title': 'مختارات شائعة',
+                        'covers': [b.cover_url for b in chosen],
+                        'count': 100,
+                        'url': '/public/books',
+                        'color': '#6366f1'
+                    })
+            except Exception:
+                pass
+
         # Save to cache
         if len(lists) > 0:
             try:
@@ -605,8 +674,8 @@ def _build_featured_lists():
     except Exception as e:
         current_app.logger.error(f"[FeaturedLists API] Error: {e}")
 
-    current_app.logger.info(f"[FeaturedLists] Built {len(lists)} lists from Google API")
-    return lists
+    current_app.logger.info(f"[FeaturedLists] Built {len(lists)} lists")
+    return lists[:6]
 
 
 
@@ -992,7 +1061,36 @@ def books():
         else:
             book.estimated_read_time = None
     
-    # 🆕 إحصائيات القراءة الشاملة
+    # 🆕 إحصائيات القراءة الشاملة والمتقدمة
+    
+    # حساب الصفحات المقروءة فعلياً (الكتب المنتهية + نسبة التقدم في الباقي)
+    pages_read = 0
+    for b in my_books:
+        pc = b.page_count or 0
+        prog = status_map.get(b.id, {}).get('progress', 0)
+        if status_map.get(b.id, {}).get('status') == 'finished':
+            pages_read += pc
+        elif prog > 0:
+            pages_read += int(pc * prog / 100)
+    
+    # أسرع كتاب أنهيته (بناءً على started_at و finished_at)
+    fastest_book = None
+    fastest_days = None
+    for s in statuses:
+        if s.status == 'finished' and s.started_at and s.finished_at:
+            days = (s.finished_at - s.started_at).days
+            if days >= 0 and (fastest_days is None or days < fastest_days):
+                fastest_days = days
+                fb = Book.query.get(s.book_id)
+                if fb:
+                    fastest_book = {'title': fb.title, 'days': days, 'cover': fb.cover_url}
+    
+    # هدف القراءة السنوي
+    reading_goal = current_user.reading_goal or 0
+    goal_progress = 0
+    if reading_goal > 0:
+        goal_progress = min(100, round(len(finished_ids) / reading_goal * 100))
+    
     reading_stats = {
         'total_books': len(my_books),
         'finished_count': len(finished_ids),
@@ -1003,18 +1101,42 @@ def books():
         'dropped_count': len(dropped_ids),
         'in_progress': len([b for b in my_books if status_map.get(b.id, {}).get('progress', 0) > 0 and status_map.get(b.id, {}).get('progress', 0) < 100]),
         'total_pages': sum(b.page_count or 0 for b in my_books),
-        'avg_progress': round(sum(status_map.get(b.id, {}).get('progress', 0) for b in my_books) / max(len(my_books), 1), 1)
+        'pages_read': pages_read,
+        'reading_hours': round(pages_read * 2 / 60, 1),  # 2 دقيقة/صفحة
+        'avg_progress': round(sum(status_map.get(b.id, {}).get('progress', 0) for b in my_books) / max(len(my_books), 1), 1),
+        'fastest_book': fastest_book,
+        'reading_goal': reading_goal,
+        'goal_progress': goal_progress,
     }
     
     # 🆕 جمع التصنيفات الفريدة للفلترة
     all_categories = set()
     all_languages = set()
+    category_distribution = {}
     for book in my_books:
         if book.categories:
             for cat in book.categories.split(','):
-                all_categories.add(cat.strip())
+                cat_clean = cat.strip()
+                if cat_clean:
+                    all_categories.add(cat_clean)
+                    category_distribution[cat_clean] = category_distribution.get(cat_clean, 0) + 1
         if book.language:
             all_languages.add(book.language)
+
+    # Get user ratings map for quick display
+    user_ratings = {}
+    if my_books:
+        google_ids = [b.google_id for b in my_books if b.google_id]
+        if google_ids:
+            ratings = UserRatingCF.query.filter(
+                UserRatingCF.user_id == current_user.id,
+                UserRatingCF.google_id.in_(google_ids)
+            ).all()
+            for r in ratings:
+                user_ratings[r.google_id] = r.rating
+
+    from datetime import datetime as dt_now
+    current_year = dt_now.now().year
 
     return render_template(
         "books.html",
@@ -1026,9 +1148,28 @@ def books():
         on_hold_books=on_hold_books,
         dropped_books=dropped_books,
         reading_stats=reading_stats,
+        status_map=status_map,
         all_categories=sorted(all_categories),
-        all_languages=sorted(all_languages)
+        all_languages=sorted(all_languages),
+        category_distribution=category_distribution,
+        user_ratings=user_ratings,
+        current_year=current_year,
     )
+
+
+@main_bp.post("/books/update-reading-goal")
+@login_required
+def update_reading_goal():
+    """Update the user's yearly reading goal."""
+    goal = request.form.get("reading_goal", 0, type=int)
+    if goal < 0:
+        goal = 0
+    if goal > 999:
+        goal = 999
+    current_user.reading_goal = goal
+    db.session.commit()
+    flash("Reading goal updated successfully! 🎯", "success")
+    return redirect(url_for("main.books"))
 
 
 def background_sync_book_details(app, book_id, google_id):
@@ -1402,6 +1543,20 @@ def create_book():
     return redirect(url_for("main.books"))
 
 
+@main_bp.post("/books/<int:book_id>/notes")
+@csrf.exempt
+@login_required
+def update_book_notes(book_id):
+    """حفظ ملاحظات الكتاب عبر AJAX"""
+    book = Book.query.get_or_404(book_id)
+    if book.owner_id != current_user.id:
+        return jsonify({"success": False, "error": "Unauthorized"}), 403
+    
+    notes = request.json.get("notes", "") if request.is_json else request.form.get("notes", "")
+    book.notes = notes
+    db.session.commit()
+    return jsonify({"success": True, "notes": notes})
+
 @main_bp.post("/books/<int:book_id>/update")
 @login_required
 def update_book(book_id: int):
@@ -1443,10 +1598,55 @@ def generate_book_cover(book_id):
 @main_bp.post("/books/<int:book_id>/delete")
 @login_required
 def delete_book(book_id: int):
+    """
+    حذف كتاب من مكتبة المستخدم نهائياً مع كافة البيانات المرتبطة به.
+    """
+    from ..models import (
+        BookStatus, BookReview, BookQuote, UserBookView, 
+        SearchHistory, BookEmbedding, BookGenre
+    )
+    
+    # 1. العثور على الكتاب والتأكد من الملكية
     b = Book.query.get_or_404(book_id)
     if b.owner_id != current_user.id:
-        flash("ليس لديك صلاحية", "danger"); return redirect(url_for("main.books"))
-    db.session.delete(b); db.session.commit(); flash("تم الحذف", "info")
+        flash("ليس لديك صلاحية لحذف هذا الكتاب.", "danger")
+        return redirect(url_for("main.books"))
+    
+    try:
+        # 2. حذف كافة السجلات المرتبطة (Cascading manual delete)
+        # لتجنب أخطاء المفاتيح الخارجية (Foreign Key Constraints)
+        
+        # حذف الارتباط بالتصنيفات (Genres)
+        BookGenre.query.filter_by(book_id=book_id).delete()
+        
+        # حذف الحالة (Status)
+        BookStatus.query.filter_by(book_id=book_id).delete()
+        
+        # حذف المراجعات (Reviews)
+        BookReview.query.filter_by(book_id=book_id).delete()
+        
+        # حذف الاقتباسات (Quotes)
+        BookQuote.query.filter_by(book_id=book_id).delete()
+        
+        # حذف المشاهدات (Views)
+        UserBookView.query.filter_by(book_id=book_id).delete()
+        
+        # حذف سجل البحث (Search History)
+        db.session.query(SearchHistory).filter_by(book_id=book_id).delete()
+        
+        # حذف التضمينات (Embeddings)
+        BookEmbedding.query.filter_by(book_id=book_id).delete()
+        
+        # 3. حذف سجل الكتاب نفسه
+        db.session.delete(b)
+        db.session.commit()
+        
+        flash(f"تم حذف كتاب '{b.title}' من مكتبتك بنجاح. ✨", "info")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting book {book_id}: {str(e)}", exc_info=True)
+        flash(f"فشل حذف الكتاب بسبب خطأ في قاعدة البيانات: {str(e)}", "danger")
+        
     return redirect(url_for("main.books"))
 
 
