@@ -190,3 +190,17 @@
 {"timestamp": "2026-03-31T17:34:22.172380Z", "timestamp_unix": 1774978462, "user_id": 1, "book_id": "dlMAK3CTldsC", "event_type": "view", "metadata": {"source": "Local"}}
 {"timestamp": "2026-03-31T17:34:40.083476Z", "timestamp_unix": 1774978480, "user_id": 1, "book_id": "dlMAK3CTldsC", "event_type": "rate", "value": 3}
 {"timestamp": "2026-03-31T17:34:40.367009Z", "timestamp_unix": 1774978480, "user_id": 1, "book_id": "dlMAK3CTldsC", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T11:27:51.967974Z", "timestamp_unix": 1775215671, "user_id": 277681, "book_id": "FHV9EAAAQBAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T11:37:45.759600Z", "timestamp_unix": 1775216265, "user_id": 1, "book_id": "YEoiYr4H2A0C", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T11:38:16.472136Z", "timestamp_unix": 1775216296, "user_id": 1, "book_id": "5pVkEQAAQBAJ", "event_type": "view", "metadata": {"source": "google"}}
+{"timestamp": "2026-04-03T11:46:44.188052Z", "timestamp_unix": 1775216804, "user_id": 1, "book_id": "LSfKMkrXRgUC", "event_type": "view", "metadata": {"source": "google"}}
+{"timestamp": "2026-04-03T12:18:05.787237Z", "timestamp_unix": 1775218685, "user_id": 277682, "book_id": "5pVkEQAAQBAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T12:18:27.829280Z", "timestamp_unix": 1775218707, "user_id": 277682, "book_id": "5pVkEQAAQBAJ", "event_type": "rate", "value": 5}
+{"timestamp": "2026-04-03T12:18:28.207006Z", "timestamp_unix": 1775218708, "user_id": 277682, "book_id": "5pVkEQAAQBAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T12:34:58.699518Z", "timestamp_unix": 1775219698, "user_id": 277682, "book_id": "vvAVAQAAMAAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T12:46:15.257579Z", "timestamp_unix": 1775220375, "user_id": 1, "book_id": "oJaE_ikTMu8C", "event_type": "view", "metadata": {"source": "google"}}
+{"timestamp": "2026-04-03T12:51:23.241120Z", "timestamp_unix": 1775220683, "user_id": 1, "book_id": "GClHAQAAMAAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T14:37:03.591711Z", "timestamp_unix": 1775227023, "user_id": 1, "book_id": "vvAVAQAAMAAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T14:38:18.356097Z", "timestamp_unix": 1775227098, "user_id": 1, "book_id": "741bAAAAMAAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T14:46:30.320400Z", "timestamp_unix": 1775227590, "user_id": 277684, "book_id": "5pVkEQAAQBAJ", "event_type": "view", "metadata": {"source": "Local"}}
+{"timestamp": "2026-04-03T14:46:57.834660Z", "timestamp_unix": 1775227617, "user_id": 277684, "book_id": "cbbxg1CECxQC", "event_type": "view", "metadata": {"source": "google"}}

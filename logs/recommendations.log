@@ -37347,3 +37347,1075 @@ with app.app_context(). See the documentation for more information.
    |__ [TOTAL] 8518ms | Final Results: 100 books
 ===========================================================
 [2026-04-01 00:24:31] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-01 00:24:23", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05730002885684371, "neural_time_ms": 53.60150005435571, "behavioral_time_ms": 8090.804699982982, "hybrid_time_ms": 0.0, "total_time_ms": 8517.601699975785, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:24:31] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:24:40] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 14:24:31
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 186ms | Results: 1296
+   |-- [NEURAL]       Invoked: Y | Time: 114ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8050ms | Results: 58
+-----------------------------------------------------------
+   |__ [TOTAL] 8928ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:24:40] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 14:24:31", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 185.91250001918525, "neural_time_ms": 113.65770001430064, "behavioral_time_ms": 8050.383900059387, "hybrid_time_ms": 0.0, "total_time_ms": 8927.593700005673, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:24:41] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:24:52] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 1 | Time: 2026-04-03 14:24:41
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: Y | Time: 1196ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8092ms | Results: 58
+-----------------------------------------------------------
+   |__ [TOTAL] 11470ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:24:52] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 1, "timestamp": "2026-04-03 14:24:41", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.045599997974932194, "neural_time_ms": 1196.2365000508726, "behavioral_time_ms": 8092.288300045766, "hybrid_time_ms": 0.0, "total_time_ms": 11469.715800019912, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:25:59] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:25:59] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:25:59] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 14:25:59
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: Y | Time: 68ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 17ms | Results: 61
+-----------------------------------------------------------
+   |__ [TOTAL] 361ms | Final Results: 50 books
+===========================================================
+[2026-04-03 14:25:59] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 14:25:59", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05140004213899374, "neural_time_ms": 68.24930000584573, "behavioral_time_ms": 17.18970004003495, "hybrid_time_ms": 0.0, "total_time_ms": 360.7999000232667, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 61, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:25:59] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 1 | Time: 2026-04-03 14:25:59
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: Y | Time: 83ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 26ms | Results: 61
+-----------------------------------------------------------
+   |__ [TOTAL] 363ms | Final Results: 50 books
+===========================================================
+[2026-04-03 14:25:59] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-03 14:25:59", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05230004899203777, "neural_time_ms": 83.21920002344996, "behavioral_time_ms": 26.29389998037368, "hybrid_time_ms": 0.0, "total_time_ms": 362.6532000489533, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 61, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:27:42] INFO | [REC] Starting recommendation for user 277681
+[2026-04-03 14:27:42] WARNING | [WARN] Fallback triggered: No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)
+[2026-04-03 14:27:42] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 277681 | Time: 2026-04-03 14:27:42
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 16ms | Results: 0
+   [WARN] FALLBACK USED: No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)
+-----------------------------------------------------------
+   |__ [TOTAL] 95ms | Final Results: 0 books
+===========================================================
+[2026-04-03 14:27:42] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 277681, "timestamp": "2026-04-03 14:27:42", "transformer_invoked": true, "neural_invoked": false, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.15100010205060244, "neural_time_ms": 0.0, "behavioral_time_ms": 15.713099972344935, "hybrid_time_ms": 0.0, "total_time_ms": 95.35950003191829, "transformer_results": 1296, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)"}
+[2026-04-03 14:27:42] INFO | [REC] Starting recommendation for user 277681
+[2026-04-03 14:27:42] WARNING | [WARN] Fallback triggered: No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)
+[2026-04-03 14:27:42] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000006
+   User ID: 277681 | Time: 2026-04-03 14:27:42
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 51ms | Results: 0
+   [WARN] FALLBACK USED: No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)
+-----------------------------------------------------------
+   |__ [TOTAL] 242ms | Final Results: 0 books
+===========================================================
+[2026-04-03 14:27:42] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000006", "user_id": 277681, "timestamp": "2026-04-03 14:27:42", "transformer_invoked": true, "neural_invoked": false, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.1387998927384615, "neural_time_ms": 0.0, "behavioral_time_ms": 51.32319999393076, "hybrid_time_ms": 0.0, "total_time_ms": 242.29840002954006, "transformer_results": 1296, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)"}
+[2026-04-03 14:27:43] INFO | [REC] Starting recommendation for user 277681
+[2026-04-03 14:27:43] WARNING | [WARN] Fallback triggered: No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)
+[2026-04-03 14:27:43] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000007
+   User ID: 277681 | Time: 2026-04-03 14:27:43
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 20ms | Results: 0
+   [WARN] FALLBACK USED: No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)
+-----------------------------------------------------------
+   |__ [TOTAL] 76ms | Final Results: 0 books
+===========================================================
+[2026-04-03 14:27:43] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000007", "user_id": 277681, "timestamp": "2026-04-03 14:27:43", "transformer_invoked": true, "neural_invoked": false, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.12529990635812283, "neural_time_ms": 0.0, "behavioral_time_ms": 20.45499999076128, "hybrid_time_ms": 0.0, "total_time_ms": 75.95440000295639, "transformer_results": 1296, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "No interactions found for user 277681 (views=0, ratings=0, statuses=0, searches=0)"}
+[2026-04-03 14:35:28] INFO | [REC] Starting recommendation for user 0
+[2026-04-03 14:35:28] WARNING | [WARN] Fallback triggered: user_id is None/0 — user not logged in
+[2026-04-03 14:35:28] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 0 | Time: 2026-04-03 14:35:28
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [WARN] FALLBACK USED: user_id is None/0 — user not logged in
+-----------------------------------------------------------
+   |__ [TOTAL] 27ms | Final Results: 0 books
+===========================================================
+[2026-04-03 14:35:28] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 0, "timestamp": "2026-04-03 14:35:28", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 26.682999916374683, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "user_id is None/0 \u2014 user not logged in"}
+[2026-04-03 14:35:30] INFO | [REC] Starting recommendation for user 0
+[2026-04-03 14:35:30] WARNING | [WARN] Fallback triggered: user_id is None/0 — user not logged in
+[2026-04-03 14:35:30] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 0 | Time: 2026-04-03 14:35:30
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [WARN] FALLBACK USED: user_id is None/0 — user not logged in
+-----------------------------------------------------------
+   |__ [TOTAL] 66ms | Final Results: 0 books
+===========================================================
+[2026-04-03 14:35:30] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 0, "timestamp": "2026-04-03 14:35:30", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 65.8288000850007, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "user_id is None/0 \u2014 user not logged in"}
+[2026-04-03 14:35:45] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:35:54] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 14:35:45
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 162ms | Results: 1296
+   |-- [NEURAL]       Invoked: Y | Time: 64ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8037ms | Results: 58
+-----------------------------------------------------------
+   |__ [TOTAL] 8755ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:35:54] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 14:35:45", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 161.6789000108838, "neural_time_ms": 64.35210001654923, "behavioral_time_ms": 8037.086499971338, "hybrid_time_ms": 0.0, "total_time_ms": 8755.393799976446, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:35:54] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:36:05] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 1 | Time: 2026-04-03 14:35:54
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: Y | Time: 773ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8115ms | Results: 58
+-----------------------------------------------------------
+   |__ [TOTAL] 10613ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:36:05] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-03 14:35:54", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.07599999662488699, "neural_time_ms": 773.1999000534415, "behavioral_time_ms": 8115.402700030245, "hybrid_time_ms": 0.0, "total_time_ms": 10612.609599949792, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:36:12] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:36:13] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 1 | Time: 2026-04-03 14:36:12
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1296
+   |-- [NEURAL]       Invoked: Y | Time: 52ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 21ms | Results: 61
+-----------------------------------------------------------
+   |__ [TOTAL] 295ms | Final Results: 50 books
+===========================================================
+[2026-04-03 14:36:13] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 1, "timestamp": "2026-04-03 14:36:12", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.0708999577909708, "neural_time_ms": 51.74510006327182, "behavioral_time_ms": 20.808800007216632, "hybrid_time_ms": 0.0, "total_time_ms": 295.1241999398917, "transformer_results": 1296, "neural_results": 500, "behavioral_results": 61, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:45:32] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:45:41] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 14:45:32
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 238ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 78ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8035ms | Results: 58
+-----------------------------------------------------------
+   |__ [TOTAL] 9628ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:45:41] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 14:45:32", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 238.1986000109464, "neural_time_ms": 78.16590007860214, "behavioral_time_ms": 8035.267399973236, "hybrid_time_ms": 0.0, "total_time_ms": 9628.418300068006, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:45:42] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:45:43] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:45:55] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 1 | Time: 2026-04-03 14:45:42
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 1ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 1987ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8234ms | Results: 58
+-----------------------------------------------------------
+   |__ [TOTAL] 13168ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:45:55] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 1, "timestamp": "2026-04-03 14:45:42", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.5871000466868281, "neural_time_ms": 1987.0417000493035, "behavioral_time_ms": 8234.455700032413, "hybrid_time_ms": 0.0, "total_time_ms": 13167.797600035556, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:45:57] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 14:45:43
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 2003ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8228ms | Results: 58
+-----------------------------------------------------------
+   |__ [TOTAL] 13129ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:45:57] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 14:45:43", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.08850009180605412, "neural_time_ms": 2003.1436999561265, "behavioral_time_ms": 8227.85699996166, "hybrid_time_ms": 0.0, "total_time_ms": 13128.666099975817, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 58, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:46:06] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:46:06] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:46:06] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 1 | Time: 2026-04-03 14:46:06
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 74ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 19ms | Results: 63
+-----------------------------------------------------------
+   |__ [TOTAL] 407ms | Final Results: 50 books
+===========================================================
+[2026-04-03 14:46:06] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-03 14:46:06", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05039991810917854, "neural_time_ms": 74.49569995515049, "behavioral_time_ms": 19.003800000064075, "hybrid_time_ms": 0.0, "total_time_ms": 406.902699964121, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 63, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:46:06] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 1 | Time: 2026-04-03 14:46:06
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 108ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 22ms | Results: 63
+-----------------------------------------------------------
+   |__ [TOTAL] 425ms | Final Results: 50 books
+===========================================================
+[2026-04-03 14:46:06] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 1, "timestamp": "2026-04-03 14:46:06", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.04469999112188816, "neural_time_ms": 108.35999995470047, "behavioral_time_ms": 21.67030004784465, "hybrid_time_ms": 0.0, "total_time_ms": 425.2135999267921, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 63, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:59:25] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:59:33] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 14:59:25
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 142ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 73ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8037ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 8737ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:59:33] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 14:59:25", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 141.54770004097372, "neural_time_ms": 72.7572999894619, "behavioral_time_ms": 8037.297400063835, "hybrid_time_ms": 0.0, "total_time_ms": 8736.699700006284, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:59:34] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:59:44] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 1 | Time: 2026-04-03 14:59:34
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 570ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8088ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 10643ms | Final Results: 100 books
+===========================================================
+[2026-04-03 14:59:44] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 1, "timestamp": "2026-04-03 14:59:34", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.053900061175227165, "neural_time_ms": 569.856199901551, "behavioral_time_ms": 8088.107799994759, "hybrid_time_ms": 0.0, "total_time_ms": 10642.775899963453, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 14:59:53] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 14:59:53] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 14:59:53
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1299
+   |-- [NEURAL]       Invoked: Y | Time: 45ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 14ms | Results: 64
+-----------------------------------------------------------
+   |__ [TOTAL] 228ms | Final Results: 50 books
+===========================================================
+[2026-04-03 14:59:53] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 14:59:53", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.07650000043213367, "neural_time_ms": 45.4469999531284, "behavioral_time_ms": 14.259199961088598, "hybrid_time_ms": 0.0, "total_time_ms": 227.72989992517978, "transformer_results": 1299, "neural_results": 500, "behavioral_results": 64, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:08:07] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:08:07] ERROR | [ERROR] name 'embeddings_data' is not defined
+[2026-04-03 15:08:07] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 15:08:07
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [ERROR] ERROR: name 'embeddings_data' is not defined
+-----------------------------------------------------------
+   |__ [TOTAL] 65ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:08:07] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 15:08:07", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 65.39999996311963, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": ["name 'embeddings_data' is not defined"], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:08:10] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:08:10] ERROR | [ERROR] name 'embeddings_data' is not defined
+[2026-04-03 15:08:10] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 1 | Time: 2026-04-03 15:08:10
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [ERROR] ERROR: name 'embeddings_data' is not defined
+-----------------------------------------------------------
+   |__ [TOTAL] 34ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:08:10] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 1, "timestamp": "2026-04-03 15:08:10", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 34.44129996933043, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": ["name 'embeddings_data' is not defined"], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:08:37] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:08:37] ERROR | [ERROR] name 'embeddings_data' is not defined
+[2026-04-03 15:08:37] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 15:08:37
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [ERROR] ERROR: name 'embeddings_data' is not defined
+-----------------------------------------------------------
+   |__ [TOTAL] 3ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:08:37] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 15:08:37", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 2.8370999498292804, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": ["name 'embeddings_data' is not defined"], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:15:44] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:15:44] ERROR | [ERROR] name 'embeddings_data' is not defined
+[2026-04-03 15:15:44] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 277682 | Time: 2026-04-03 15:15:44
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [ERROR] ERROR: name 'embeddings_data' is not defined
+-----------------------------------------------------------
+   |__ [TOTAL] 4ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:15:44] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 277682, "timestamp": "2026-04-03 15:15:44", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 4.387599998153746, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": ["name 'embeddings_data' is not defined"], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:15:47] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:15:47] ERROR | [ERROR] name 'embeddings_data' is not defined
+[2026-04-03 15:15:47] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 277682 | Time: 2026-04-03 15:15:47
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [ERROR] ERROR: name 'embeddings_data' is not defined
+-----------------------------------------------------------
+   |__ [TOTAL] 36ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:15:47] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 277682, "timestamp": "2026-04-03 15:15:47", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 35.78640008345246, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": ["name 'embeddings_data' is not defined"], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:15:47] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:15:47] ERROR | [ERROR] name 'embeddings_data' is not defined
+[2026-04-03 15:15:47] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000006
+   User ID: 277682 | Time: 2026-04-03 15:15:47
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [ERROR] ERROR: name 'embeddings_data' is not defined
+-----------------------------------------------------------
+   |__ [TOTAL] 7ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:15:47] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000006", "user_id": 277682, "timestamp": "2026-04-03 15:15:47", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 6.998699973337352, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": ["name 'embeddings_data' is not defined"], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:24:41] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:24:50] WARNING | [WARN] Fallback triggered: User 277682 has interactions but 0 matching embeddings
+[2026-04-03 15:24:50] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 277682 | Time: 2026-04-03 15:24:41
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 239ms | Results: 1303
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8062ms | Results: 1
+   [WARN] FALLBACK USED: User 277682 has interactions but 0 matching embeddings
+-----------------------------------------------------------
+   |__ [TOTAL] 8305ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:24:50] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 277682, "timestamp": "2026-04-03 15:24:41", "transformer_invoked": true, "neural_invoked": false, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 238.704799907282, "neural_time_ms": 0.0, "behavioral_time_ms": 8061.624100082554, "hybrid_time_ms": 0.0, "total_time_ms": 8305.253900005482, "transformer_results": 1303, "neural_results": 0, "behavioral_results": 1, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "User 277682 has interactions but 0 matching embeddings"}
+[2026-04-03 15:24:51] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:24:58] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 277682 | Time: 2026-04-03 15:24:51
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1303
+   |-- [NEURAL]       Invoked: Y | Time: 60ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 6062ms | Results: 5
+-----------------------------------------------------------
+   |__ [TOTAL] 6415ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:24:58] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 277682, "timestamp": "2026-04-03 15:24:51", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06550003308802843, "neural_time_ms": 59.90280001424253, "behavioral_time_ms": 6062.485000002198, "hybrid_time_ms": 0.0, "total_time_ms": 6415.047999937087, "transformer_results": 1303, "neural_results": 500, "behavioral_results": 5, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:24:58] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:24:58] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 277682 | Time: 2026-04-03 15:24:58
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1303
+   |-- [NEURAL]       Invoked: Y | Time: 43ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 12ms | Results: 5
+-----------------------------------------------------------
+   |__ [TOTAL] 185ms | Final Results: 50 books
+===========================================================
+[2026-04-03 15:24:58] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 277682, "timestamp": "2026-04-03 15:24:58", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.042599975131452084, "neural_time_ms": 43.18849998526275, "behavioral_time_ms": 11.651000007987022, "hybrid_time_ms": 0.0, "total_time_ms": 185.35609997343272, "transformer_results": 1303, "neural_results": 500, "behavioral_results": 5, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:33:01] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:33:10] WARNING | [WARN] Fallback triggered: User 277682 has interactions but 0 matching embeddings
+[2026-04-03 15:33:10] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 277682 | Time: 2026-04-03 15:33:01
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 185ms | Results: 1303
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8080ms | Results: 1
+   [WARN] FALLBACK USED: User 277682 has interactions but 0 matching embeddings
+-----------------------------------------------------------
+   |__ [TOTAL] 8272ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:33:10] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 277682, "timestamp": "2026-04-03 15:33:01", "transformer_invoked": true, "neural_invoked": false, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 185.28079998213798, "neural_time_ms": 0.0, "behavioral_time_ms": 8079.722300055437, "hybrid_time_ms": 0.0, "total_time_ms": 8271.837799926288, "transformer_results": 1303, "neural_results": 0, "behavioral_results": 1, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "User 277682 has interactions but 0 matching embeddings"}
+[2026-04-03 15:33:12] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:33:20] WARNING | [WARN] Fallback triggered: User 277682 has interactions but 0 matching embeddings
+[2026-04-03 15:33:20] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 277682 | Time: 2026-04-03 15:33:12
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1303
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8065ms | Results: 1
+   [WARN] FALLBACK USED: User 277682 has interactions but 0 matching embeddings
+-----------------------------------------------------------
+   |__ [TOTAL] 8098ms | Final Results: 0 books
+===========================================================
+[2026-04-03 15:33:20] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 277682, "timestamp": "2026-04-03 15:33:12", "transformer_invoked": true, "neural_invoked": false, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.0790000194683671, "neural_time_ms": 0.0, "behavioral_time_ms": 8064.965299912728, "hybrid_time_ms": 0.0, "total_time_ms": 8097.537499968894, "transformer_results": 1303, "neural_results": 0, "behavioral_results": 1, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "User 277682 has interactions but 0 matching embeddings"}
+[2026-04-03 15:33:21] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:33:21] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 277682 | Time: 2026-04-03 15:33:21
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1303
+   |-- [NEURAL]       Invoked: Y | Time: 48ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 11ms | Results: 5
+-----------------------------------------------------------
+   |__ [TOTAL] 204ms | Final Results: 50 books
+===========================================================
+[2026-04-03 15:33:21] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 277682, "timestamp": "2026-04-03 15:33:21", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05250005051493645, "neural_time_ms": 48.14279999118298, "behavioral_time_ms": 10.750800021924078, "hybrid_time_ms": 0.0, "total_time_ms": 204.30019998457283, "transformer_results": 1303, "neural_results": 500, "behavioral_results": 5, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:33:23] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:33:24] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 277682 | Time: 2026-04-03 15:33:23
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1303
+   |-- [NEURAL]       Invoked: Y | Time: 275ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 31ms | Results: 5
+-----------------------------------------------------------
+   |__ [TOTAL] 631ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:33:24] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 277682, "timestamp": "2026-04-03 15:33:23", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.07209996692836285, "neural_time_ms": 275.4162000492215, "behavioral_time_ms": 31.17750003002584, "hybrid_time_ms": 0.0, "total_time_ms": 630.8734999038279, "transformer_results": 1303, "neural_results": 500, "behavioral_results": 5, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:44:19] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:44:29] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 277682 | Time: 2026-04-03 15:44:19
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 164ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 143ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8036ms | Results: 2
+-----------------------------------------------------------
+   |__ [TOTAL] 9157ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:44:29] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 277682, "timestamp": "2026-04-03 15:44:19", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 163.8092000503093, "neural_time_ms": 143.36769992951304, "behavioral_time_ms": 8036.341600003652, "hybrid_time_ms": 0.0, "total_time_ms": 9157.055699964985, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 2, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:44:29] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:44:37] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 277682 | Time: 2026-04-03 15:44:29
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 54ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8005ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 8478ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:44:37] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 277682, "timestamp": "2026-04-03 15:44:29", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.08110003545880318, "neural_time_ms": 53.631799994036555, "behavioral_time_ms": 8004.80019999668, "hybrid_time_ms": 0.0, "total_time_ms": 8478.290400002152, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:44:42] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:44:44] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 277682 | Time: 2026-04-03 15:44:42
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 337ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 62ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 1986ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:44:44] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 277682, "timestamp": "2026-04-03 15:44:42", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.04650000482797623, "neural_time_ms": 337.36070001032203, "behavioral_time_ms": 62.08099995274097, "hybrid_time_ms": 0.0, "total_time_ms": 1986.10830004327, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:44:55] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:44:55] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 1 | Time: 2026-04-03 15:44:55
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 55ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 92ms | Results: 67
+-----------------------------------------------------------
+   |__ [TOTAL] 507ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:44:55] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-03 15:44:55", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05909998435527086, "neural_time_ms": 55.44200004078448, "behavioral_time_ms": 91.93329990375787, "hybrid_time_ms": 0.0, "total_time_ms": 507.4601999949664, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 67, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:44:55] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:44:56] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 1 | Time: 2026-04-03 15:44:55
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 187ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 88ms | Results: 67
+-----------------------------------------------------------
+   |__ [TOTAL] 1228ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:44:56] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 1, "timestamp": "2026-04-03 15:44:55", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05150004290044308, "neural_time_ms": 186.8013000348583, "behavioral_time_ms": 88.00700004212558, "hybrid_time_ms": 0.0, "total_time_ms": 1228.36350009311, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 67, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:48:33] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:48:42] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 15:48:33
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 181ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 45ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8043ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 8540ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:48:42] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 15:48:33", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 180.70719996467233, "neural_time_ms": 44.938000035472214, "behavioral_time_ms": 8042.906200047582, "hybrid_time_ms": 0.0, "total_time_ms": 8539.659000001848, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:48:42] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:48:50] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 1 | Time: 2026-04-03 15:48:42
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 195ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8089ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 8570ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:48:50] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 1, "timestamp": "2026-04-03 15:48:42", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06489991210401058, "neural_time_ms": 195.44799998402596, "behavioral_time_ms": 8088.855099980719, "hybrid_time_ms": 0.0, "total_time_ms": 8570.39479992818, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:48:51] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:48:51] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 15:48:51
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 28ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 12ms | Results: 67
+-----------------------------------------------------------
+   |__ [TOTAL] 181ms | Final Results: 50 books
+===========================================================
+[2026-04-03 15:48:51] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 15:48:51", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.04830001853406429, "neural_time_ms": 28.042800026014447, "behavioral_time_ms": 11.800499982200563, "hybrid_time_ms": 0.0, "total_time_ms": 181.28349992912263, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 67, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:48:59] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:49:01] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 1 | Time: 2026-04-03 15:48:59
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 209ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 179ms | Results: 67
+-----------------------------------------------------------
+   |__ [TOTAL] 2062ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:49:01] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-03 15:48:59", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.04309997893869877, "neural_time_ms": 208.96630000788718, "behavioral_time_ms": 179.00860006920993, "hybrid_time_ms": 0.0, "total_time_ms": 2062.414199928753, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 67, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:53:10] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:53:18] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 15:53:10
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 248ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 67ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8068ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 8436ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:53:18] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 15:53:10", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 247.87329998798668, "neural_time_ms": 66.68579997494817, "behavioral_time_ms": 8068.150199949741, "hybrid_time_ms": 0.0, "total_time_ms": 8435.502900043502, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:53:19] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:53:26] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 1 | Time: 2026-04-03 15:53:19
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 46ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 7433ms | Results: 67
+-----------------------------------------------------------
+   |__ [TOTAL] 7510ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:53:26] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 1, "timestamp": "2026-04-03 15:53:19", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06199989002197981, "neural_time_ms": 45.95940001308918, "behavioral_time_ms": 7433.3208000753075, "hybrid_time_ms": 0.0, "total_time_ms": 7509.549300069921, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 67, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:53:26] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:53:26] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 15:53:26
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 46ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 19ms | Results: 67
+-----------------------------------------------------------
+   |__ [TOTAL] 97ms | Final Results: 50 books
+===========================================================
+[2026-04-03 15:53:26] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 15:53:26", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06860005669295788, "neural_time_ms": 46.346800052560866, "behavioral_time_ms": 19.326500012539327, "hybrid_time_ms": 0.0, "total_time_ms": 97.16610005125403, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 67, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:53:35] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 15:53:36] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 1 | Time: 2026-04-03 15:53:35
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 242ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 266ms | Results: 67
+-----------------------------------------------------------
+   |__ [TOTAL] 1300ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:53:36] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-03 15:53:35", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.0684000551700592, "neural_time_ms": 241.50200001895428, "behavioral_time_ms": 265.93330001924187, "hybrid_time_ms": 0.0, "total_time_ms": 1299.6423000004143, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 67, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:55:03] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:55:03] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 277682 | Time: 2026-04-03 15:55:03
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 111ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 27ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 189ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:55:03] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 277682, "timestamp": "2026-04-03 15:55:03", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.15169999096542597, "neural_time_ms": 111.48860002867877, "behavioral_time_ms": 26.747200055979192, "hybrid_time_ms": 0.0, "total_time_ms": 189.14190004579723, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:55:03] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:55:04] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000006
+   User ID: 277682 | Time: 2026-04-03 15:55:03
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 146ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 61ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 408ms | Final Results: 100 books
+===========================================================
+[2026-04-03 15:55:04] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000006", "user_id": 277682, "timestamp": "2026-04-03 15:55:03", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.10689999908208847, "neural_time_ms": 145.95819998066872, "behavioral_time_ms": 61.10549997538328, "hybrid_time_ms": 0.0, "total_time_ms": 407.59190008975565, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 15:55:06] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 15:55:06] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000007
+   User ID: 277682 | Time: 2026-04-03 15:55:06
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 58ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 14ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 114ms | Final Results: 50 books
+===========================================================
+[2026-04-03 15:55:06] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000007", "user_id": 277682, "timestamp": "2026-04-03 15:55:06", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.04539999645203352, "neural_time_ms": 57.512299972586334, "behavioral_time_ms": 14.296800014562905, "hybrid_time_ms": 0.0, "total_time_ms": 114.09369995817542, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:02:19] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 16:02:28] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 16:02:19
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 526ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 596ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8115ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 9413ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:02:28] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 16:02:19", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 525.7743999827653, "neural_time_ms": 596.4992999797687, "behavioral_time_ms": 8114.937099977396, "hybrid_time_ms": 0.0, "total_time_ms": 9413.012999924831, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:07:39] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:07:48] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 277682 | Time: 2026-04-03 16:07:39
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 171ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 327ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8039ms | Results: 2
+-----------------------------------------------------------
+   |__ [TOTAL] 8598ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:07:48] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 277682, "timestamp": "2026-04-03 16:07:39", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 170.91509990859777, "neural_time_ms": 326.8781000515446, "behavioral_time_ms": 8038.779800059274, "hybrid_time_ms": 0.0, "total_time_ms": 8597.762700053863, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 2, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:07:48] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:07:57] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 277682 | Time: 2026-04-03 16:07:48
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 394ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8077ms | Results: 2
+-----------------------------------------------------------
+   |__ [TOTAL] 8679ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:07:57] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 277682, "timestamp": "2026-04-03 16:07:48", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06230000872164965, "neural_time_ms": 393.7541999621317, "behavioral_time_ms": 8077.073800028302, "hybrid_time_ms": 0.0, "total_time_ms": 8678.88599995058, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 2, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:07:58] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:07:58] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 277682 | Time: 2026-04-03 16:07:58
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 54ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 14ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 106ms | Final Results: 50 books
+===========================================================
+[2026-04-03 16:07:58] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 277682, "timestamp": "2026-04-03 16:07:58", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05679996684193611, "neural_time_ms": 53.89620002824813, "behavioral_time_ms": 14.3874998902902, "hybrid_time_ms": 0.0, "total_time_ms": 106.38759995345026, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:08:03] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:08:03] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 277682 | Time: 2026-04-03 16:08:03
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 121ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 26ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 189ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:08:03] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 277682, "timestamp": "2026-04-03 16:08:03", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.07860001642256975, "neural_time_ms": 121.48760003037751, "behavioral_time_ms": 25.509900064207613, "hybrid_time_ms": 0.0, "total_time_ms": 188.97669995203614, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:09:51] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:09:51] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 277682 | Time: 2026-04-03 16:09:51
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 110ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 24ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 172ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:09:51] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 277682, "timestamp": "2026-04-03 16:09:51", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.13379997108131647, "neural_time_ms": 110.13299995101988, "behavioral_time_ms": 23.707000073045492, "hybrid_time_ms": 0.0, "total_time_ms": 172.34709998592734, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:09:51] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:09:52] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000006
+   User ID: 277682 | Time: 2026-04-03 16:09:51
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 77ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 41ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 347ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:09:52] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000006", "user_id": 277682, "timestamp": "2026-04-03 16:09:51", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06230000872164965, "neural_time_ms": 76.85299997683614, "behavioral_time_ms": 41.43179999664426, "hybrid_time_ms": 0.0, "total_time_ms": 346.6150000458583, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:09:54] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:09:54] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000007
+   User ID: 277682 | Time: 2026-04-03 16:09:54
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 66ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 15ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 116ms | Final Results: 50 books
+===========================================================
+[2026-04-03 16:09:54] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000007", "user_id": 277682, "timestamp": "2026-04-03 16:09:54", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.09200000204145908, "neural_time_ms": 66.1128000356257, "behavioral_time_ms": 14.69600002747029, "hybrid_time_ms": 0.0, "total_time_ms": 116.19759991299361, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 7, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:10:08] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 16:10:10] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000008
+   User ID: 1 | Time: 2026-04-03 16:10:08
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 235ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 1784ms | Results: 66
+-----------------------------------------------------------
+   |__ [TOTAL] 2058ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:10:10] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000008", "user_id": 1, "timestamp": "2026-04-03 16:10:08", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.057999975979328156, "neural_time_ms": 235.38379999808967, "behavioral_time_ms": 1783.7922999169677, "hybrid_time_ms": 0.0, "total_time_ms": 2058.3761000307277, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 66, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:10:10] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 16:10:11] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000009
+   User ID: 1 | Time: 2026-04-03 16:10:10
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 367ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 73ms | Results: 66
+-----------------------------------------------------------
+   |__ [TOTAL] 610ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:10:11] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000009", "user_id": 1, "timestamp": "2026-04-03 16:10:10", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.07770000956952572, "neural_time_ms": 367.30879999231547, "behavioral_time_ms": 72.59410002734512, "hybrid_time_ms": 0.0, "total_time_ms": 609.662999981083, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 66, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:10:19] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 16:10:19] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000010
+   User ID: 1 | Time: 2026-04-03 16:10:19
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1305
+   |-- [NEURAL]       Invoked: Y | Time: 43ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 20ms | Results: 66
+-----------------------------------------------------------
+   |__ [TOTAL] 105ms | Final Results: 50 books
+===========================================================
+[2026-04-03 16:10:19] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000010", "user_id": 1, "timestamp": "2026-04-03 16:10:19", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05209993105381727, "neural_time_ms": 42.60619997512549, "behavioral_time_ms": 20.458899904042482, "hybrid_time_ms": 0.0, "total_time_ms": 104.85979996155947, "transformer_results": 1305, "neural_results": 500, "behavioral_results": 66, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:19:03] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 16:19:11] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 1 | Time: 2026-04-03 16:19:03
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 124ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 149ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8044ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 8599ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:19:11] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 1, "timestamp": "2026-04-03 16:19:03", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 123.53089998941869, "neural_time_ms": 148.99340004194528, "behavioral_time_ms": 8043.5464000329375, "hybrid_time_ms": 0.0, "total_time_ms": 8598.967600031756, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:19:12] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 16:19:20] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 1 | Time: 2026-04-03 16:19:12
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 80ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8147ms | Results: 59
+-----------------------------------------------------------
+   |__ [TOTAL] 8296ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:19:20] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 1, "timestamp": "2026-04-03 16:19:12", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.07760000880807638, "neural_time_ms": 80.11029998306185, "behavioral_time_ms": 8146.821599919349, "hybrid_time_ms": 0.0, "total_time_ms": 8296.495200018398, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 59, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:19:21] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 16:19:22] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 16:19:21
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 49ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 14ms | Results: 66
+-----------------------------------------------------------
+   |__ [TOTAL] 94ms | Final Results: 50 books
+===========================================================
+[2026-04-03 16:19:22] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 16:19:21", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.060699996538460255, "neural_time_ms": 49.04970002826303, "behavioral_time_ms": 13.86940001975745, "hybrid_time_ms": 0.0, "total_time_ms": 94.12100003100932, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 66, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:44:38] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:44:47] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 277682 | Time: 2026-04-03 16:44:38
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 152ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 368ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8032ms | Results: 2
+-----------------------------------------------------------
+   |__ [TOTAL] 8626ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:44:47] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 277682, "timestamp": "2026-04-03 16:44:38", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 152.48150005936623, "neural_time_ms": 368.4293999103829, "behavioral_time_ms": 8031.7854000022635, "hybrid_time_ms": 0.0, "total_time_ms": 8625.666600069962, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 2, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:44:47] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:44:54] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 277682 | Time: 2026-04-03 16:44:47
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 57ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 6595ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 6716ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:44:54] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 277682, "timestamp": "2026-04-03 16:44:47", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.0643999082967639, "neural_time_ms": 57.134400005452335, "behavioral_time_ms": 6594.696800108068, "hybrid_time_ms": 0.0, "total_time_ms": 6715.783599996939, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:44:54] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:44:54] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 277682 | Time: 2026-04-03 16:44:54
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 34ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 12ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 63ms | Final Results: 50 books
+===========================================================
+[2026-04-03 16:44:54] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 277682, "timestamp": "2026-04-03 16:44:54", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06580003537237644, "neural_time_ms": 33.81769999396056, "behavioral_time_ms": 11.848699999973178, "hybrid_time_ms": 0.0, "total_time_ms": 62.564500025473535, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 7, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:46:07] INFO | [REC] Starting recommendation for user 3
+[2026-04-03 16:46:09] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 3 | Time: 2026-04-03 16:46:07
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 51ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 2195ms | Results: 50
+-----------------------------------------------------------
+   |__ [TOTAL] 2285ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:46:09] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 3, "timestamp": "2026-04-03 16:46:07", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.07790001109242439, "neural_time_ms": 51.106599974446, "behavioral_time_ms": 2194.735200027935, "hybrid_time_ms": 0.0, "total_time_ms": 2284.7717000404373, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 50, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:46:09] INFO | [REC] Starting recommendation for user 3
+[2026-04-03 16:46:10] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000005
+   User ID: 3 | Time: 2026-04-03 16:46:09
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 187ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 75ms | Results: 50
+-----------------------------------------------------------
+   |__ [TOTAL] 739ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:46:10] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000005", "user_id": 3, "timestamp": "2026-04-03 16:46:09", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06450002547353506, "neural_time_ms": 186.6114999866113, "behavioral_time_ms": 74.76300001144409, "hybrid_time_ms": 0.0, "total_time_ms": 738.639899995178, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 50, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:46:17] INFO | [REC] Starting recommendation for user 3
+[2026-04-03 16:46:17] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000006
+   User ID: 3 | Time: 2026-04-03 16:46:17
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 60ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 14ms | Results: 50
+-----------------------------------------------------------
+   |__ [TOTAL] 101ms | Final Results: 50 books
+===========================================================
+[2026-04-03 16:46:17] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000006", "user_id": 3, "timestamp": "2026-04-03 16:46:17", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06079999729990959, "neural_time_ms": 59.72520005889237, "behavioral_time_ms": 14.393200050108135, "hybrid_time_ms": 0.0, "total_time_ms": 100.62729998026043, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 50, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:48:43] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:48:43] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000007
+   User ID: 277682 | Time: 2026-04-03 16:48:43
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 118ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 34ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 243ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:48:43] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000007", "user_id": 277682, "timestamp": "2026-04-03 16:48:43", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.17040001694113016, "neural_time_ms": 118.06230002548546, "behavioral_time_ms": 33.6134999524802, "hybrid_time_ms": 0.0, "total_time_ms": 242.71920009050518, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:48:43] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:48:44] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000008
+   User ID: 277682 | Time: 2026-04-03 16:48:43
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 233ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 40ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 481ms | Final Results: 100 books
+===========================================================
+[2026-04-03 16:48:44] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000008", "user_id": 277682, "timestamp": "2026-04-03 16:48:43", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06999995093792677, "neural_time_ms": 232.96500009018928, "behavioral_time_ms": 39.5145999500528, "hybrid_time_ms": 0.0, "total_time_ms": 480.76509998645633, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 7, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 16:48:46] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 16:48:46] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000009
+   User ID: 277682 | Time: 2026-04-03 16:48:46
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 55ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 11ms | Results: 7
+-----------------------------------------------------------
+   |__ [TOTAL] 103ms | Final Results: 50 books
+===========================================================
+[2026-04-03 16:48:46] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000009", "user_id": 277682, "timestamp": "2026-04-03 16:48:46", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05100003909319639, "neural_time_ms": 55.489599937573075, "behavioral_time_ms": 11.352900066412985, "hybrid_time_ms": 0.0, "total_time_ms": 102.65759995672852, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 7, "final_results": 50, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 17:28:36] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 17:28:44] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 277682 | Time: 2026-04-03 17:28:36
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 171ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 70ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8034ms | Results: 2
+-----------------------------------------------------------
+   |__ [TOTAL] 8327ms | Final Results: 100 books
+===========================================================
+[2026-04-03 17:28:44] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 277682, "timestamp": "2026-04-03 17:28:36", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 170.90859997551888, "neural_time_ms": 70.36769995465875, "behavioral_time_ms": 8034.473899984732, "hybrid_time_ms": 0.0, "total_time_ms": 8327.332900022157, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 2, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 17:28:44] INFO | [REC] Starting recommendation for user 277682
+[2026-04-03 17:28:52] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 277682 | Time: 2026-04-03 17:28:44
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 81ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 8047ms | Results: 2
+-----------------------------------------------------------
+   |__ [TOTAL] 8182ms | Final Results: 100 books
+===========================================================
+[2026-04-03 17:28:52] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 277682, "timestamp": "2026-04-03 17:28:44", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06350001785904169, "neural_time_ms": 80.51080000586808, "behavioral_time_ms": 8046.72300000675, "hybrid_time_ms": 0.0, "total_time_ms": 8182.375400094315, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 2, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 17:35:55] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 17:35:57] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 1 | Time: 2026-04-03 17:35:55
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 244ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 2044ms | Results: 66
+-----------------------------------------------------------
+   |__ [TOTAL] 2330ms | Final Results: 100 books
+===========================================================
+[2026-04-03 17:35:57] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 1, "timestamp": "2026-04-03 17:35:55", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.08449994493275881, "neural_time_ms": 244.27010002546012, "behavioral_time_ms": 2044.421299942769, "hybrid_time_ms": 0.0, "total_time_ms": 2330.113000003621, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 66, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 17:35:57] INFO | [REC] Starting recommendation for user 1
+[2026-04-03 17:35:58] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 1 | Time: 2026-04-03 17:35:57
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 176ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 65ms | Results: 66
+-----------------------------------------------------------
+   |__ [TOTAL] 542ms | Final Results: 100 books
+===========================================================
+[2026-04-03 17:35:58] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 1, "timestamp": "2026-04-03 17:35:57", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.05579995922744274, "neural_time_ms": 176.03690002579242, "behavioral_time_ms": 65.24839997291565, "hybrid_time_ms": 0.0, "total_time_ms": 542.0863999752328, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 66, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 17:42:48] INFO | [REC] Starting recommendation for user 0
+[2026-04-03 17:42:48] WARNING | [WARN] Fallback triggered: user_id is None/0 — user not logged in
+[2026-04-03 17:42:48] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000001
+   User ID: 0 | Time: 2026-04-03 17:42:48
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [WARN] FALLBACK USED: user_id is None/0 — user not logged in
+-----------------------------------------------------------
+   |__ [TOTAL] 1ms | Final Results: 0 books
+===========================================================
+[2026-04-03 17:42:48] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000001", "user_id": 0, "timestamp": "2026-04-03 17:42:48", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 1.4164000749588013, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "user_id is None/0 \u2014 user not logged in"}
+[2026-04-03 17:42:50] INFO | [REC] Starting recommendation for user 0
+[2026-04-03 17:42:50] WARNING | [WARN] Fallback triggered: user_id is None/0 — user not logged in
+[2026-04-03 17:42:50] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000002
+   User ID: 0 | Time: 2026-04-03 17:42:50
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: N | Time: 0ms | Results: 0
+   |-- [NEURAL]       Invoked: N | Time: 0ms | Results: 0
+   |-- [BEHAVIORAL]   Invoked: N | Time: 0ms | Results: 0
+   [WARN] FALLBACK USED: user_id is None/0 — user not logged in
+-----------------------------------------------------------
+   |__ [TOTAL] 2ms | Final Results: 0 books
+===========================================================
+[2026-04-03 17:42:50] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000002", "user_id": 0, "timestamp": "2026-04-03 17:42:50", "transformer_invoked": false, "neural_invoked": false, "behavioral_invoked": false, "hybrid_merge_performed": false, "transformer_time_ms": 0.0, "neural_time_ms": 0.0, "behavioral_time_ms": 0.0, "hybrid_time_ms": 0.0, "total_time_ms": 2.2394999396055937, "transformer_results": 0, "neural_results": 0, "behavioral_results": 0, "final_results": 0, "weights": {}, "errors": [], "warnings": [], "used_fallback": true, "fallback_reason": "user_id is None/0 \u2014 user not logged in"}
+[2026-04-03 17:44:43] INFO | [REC] Starting recommendation for user 277684
+[2026-04-03 17:44:43] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000003
+   User ID: 277684 | Time: 2026-04-03 17:44:43
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 168ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 48ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 25ms | Results: 1
+-----------------------------------------------------------
+   |__ [TOTAL] 290ms | Final Results: 100 books
+===========================================================
+[2026-04-03 17:44:43] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000003", "user_id": 277684, "timestamp": "2026-04-03 17:44:43", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 168.0517999920994, "neural_time_ms": 48.42409992124885, "behavioral_time_ms": 25.306499912403524, "hybrid_time_ms": 0.0, "total_time_ms": 290.3647000202909, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 1, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}
+[2026-04-03 17:44:43] INFO | [REC] Starting recommendation for user 277684
+[2026-04-03 17:44:44] INFO | 
+===========================================================
+[REC] RECOMMENDATION REQUEST: REQ-000004
+   User ID: 277684 | Time: 2026-04-03 17:44:43
+-----------------------------------------------------------
+   |-- [TRANSFORMER]  Invoked: Y | Time: 0ms | Results: 1307
+   |-- [NEURAL]       Invoked: Y | Time: 299ms | Results: 500
+   |-- [BEHAVIORAL]   Invoked: Y | Time: 32ms | Results: 1
+-----------------------------------------------------------
+   |__ [TOTAL] 364ms | Final Results: 100 books
+===========================================================
+[2026-04-03 17:44:44] DEBUG | EXECUTION_LOG_JSON: {"request_id": "REQ-000004", "user_id": 277684, "timestamp": "2026-04-03 17:44:43", "transformer_invoked": true, "neural_invoked": true, "behavioral_invoked": true, "hybrid_merge_performed": false, "transformer_time_ms": 0.06620003841817379, "neural_time_ms": 298.8839000463486, "behavioral_time_ms": 31.83230001013726, "hybrid_time_ms": 0.0, "total_time_ms": 363.5958000086248, "transformer_results": 1307, "neural_results": 500, "behavioral_results": 1, "final_results": 100, "weights": {}, "errors": [], "warnings": [], "used_fallback": false, "fallback_reason": ""}

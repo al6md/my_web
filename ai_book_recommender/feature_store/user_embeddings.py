@@ -76,11 +76,16 @@ class UserEmbeddingManager:
                 
                 old_vector = np.array(u_vec_data, dtype=np.float32)
                 
-                # running mean formula
-                updated_vector = (old_vector * n + new_vector) / (n + 1)
-                
-                user_emb.vector = pickle.dumps(updated_vector.tolist())
-                user_emb.interaction_count = n + 1
+                # Check for shape mismatch (e.g. model changed from 128 to 384 dims)
+                if old_vector.shape != new_vector.shape:
+                    logger.warning(f"Shape mismatch for user {user_id}: {old_vector.shape} vs {new_vector.shape}. Resetting embedding.")
+                    user_emb.vector = pickle.dumps(new_vector.tolist())
+                    user_emb.interaction_count = 1
+                else:
+                    # running mean formula
+                    updated_vector = (old_vector * n + new_vector) / (n + 1)
+                    user_emb.vector = pickle.dumps(updated_vector.tolist())
+                    user_emb.interaction_count = n + 1
             
             db.session.commit()
             logger.info(f"✅ Updated UserEmbedding for user {user_id} (count: {user_emb.interaction_count})")
