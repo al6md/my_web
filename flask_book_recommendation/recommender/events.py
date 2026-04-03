@@ -189,7 +189,7 @@ def update_user_model_online(user_id: int, event):
     - Abandon: -0.5 (disinterest)
     
     Also handles:
-    - Dynamic interest creation: new categories → interests after 3+ views
+    - Dynamic interest creation: new categories -> interests after 3+ views
     - Auto-trigger AI analysis every 10 interactions
     - Cache invalidation after updates
     """

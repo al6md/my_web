@@ -108,7 +108,7 @@ def create_app():
     csrf.exempt(realtime_bp)
     app.register_blueprint(realtime_bp)
 
-    # الصفحة الرئيسية → Explore
+    # Home page -> Explore
     # @app.route("/")
     # def index():
     #     return redirect(url_for("explore.index"))

@@ -378,7 +378,7 @@ def home():
             pre_filter_count = len(ai_algo_books)
             ai_algo_books = _strict_interest_filter(ai_algo_books, user_interests, limit=100)
             logger.info(
-                f"[InterestGatekeeper] Filtered {pre_filter_count} → {len(ai_algo_books)} books "
+                f"[InterestGatekeeper] Filtered {pre_filter_count} -> {len(ai_algo_books)} books "
                 f"for user {user_id} with interests: {user_interests}"
             )
             
