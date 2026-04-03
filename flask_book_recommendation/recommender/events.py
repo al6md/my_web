@@ -61,6 +61,7 @@ def log_user_view(user_id, book):
                 book_google_id=g_id,
             )
             db.session.add(event)
+
         except Exception:
             pass  # UserEvent table may not exist yet (pre-migration)
 
@@ -175,62 +176,182 @@ def analyze_user_profile_with_ai(user_id):
 
 def update_user_model_online(user_id: int, event):
     """
-    تحديث نظام التوصيات للمستخدم مباشرة في الوقت الفعلي بناءً على الحدث المدخل.
+    🔄 تحديث نظام التوصيات للمستخدم مباشرة في الوقت الفعلي بناءً على الحدث المدخل.
+    
+    Enhanced behavioral weight system:
+    - Click/View: +0.3 (initial interest signal)
+    - Long View (2+ min): +0.8 (deep interest)
+    - Search: +1.5 (strongest explicit intent)
+    - Rate 4+: +1.0 (positive endorsement)
+    - Rate 3-: -0.3 (negative signal)
+    - Favorite/Later: +0.8 (save intent)
+    - Finished reading: +2.0 (strongest behavioral signal)
+    - Abandon: -0.5 (disinterest)
+    
+    Also handles:
+    - Dynamic interest creation: new categories → interests after 3+ views
+    - Auto-trigger AI analysis every 10 interactions
+    - Cache invalidation after updates
     """
     if not user_id or not event:
         return
 
     # استخراج التصنيف/الموضوع للكتاب المعني
-    topic = 'general'
+    topics = []
     if event.book_google_id:
         book = Book.query.filter_by(google_id=event.book_google_id).first()
         if book and book.categories:
-            # افتراض أن Categories محفوظ كـ String مقسم بـ comma أو ككلمة واحدة
+            # Parse all categories
             cats = [c.strip() for c in book.categories.split(",")]
-            if cats:
-                topic = cats[0]
+            topics = [c for c in cats if c]
+    
+    if not topics:
+        topics = ['general']
 
-    # جلب أو إنشاء تفضيل للمستخدم
-    preference = UserPreference.query.filter_by(user_id=user_id, topic=topic).first()
-    if not preference:
-        preference = UserPreference(user_id=user_id, topic=topic, weight=1.0)
-        db.session.add(preference)
-
-    # حساب التعديل على الوزن حسب الحدث
+    # ── Calculate weight change based on event type ──
     weight_change = 0.0
     
-    if event.event_type == 'finish':
-        weight_change = 0.5
-    elif event.event_type == 'view':
-        duration = event.duration_seconds or 0
-        if duration > 300: # أكثر من 5 دقائق
-            weight_change = 0.2
-        elif duration < 10:
-            weight_change = -0.1
-    elif event.event_type == 'abandon':
-        scroll = event.scroll_depth or 0.0
-        if scroll < 0.2:
-            weight_change = -0.3
-
-    if weight_change != 0.0:
-        preference.weight = max(0.0, preference.weight + weight_change)
-        
+    if event.event_type == 'finish' or event.event_type == 'finished':
+        weight_change = 2.0  # Strongest signal: completed a book
+    elif event.event_type == 'view' or event.event_type == 'click':
+        duration = getattr(event, 'duration_seconds', 0) or 0
+        weight_change = 0.3  # Base: clicking/viewing = initial interest
+        if duration > 120:  # More than 2 minutes = deep interest
+            weight_change = 0.8
+        elif duration > 60:  # More than 1 minute
+            weight_change = 0.5
+    elif event.event_type == 'search':
+        weight_change = 1.5  # Search = highest explicit intent
+    elif event.event_type == 'rate':
+        rating = getattr(event, 'metadata_json', None)
         try:
-            db.session.commit()
-            logger.info(f"Updated user {user_id} preference {topic} by {weight_change}. New weight: {preference.weight}")
+            import json
+            if rating:
+                meta = json.loads(str(rating)) if isinstance(rating, str) else rating
+                rating_val = float(meta.get('rating', 3))
+            else:
+                rating_val = 3.0
+        except Exception:
+            rating_val = 3.0
+        
+        if rating_val >= 4:
+            weight_change = 1.0  # Positive endorsement
+        elif rating_val <= 2:
+            weight_change = -0.3  # Negative signal
+    elif event.event_type in ('favorite', 'later', 'save'):
+        weight_change = 0.8  # Save intent
+    elif event.event_type == 'abandon':
+        scroll = getattr(event, 'scroll_depth', 0.0) or 0.0
+        if scroll < 0.2:
+            weight_change = -0.5  # Quick abandon = disinterest
+        elif scroll < 0.5:
+            weight_change = -0.2
+
+    if weight_change == 0.0:
+        return
+
+    # ── Update UserPreference for each topic ──
+    updated_topics = []
+    for topic in topics:
+        preference = UserPreference.query.filter_by(user_id=user_id, topic=topic).first()
+        if not preference:
+            # Only create new preferences for positive signals
+            if weight_change > 0:
+                preference = UserPreference(user_id=user_id, topic=topic, weight=weight_change)
+                db.session.add(preference)
+                updated_topics.append(topic)
+        else:
+            preference.weight = max(0.0, preference.weight + weight_change)
+            updated_topics.append(topic)
+    
+    try:
+        db.session.commit()
+        if updated_topics:
+            logger.info(
+                f"[BehaviorUpdate] user={user_id} event={event.event_type} "
+                f"topics={updated_topics} change={weight_change:+.1f}"
+            )
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating online model for user {user_id}: {e}")
+        return
+
+    # ── 🧠 Dynamic Interest Creation ──
+    # If a user has viewed books in a new category 3+ times, auto-add as interest
+    if weight_change > 0:
+        try:
+            for topic in topics:
+                if topic == 'general':
+                    continue
+                pref = UserPreference.query.filter_by(user_id=user_id, topic=topic).first()
+                if pref and pref.weight >= 3.0:
+                    # Check if this is already a high-weight interest
+                    from ..models import UserGenre, Genre
+                    genre = Genre.query.filter(Genre.name.ilike(topic)).first()
+                    if genre:
+                        existing = UserGenre.query.filter_by(
+                            user_id=user_id, genre_id=genre.id
+                        ).first()
+                        if not existing:
+                            db.session.add(UserGenre(user_id=user_id, genre_id=genre.id))
+                            db.session.commit()
+                            logger.info(
+                                f"[DynamicInterest] Auto-added genre '{topic}' "
+                                f"for user {user_id} (weight={pref.weight:.1f})"
+                            )
         except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error updating online model for user {user_id}: {e}")
+            logger.error(f"[DynamicInterest] Error: {e}")
+
+    # ── 🤖 Auto-trigger AI Profile Analysis every 10 interactions ──
+    try:
+        from ..models import UserEvent
+        interaction_count = UserEvent.query.filter_by(user_id=user_id).count()
+        if interaction_count > 0 and interaction_count % 10 == 0:
+            import threading
+            from flask import current_app
+            app = current_app._get_current_object()
+            
+            def _bg_analyze():
+                with app.app_context():
+                    try:
+                        analyze_user_profile_with_ai(user_id)
+                        logger.info(f"[AutoAnalysis] AI profile analysis triggered for user {user_id} (interaction #{interaction_count})")
+                    except Exception as e:
+                        logger.error(f"[AutoAnalysis] Error: {e}")
+            
+            thread = threading.Thread(target=_bg_analyze, daemon=True)
+            thread.start()
+    except Exception:
+        pass
+
+    # ── 🗑️ Cache Invalidation for immediate recommendation refresh ──
+    try:
+        from ..extensions import cache
+        cache.delete(f"home_full_{user_id}")
+        cache.delete(f"home_feed_{user_id}")
+    except Exception:
+        pass
+
 
 def decay_preferences():
     """
     تتلاشى التفضيلات تدريجياً مع مرور الوقت للتركيز على الاهتمامات الأحدث.
     هذه الدالة يُفترض أن تُشغل عبر مهمة مجدولة (Celery Beat مثلاً) أسبوعياً كـ: `كل أحد 2 صباحاً`
+    
+    Note: Explicit onboarding interests (weight >= 100) decay slower (0.98)
+    while behavioral interests (weight < 100) decay faster (0.90) to be responsive.
     """
     try:
-        db.session.execute('UPDATE user_preferences SET weight = weight * 0.95')
+        # Explicit interests decay slowly
+        db.session.execute(
+            'UPDATE user_preferences SET weight = weight * 0.98 WHERE weight >= 100'
+        )
+        # Behavioral interests decay faster
+        db.session.execute(
+            'UPDATE user_preferences SET weight = weight * 0.90 WHERE weight < 100'
+        )
         db.session.commit()
-        logger.info("Executed weekly preference weight decay (0.95).")
+        logger.info("Executed weekly preference weight decay (explicit: 0.98, behavioral: 0.90).")
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error decaying preferences: {e}")

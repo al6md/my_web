@@ -2520,11 +2520,11 @@ def update_user_preferences_from_behavior(user_id: int, action: str, book_info: 
     from .extensions import db
     
     weight_map = {
-        "view": 1,
-        "favorite": 10,
-        "finished": 15,
-        "rated_high": 20,
-        "search": 5
+        "view": 15,
+        "favorite": 40,
+        "finished": 60,
+        "rated_high": 120,
+        "search": 30
     }
     
     weight = weight_map.get(action, 1)

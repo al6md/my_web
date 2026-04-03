@@ -471,6 +471,14 @@ class UnifiedRecommendationPipeline:
             if adjustment != 0:
                 c["final_score"] = float(np.clip(c["final_score"] + (adjustment * 0.15), 0, 1))
                 
+        # 💡 [AI STRICT FILTER] Pure Neural Confidence Floor
+        # We rely entirely on the AI pipeline embedding distance and ensemble scores.
+        # Only keep books with at least 75% confidence match to ensure high precision without hardcoded strings.
+        initial_count = len(candidates)
+        candidates = [c for c in candidates if c.get("final_score", 0) >= 0.75]
+        if len(candidates) < initial_count:
+            logger.info(f"🛡️ [AI Filter] Dropped {initial_count - len(candidates)} books scoring below 0.75 confidence")
+
         candidates.sort(key=lambda x: x.get("final_score", 0), reverse=True)
         candidates = candidates[:top_k]
         timings["sort_and_learn"] = time.time() - t0
@@ -539,30 +547,31 @@ class UnifiedRecommendationPipeline:
             )
 
             futures = {}
+            # 💡 [PRECISION] Disabled randomization for all candidate sources
             futures["Collaborative Filtering"] = self._executor.submit(
                 _safe_source, "Collaborative Filtering",
-                _run_in_context, get_cf_similar, user_id, top_n=100, randomize=True
+                _run_in_context, get_cf_similar, user_id, top_n=100, randomize=False
             )
             futures["Content-Based"] = self._executor.submit(
                 _safe_source, "Content-Based",
-                _run_in_context, get_content_similar, user_id, top_n=100, randomize=True
+                _run_in_context, get_content_similar, user_id, top_n=100, randomize=False
             )
             futures["Two-Tower"] = self._executor.submit(
                 _safe_source, "Two-Tower",
-                _run_in_context, get_deep_learning_recommendations, user_id, limit=100, randomize=True
+                _run_in_context, get_deep_learning_recommendations, user_id, limit=100, randomize=False
             )
             futures["Behavioral"] = self._executor.submit(
                 _safe_source, "Behavioral",
-                _run_in_context, get_behavior_based_recommendations, user_id, limit=100, randomize=True
+                _run_in_context, get_behavior_based_recommendations, user_id, limit=100, randomize=False
             )
             futures["View-Based"] = self._executor.submit(
                 _safe_source, "View-Based",
-                _run_in_context, get_view_based_recommendations, user_id, top_n=100, randomize=True
+                _run_in_context, get_view_based_recommendations, user_id, top_n=100, randomize=False
             )
-            futures["Trending"] = self._executor.submit(
-                _safe_source, "Trending",
-                _run_in_context, get_trending, limit=80
-            )
+            # futures["Trending"] = self._executor.submit(
+            #     _safe_source, "Trending",
+            #     _run_in_context, get_trending, limit=80
+            # )
             
             # 🔥 New: Direct search-query based retrieval for immediate behavior matching
             from flask_book_recommendation.extensions import db
@@ -581,10 +590,38 @@ class UnifiedRecommendationPipeline:
                     _run_in_context, get_vector_search_results, q, top_n=50
                 )
 
+            # 🍏 New: Interest-based retrieval for new users
+            from flask_book_recommendation.models import UserGenre, Genre
+            from flask_book_recommendation.extensions import db
+            user_interest_genres = db.session.query(Genre.name).join(UserGenre).filter(UserGenre.user_id == user_id).all()
+            user_interests = [g[0] for g in user_interest_genres]
+            if user_interests:
+                logger.info(f"🧬 [Retrieval] Current user interest genres: {user_interests}")
+                # Increased from 3 to 5 for better coverage
+                for genre_query in user_interests[:5]: 
+                    from .retrieval.hybrid_retrieval import get_vector_search_results
+                    # Increased top_n from 30 to 50 for more variety
+                    futures[f"Interest:{genre_query}"] = self._executor.submit(
+                        _safe_source, f"Interest:{genre_query}",
+                        _run_in_context, get_vector_search_results, genre_query, top_n=50
+                    )
+
             for key, future in futures.items():
                 try:
                     source_name, items = future.result(timeout=18)
+                    
+                    # 💡 [GATEKEEPER] Source Confidence Gating
+                    # If a source returns very low scores, it's considered "Noise" for a new user
+                    confidence_threshold = 0.20
+                    filtered_items = []
                     for item in items:
+                        if float(item.get("score", 0)) >= confidence_threshold:
+                            filtered_items.append(item)
+                    
+                    if len(filtered_items) < len(items):
+                        logger.info(f"🛡️ [Gatekeeper] Dropped {len(items) - len(filtered_items)} low-confidence items from {source_name}")
+                    
+                    for item in filtered_items:
                         self._merge_candidate(candidates_map, item, source_name)
                 except Exception as e:
                     logger.error(f"❌ [Retrieval] {key} timeout/error: {e}")
@@ -834,7 +871,7 @@ class UnifiedRecommendationPipeline:
             "semantic": 0.15,
             "graph": 0.10,
             "behavioral": 0.15,  # Real-time search/view boost
-            "popularity": 0.05,
+            "popularity": 0.00,  # [PURE-PERS] Disabled popularity bias
         }
 
         for c in candidates:

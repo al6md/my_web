@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EnsembleWeights:
     """Default weights for ensemble components."""
-    two_tower: float = 0.30
-    graph: float = 0.15
-    collaborative: float = 0.15
-    semantic: float = 0.15
-    behavioral: float = 0.15
-    popularity: float = 0.05
+    two_tower: float = 0.45    # 🚀 Increased: Strongest personalization signal
+    graph: float = 0.05        # 📉 Decreased: Can sometimes pull broad matches
+    collaborative: float = 0.10 # 📉 Decreased: Unreliable for cold-start users
+    semantic: float = 0.35     # 🚀 Increased: Best for interest-based matching
+    behavioral: float = 0.05   # 📉 Decreased: Handled partially by Two-Tower
+    popularity: float = 0.00   # ❌ Disabled: Purely personalized
     diversity: float = 0.03
     novelty: float = 0.02
 

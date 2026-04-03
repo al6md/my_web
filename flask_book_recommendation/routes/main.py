@@ -44,10 +44,165 @@ from ai_book_recommender.unified_pipeline import get_unified_engine
 main_bp = Blueprint("main", __name__)
 
 
+def _get_user_interests(user_id):
+    """
+    Get ALL user interests from both UserGenre and UserPreference.
+    Returns a set of lowercase interest/topic strings.
+    """
+    if not user_id:
+        return set()
+    
+    from ..models import UserGenre, Genre, UserPreference
+    interests = set()
+    
+    # From UserGenre (explicit genre selections)
+    user_genres = (
+        db.session.query(Genre.name)
+        .join(UserGenre)
+        .filter(UserGenre.user_id == user_id)
+        .all()
+    )
+    for (name,) in user_genres:
+        interests.add(name.lower().strip())
+    
+    # From UserPreference (broader topic interests, behavioral)
+    user_prefs = UserPreference.query.filter_by(user_id=user_id).filter(
+        UserPreference.weight >= 5.0  # Only significant interests
+    ).all()
+    for pref in user_prefs:
+        interests.add(pref.topic.lower().strip())
+    
+    return interests
+
+
+def _strict_interest_filter(books, user_interests, limit=100):
+    """
+    🔒 STRICT INTEREST GATEKEEPER
+    
+    Filters a list of book recommendations to ONLY include books 
+    that match at least one of the user's interests.
+    
+    Matching criteria:
+    - Book's categories contain an interest keyword
+    - Book's title contains an interest keyword
+    
+    This is a 100% strict filter — no random/unrelated books pass through.
+    
+    Args:
+        books: List of book dicts with 'categories', 'title', etc.
+        user_interests: Set of lowercase interest strings
+        limit: Maximum number of books to return
+    
+    Returns:
+        Filtered list of books matching user interests
+    """
+    if not user_interests:
+        return books[:limit]  # No interests set = return as-is (cold start)
+    
+    filtered = []
+    for book in books:
+        if len(filtered) >= limit:
+            break
+        
+        # Get book's categories
+        cats_raw = book.get("categories", [])
+        if isinstance(cats_raw, str):
+            cats_raw = [c.strip() for c in cats_raw.split(",")]
+        
+        # Build searchable text from categories + title
+        cat_text = " ".join(cats_raw).lower() if cats_raw else ""
+        title_text = (book.get("title") or "").lower()
+        author_text = (book.get("author") or "").lower()
+        search_text = f"{cat_text} {title_text} {author_text}"
+        
+        # Check if ANY user interest matches
+        matched = False
+        for interest in user_interests:
+            # Split multi-word interests for flexible matching
+            interest_words = interest.split()
+            if len(interest_words) > 1:
+                # Multi-word: check if the full phrase appears
+                if interest in search_text:
+                    matched = True
+                    break
+            else:
+                # Single word: check if it appears as a word
+                if interest in search_text:
+                    matched = True
+                    break
+        
+        if matched:
+            filtered.append(book)
+    
+    return filtered
+
+
+def _fetch_interest_books_from_api(interests, limit_per_interest=10):
+    """
+    Fetch books from Google Books API based on user interests.
+    Used as fallback when local DB doesn't have enough matching books.
+    
+    Returns list of book dicts.
+    """
+    import os
+    api_key = os.environ.get("GOOGLE_BOOKS_API_KEY")
+    results = []
+    seen_ids = set()
+    
+    for interest in list(interests)[:5]:  # Limit to 5 interests
+        try:
+            params = {
+                "q": f"subject:{interest}",
+                "maxResults": limit_per_interest,
+                "orderBy": "relevance",
+                "printType": "books",
+            }
+            if api_key:
+                params["key"] = api_key
+            
+            import requests as _req
+            resp = _req.get("https://www.googleapis.com/books/v1/volumes", 
+                          params=params, timeout=10)
+            if not resp.ok:
+                continue
+            
+            for item in resp.json().get("items", []):
+                gid = item.get("id")
+                if not gid or gid in seen_ids:
+                    continue
+                seen_ids.add(gid)
+                
+                vi = item.get("volumeInfo", {})
+                imgs = vi.get("imageLinks", {}) or {}
+                cover = imgs.get("thumbnail") or imgs.get("smallThumbnail")
+                if cover:
+                    cover = cover.replace("http://", "https://").replace("&edge=curl", "")
+                
+                cats = vi.get("categories", [interest.title()])
+                
+                results.append({
+                    "id": gid,
+                    "title": vi.get("title", ""),
+                    "author": ", ".join(vi.get("authors", ["Unknown"])),
+                    "cover_url": cover,
+                    "categories": cats,
+                    "algorithm_tag": "INTEREST MATCH",
+                    "algo_tag": "Interest-Based",
+                    "confidence": 0.9,
+                    "score": 0.85,
+                    "rating": vi.get("averageRating", 4.5)
+                })
+        except Exception as e:
+            logger.warning(f"[InterestAPI] Error fetching '{interest}': {e}")
+            continue
+    
+    return results
+
+
 @main_bp.route("/")
 def home():
     """
-    الصفحة الرئيسية — مع تخزين مؤقت ذكي لتسريع فائق.
+    الصفحة الرئيسية — مع فلتر صارم بالاهتمامات لقسم Recommended for You.
     """
     from flask import make_response
     
@@ -59,9 +214,10 @@ def home():
     if cached_resp:
         return cached_resp
     
+    # ── Get user interests for strict filtering ──
+    user_interests = _get_user_interests(user_id) if user_id else set()
     
     # جلب كتب متنوعة للأقسام المختلفة
-    
     if user_id:
         featured = get_deep_learning_recommendations(user_id, limit=100)
     else:
@@ -97,21 +253,36 @@ def home():
     most_viewed = get_trending(limit=100)
     
     if not featured or len(featured) < 3:
-        # Emergency fetch from Google Books if local data is sparse
-        items, _ = fetch_google_books("featured books architecture", max_results=12)
-        featured = []
-        for it in items:
-            vi = it.get("volumeInfo", {})
-            featured.append({
-                "id": it.get("id"),
-                "title": vi.get("title"),
-                "author": ", ".join(vi.get("authors", ["Unknown"])),
-                "cover": (vi.get("imageLinks", {})).get("thumbnail"),
-                "rating": vi.get("averageRating", 4.5)
-            })
+        if user_id and user_interests:
+            # Fetch from Google Books based on interests instead of generic
+            items_all = []
+            for interest in list(user_interests)[:3]:
+                items, _ = fetch_google_books(f"subject:{interest}", max_results=6)
+                items_all.extend(items)
+            featured = []
+            for it in items_all:
+                vi = it.get("volumeInfo", {})
+                featured.append({
+                    "id": it.get("id"),
+                    "title": vi.get("title"),
+                    "author": ", ".join(vi.get("authors", ["Unknown"])),
+                    "cover": (vi.get("imageLinks", {})).get("thumbnail"),
+                    "rating": vi.get("averageRating", 4.5)
+                })
+        else:
+            items, _ = fetch_google_books("featured books architecture", max_results=12)
+            featured = []
+            for it in items:
+                vi = it.get("volumeInfo", {})
+                featured.append({
+                    "id": it.get("id"),
+                    "title": vi.get("title"),
+                    "author": ", ".join(vi.get("authors", ["Unknown"])),
+                    "cover": (vi.get("imageLinks", {})).get("thumbnail"),
+                    "rating": vi.get("averageRating", 4.5)
+                })
             
     if not most_viewed or len(most_viewed) < 3:
-        # Use featured as fallback for most viewed
         most_viewed = featured[:10]
  
     # قائمة التصنيفات الأساسية
@@ -121,18 +292,21 @@ def home():
         "Psychology", "Business", "Self-Help", "Travel", "Religion"
     ]
  
-    # Fetch real project algorithm recommendations for the showcase
+    # ═══════════════════════════════════════════════════════════════
+    # 🔒 STRICT INTEREST-BASED RECOMMENDATIONS (ai_algo_books)
+    # Only books matching user interests pass through
+    # ═══════════════════════════════════════════════════════════════
     ai_algo_books = []
     mind_metrics_percentage = 68
     try:
         # 1. Get Neural Hybrid (Featured)
         engine = get_unified_engine()
         ctx = {"page": "home_showcase", "time": time.time()}
-        neural_recs = engine.recommend_full_stack(user_id=user_id, top_k=5, context=ctx)
+        neural_recs = engine.recommend_full_stack(user_id=user_id, top_k=100, context=ctx)
         
         # 2. Get DL and CF candidates
-        dl_recs = get_deep_learning_recommendations(user_id, limit=50)
-        cf_recs = get_cf_similar(user_id, top_n=50) if user_id else []
+        dl_recs = get_deep_learning_recommendations(user_id, limit=100)
+        cf_recs = get_cf_similar(user_id, top_n=100) if user_id else []
         
         # Calculate Dynamic Mind Metrics
         if user_id:
@@ -141,14 +315,13 @@ def home():
             import time as _time
             mind_metrics_percentage = 65 + (int(_time.time() / 3600) % 30)
             
-        # Combine into ai_algo_books with tags
+        # Combine all candidates into ai_algo_books with tags
         seen_ids = set()
         
         # Featured (Neural)
-        if neural_recs:
-            b = neural_recs[0]
+        for b in (neural_recs or []):
             bid = b.get('id') or b.get('google_id')
-            if bid:
+            if bid and bid not in seen_ids:
                 seen_ids.add(bid)
                 ai_algo_books.append({
                     "id": bid,
@@ -163,18 +336,13 @@ def home():
                     "rating": b.get('rating', 4.8)
                 })
  
-        # Supporters (DL, CF, etc.)
+        # Supporters (DL, CF)
         candidates = []
         for b in dl_recs: candidates.append((b, "DEEP LEARNING"))
         for b in cf_recs: candidates.append((b, "COLLECTIVE"))
-        
-        # Fallback if sparse
-        if len(ai_algo_books) + len(candidates) < 100:
-            trending = get_trending(limit=100)
-            for b in trending: candidates.append((b, "TRENDING"))
  
         for b, tag in candidates:
-            if len(ai_algo_books) >= 100: break
+            if len(ai_algo_books) >= 200: break  # Gather more for filtering
             bid = b.get('id') if isinstance(b, dict) else (b.google_id or b.id)
             if bid and bid not in seen_ids:
                 seen_ids.add(bid)
@@ -205,23 +373,32 @@ def home():
                         "rating": 4.5
                     })
  
+        # ── 🔒 STRICT INTEREST GATEKEEPER ──
+        if user_id and user_interests:
+            pre_filter_count = len(ai_algo_books)
+            ai_algo_books = _strict_interest_filter(ai_algo_books, user_interests, limit=100)
+            logger.info(
+                f"[InterestGatekeeper] Filtered {pre_filter_count} → {len(ai_algo_books)} books "
+                f"for user {user_id} with interests: {user_interests}"
+            )
+            
+            # If strict filter left too few books, fetch from Google Books API
+            if len(ai_algo_books) < 5:
+                logger.info(f"[InterestGatekeeper] Only {len(ai_algo_books)} books after filter, fetching from API...")
+                api_books = _fetch_interest_books_from_api(user_interests, limit_per_interest=10)
+                for ab in api_books:
+                    if len(ai_algo_books) >= 100:
+                        break
+                    if ab["id"] not in seen_ids:
+                        seen_ids.add(ab["id"])
+                        ai_algo_books.append(ab)
+ 
     except Exception as e:
         import traceback
         logger.error(f"Error fetching AI recommendations: {str(e)}\n{traceback.format_exc()}")
-        # Fallback logic to ensure we have data even if AI fails
-        if not ai_algo_books:
-            logger.warning("No AI recommendations fetched, falling back to trending for this section")
-            tr = get_trending(limit=4)
-            for b in tr:
-                ai_algo_books.append({
-                    "id": b.get('id') or b.get('google_id'),
-                    "title": b.get('title', "Unknown"),
-                    "author": b.get('author') or (b.get('authors', [None])[0] if b.get('authors') else "Unknown"),
-                    "cover_url": b.get('cover_url') or b.get('cover'),
-                    "categories": b.get('categories') or [],
-                    "algorithm_tag": "TRENDING",
-                    "rating": 4.5
-                })
+        if not ai_algo_books and user_id and user_interests:
+            # Fallback: fetch from API based on interests
+            ai_algo_books = _fetch_interest_books_from_api(user_interests, limit_per_interest=8)
  
     # Get pipeline metadata for frontend visualization
     from ai_book_recommender.unified_pipeline import UnifiedRecommendationPipeline
@@ -242,11 +419,11 @@ def home():
         pipeline_meta=pipeline_meta,
         current_filters={'query': '', 'sort': 'ai_relevance', 'debug_ts': time.time()}
     ))
-    # ⚡ Cache-Control: allow browser caching for 3 minutes
-    resp.headers["Cache-Control"] = "private, max-age=180"
+    # ⚡ Cache-Control: reduced to 1 minute for faster interest updates
+    resp.headers["Cache-Control"] = "private, max-age=60"
     
-    # ⚡ Store in server cache for 3 minutes
-    cache.set(cache_key, resp, timeout=180)
+    # ⚡ Store in server cache for 1 minute (was 3 min)
+    cache.set(cache_key, resp, timeout=60)
     return resp
 
 @main_bp.route("/api/pipeline-status")
@@ -339,8 +516,8 @@ def home_feed():
 
     with ThreadPoolExecutor(max_workers=6) as ex:  # ⚡ Reduced from 12 to 6
         futs = {
-            # Basic AI
-            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=100, randomize=True): ("cat", "deep_learning"),
+            # Basic AI - disabled randomization for consistency
+            ex.submit(_run_safe, app_obj, get_deep_learning_recommendations, user_id, limit=100, randomize=False): ("cat", "deep_learning"),
             
             # Interactive / Community
             ex.submit(_run_safe, app_obj, get_mood_based_recommendations, mood_key=user_mood_key, limit=100): ("cat", "mood_ai"),
@@ -399,6 +576,32 @@ def home_feed():
     # ── Build Featured Lists ──
     featured_lists = _build_featured_lists()
 
+    # ── 🔒 Apply Strict Interest Gatekeeper to neural sections ──
+    user_interests = _get_user_interests(user_id) if user_id else set()
+    if user_id and user_interests:
+        # Filter "recommended_for_you" section strictly by interests
+        if "recommended_for_you" in neural_sections:
+            raw_recs = neural_sections["recommended_for_you"]
+            neural_sections["recommended_for_you"] = _strict_interest_filter(
+                raw_recs, user_interests, limit=100
+            )
+            current_app.logger.info(
+                f"[FeedGatekeeper] recommended_for_you: {len(raw_recs)} -> "
+                f"{len(neural_sections['recommended_for_you'])}"
+            )
+            
+            # If too few after filtering, supplement from Google Books API
+            if len(neural_sections["recommended_for_you"]) < 3:
+                api_supplement = _fetch_interest_books_from_api(user_interests, limit_per_interest=6)
+                neural_sections["recommended_for_you"].extend(api_supplement)
+        
+        # Also filter deep_learning section
+        dl_books = cat_results.get("deep_learning", [])
+        if dl_books:
+            cat_results["deep_learning"] = _strict_interest_filter(
+                dl_books, user_interests, limit=100
+            )
+
     # ── Render template ──
     # ── Dynamic "Because You Searched For" Section ──
     dynamic_search_books = []
@@ -414,24 +617,18 @@ def home_feed():
         if not last_search_term or len(last_search_term) < 2:
             last_search_term = "Self Growth"
 
-        # Search in categories and title, ordered randomly to show different books
+        # ⭐ Search based on relevance - ordered by rating/recency instead of random
         dynamic_search_books = Book.query.filter(
             db.or_(
                 Book.categories.ilike(f'%{last_search_term}%'),
                 Book.title.ilike(f'%{last_search_term}%')
             )
-        ).order_by(db.func.random()).limit(4).all()
+        ).order_by(Book.id.desc()).limit(4).all()
         
-        # Fallback if no specific books found or search term was default
-        if not dynamic_search_books or len(dynamic_search_books) < 4:
-            trending = get_trending(limit=10)
-            added_ids = [getattr(b, 'id', b.get('id') if isinstance(b, dict) else None) for b in dynamic_search_books]
-            for tb in trending:
-                tbid = tb.get('id')
-                if tbid not in added_ids:
-                    dynamic_search_books.append(tb)
-                if len(dynamic_search_books) >= 4:
-                    break
+        # Fallback suppressed - showing only relevant search matches
+        if not dynamic_search_books:
+             # trending = get_trending(limit=4)
+             pass
     except Exception as e:
         current_app.logger.error(f"[Feed] Search section failed: {str(e)}")
         # Ultimate fallback
@@ -455,10 +652,10 @@ def home_feed():
         featured_lists=featured_lists,
     )
     resp = jsonify({"success": True, "html": html})
-    resp.headers["Cache-Control"] = "private, max-age=120"
+    resp.headers["Cache-Control"] = "private, max-age=60"
     
-    # ⚡ Cache the feed response for 2 minutes
-    cache.set(feed_cache_key, resp, timeout=120)
+    # ⚡ Cache the feed response for 1 minute (reduced from 2 min for faster updates)
+    cache.set(feed_cache_key, resp, timeout=60)
     return resp
 
 

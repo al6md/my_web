@@ -43,8 +43,8 @@ def save_interests():
                 db.session.add(UserGenre(user_id=current_user.id, genre_id=genre_id))
             else:
                 # Save as generic UserPreference (Topic)
-                # Give high weight (2.0) for explicit selection
-                db.session.add(UserPreference(user_id=current_user.id, topic=term, weight=2.0))
+                # Give high weight (150.0) for explicit selection
+                db.session.add(UserPreference(user_id=current_user.id, topic=term, weight=150.0))
         
         # 3. Mark onboarding as completed
         current_user.onboarding_completed = True

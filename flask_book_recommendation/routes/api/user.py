@@ -4,7 +4,7 @@ API User endpoints - مكتبة المستخدم والتفضيلات
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from ...extensions import db
+from ...extensions import db, cache
 from ...models import (
     User, Book, UserPreference, BookStatus, 
     UserRatingCF, BookReview
@@ -117,6 +117,11 @@ def add_to_library(gid: str):
         print(f"Embedding update error: {e_emb}")
     # ------------------------------------------
     
+    # 🔥 إبطال كاش الصفحة الرئيسية لحظياً
+    cache.delete(f"home_full_{user_id}")
+    cache.delete(f"home_feed_{user_id}")
+    cache.delete(f"home_recs_{user_id}")
+    
     return jsonify({
         'success': True,
         'message': f'تم إضافة الكتاب كـ {status}'
@@ -136,6 +141,11 @@ def remove_from_library(gid: str):
     if book:
         BookStatus.query.filter_by(user_id=user_id, book_id=book.id).delete()
         db.session.commit()
+    
+    # 🔥 إبطال كاش الصفحة الرئيسية لحظياً
+    cache.delete(f"home_full_{user_id}")
+    cache.delete(f"home_feed_{user_id}")
+    cache.delete(f"home_recs_{user_id}")
     
     return jsonify({
         'success': True,
@@ -240,6 +250,11 @@ def rate_book(gid: str):
     except Exception as e_emb:
         print(f"Embedding update error: {e_emb}")
     # ------------------------------------------
+
+    # 🔥 إبطال كاش الصفحة الرئيسية لحظياً لتحديث التوصيات بناءً على التقييم
+    cache.delete(f"home_full_{user_id}")
+    cache.delete(f"home_feed_{user_id}")
+    cache.delete(f"home_recs_{user_id}")
     
     return jsonify({
         'success': True,
@@ -341,6 +356,11 @@ def log_book_view():
                 update_user_preferences_from_behavior(user_id, "view", book_info)
             except Exception as e:
                 print(f"[BookView] Preferences update error: {e}")
+        
+        # 🔥 إبطال كاش الصفحة الرئيسية لحظياً لتحديث التوصيات بناءً على المشاهدة
+        cache.delete(f"home_full_{user_id}")
+        cache.delete(f"home_feed_{user_id}")
+        cache.delete(f"home_recs_{user_id}")
         
         return jsonify({
             'success': True,

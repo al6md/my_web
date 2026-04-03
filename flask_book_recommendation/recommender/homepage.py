@@ -518,10 +518,15 @@ def get_homepage_sections(user_id, recent_query=None):
             "query": "special:continue-reading"
         })
 
-    # --- Task 4: UCB1 Bandit Injection ---
+    # --- Task 4: UCB1 Bandit Injection (Only for General sections) ---
     try:
         from .exploration import UCB1Explorer
         for sec in sections:
+            # Skip for high-intent personalized sections
+            title = sec.get('title', '')
+            if any(x in title for x in ["مخصص لك", "لأنك بحثت", "لأنك قرأت", "مفضلات", "استكمل قراءة"]):
+                continue
+                
             if sec.get('books') and len(sec['books']) > 0:
                 sec['books'] = UCB1Explorer.inject_exploration(sec['books'])
     except Exception as e:

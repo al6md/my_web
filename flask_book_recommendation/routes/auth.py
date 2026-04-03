@@ -101,29 +101,69 @@ def onboarding():
             flash("يرجى اختيار 3 اهتمامات على الأقل", "error")
             return redirect(url_for("auth.onboarding"))
         
-        # حفظ الاهتمامات في UserPreference
-        for interest in interests:
-            # تحقق من عدم التكرار
-            existing = UserPreference.query.filter_by(
-                user_id=current_user.id,
-                topic=interest
-            ).first()
-            
-            if not existing:
-                pref = UserPreference(
-                    user_id=current_user.id,
-                    topic=interest,
-                    weight=100.0  # وزن عالي للاهتمامات المختارة
-                )
-                db.session.add(pref)
+        # ── 1. Clear previous selections ──
+        from ..models import UserGenre, Genre
+        UserGenre.query.filter_by(user_id=current_user.id).delete()
+        UserPreference.query.filter_by(user_id=current_user.id).delete()
         
-        # تحديث حالة الـ onboarding
+        # ── 2. Save to both UserGenre AND UserPreference ──
+        all_genres = {g.name.lower(): g for g in Genre.query.all()}
+        selected_genre_names = []
+        
+        for interest in interests:
+            term = interest.strip()
+            if not term:
+                continue
+            
+            term_lower = term.lower()
+            selected_genre_names.append(term)
+            
+            # Save as UserGenre if it matches a known genre
+            if term_lower in all_genres:
+                genre = all_genres[term_lower]
+                db.session.add(UserGenre(user_id=current_user.id, genre_id=genre.id))
+            
+            # Always save as UserPreference with high weight
+            existing_pref = UserPreference.query.filter_by(
+                user_id=current_user.id, topic=term
+            ).first()
+            if not existing_pref:
+                db.session.add(UserPreference(
+                    user_id=current_user.id,
+                    topic=term,
+                    weight=150.0  # Explicit selection = highest priority
+                ))
+        
+        # ── 3. Mark onboarding as completed ──
         current_user.onboarding_completed = True
         db.session.commit()
         
-        # مسح الكاش لتفعيل الاهتمامات الجديدة فوراً
+        # ── 4. Build User Embedding (cold-start initialization) ──
+        try:
+            from ai_book_recommender.feature_store.user_embeddings import user_embedding_manager
+            user_embedding_manager.initialize_from_interests(current_user.id, selected_genre_names)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error initializing user embedding: {e}")
+        
+        # ── 5. Seed books from Google Books in background ──
+        try:
+            from ..interest_seeder import seed_books_for_interests
+            app = current_app._get_current_object()
+            seed_books_for_interests(current_user.id, selected_genre_names, app=app)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error seeding books: {e}")
+        
+        # ── 6. Clear all caches for immediate fresh recommendations ──
         try:
             cache.clear()
+        except Exception:
+            pass
+        try:
+            from ai_book_recommender.unified_pipeline import get_unified_engine
+            engine = get_unified_engine()
+            engine.clear_user_cache(current_user.id)
         except Exception:
             pass
         

@@ -206,13 +206,44 @@ def _get_ai_embedding_recommendations(
         else:
             indices_to_iter = ranked_indices[start_idx:]
             
+        # 🚀 [OPTIMIZATION] Bulk-fetch books for AI
+        target_ids = [candidate_ids[idx] for idx in indices_to_iter if sims[idx] >= 0.25]
+        if not target_ids:
+            return []
+            
+        found_books = Book.query.filter(Book.id.in_(target_ids)).all()
+        book_map = {b.id: b for b in found_books}
+        
+        # 🍏 Interests-Based Filtering Gatekeeper 🍏
+        user_category_set = {g.lower() for g in (explicit_genres or [])}
+        
+        # ❄️ COLD START FALLBACK: If user has no interests, use high-quality defaults
+        if not user_category_set:
+            user_category_set = {"psychology", "philosophy", "science", "technology", "business", "self-help"}
+        
         for idx in indices_to_iter:
             score = sims[idx]
-            if score < 0.15:
-                continue
+            original_score = score
             
-            book = Book.query.get(candidate_ids[idx])
+            book = book_map.get(candidate_ids[idx])
             if not book:
+                continue
+
+            # Category Match Logic
+            book_cats = {c.strip().lower() for c in (book.categories or "").split(",")}
+            has_match = any(cat in user_category_set for cat in book_cats)
+            
+            if user_category_set:
+                if has_match:
+                    # Boost for direct interest match
+                    score = min(1.0, score * 1.5)
+                else:
+                    # Moderate Penalty instead of extreme (0.3x)
+                    # Allows very high semantic matches to still surface
+                    score = score * 0.3
+            
+            # Revised floor threshold to allow some variety while maintaining quality
+            if score < 0.15:
                 continue
                 
             book_id_key = book.google_id or f"local_{book.id}"
@@ -348,7 +379,7 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             if not user_id:
                 pipeline_log.log_fallback("user_id is None/0 — user not logged in")
                 pipeline_log.set_final_count(0)
-                return get_trending(limit=limit)
+                return [] # No trending fallback
 
             # ── Stage 1: TRANSFORMER (Embedding Retrieval) ──
             transformer_start = time.perf_counter()
@@ -370,13 +401,14 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             
             # Lazy Load FAISS Index
             if not hasattr(current_app, 'faiss_index'):
+                from ..models import BookEmbedding
                 import faiss
-                embeddings_data = BookEmbedding.query.filter(BookEmbedding.vector.isnot(None)).all()
+                embeddings_data = BookEmbedding.query.all()
                 if not embeddings_data:
                     pipeline_log.log_stage("transformer", time_ms=(time.perf_counter()-transformer_start)*1000, results=0)
                     pipeline_log.log_fallback("No book embeddings in database")
                     pipeline_log.set_final_count(0)
-                    return get_trending(limit=limit)
+                    return [] # No trending fallback
                 id_map = []
                 vec_list = []
                 for emb in embeddings_data:
@@ -431,6 +463,16 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             
             searches = db.session.query(SearchHistory).filter_by(user_id=user_id).order_by(SearchHistory.created_at.desc()).limit(5).all()
             search_queries = [s.query for s in searches if s.query]
+            
+            # --- New: Interest-based signals (Genres) ---
+            from ..models import UserGenre, Genre
+            user_genres = db.session.query(Genre.name).join(UserGenre).filter(UserGenre.user_id == user_id).all()
+            interest_genres = [g[0] for g in user_genres]
+            if interest_genres:
+                logger.info(f"[DL-Rec] User {user_id} has interest genres: {interest_genres}")
+                # Treat genres as virtual high-intent search queries
+                search_queries.extend(interest_genres[:5])
+
             search_hists = []
             
             if search_queries:
@@ -471,9 +513,9 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             pipeline_log.log_stage("behavioral", time_ms=behavioral_time, results=total_interactions)
             
             if not interaction_ids and not search_hists:
-                pipeline_log.log_fallback(f"No interactions found for user {user_id} (views={len(view_bids)}, ratings={len(rating_bids)}, statuses={len(status_bids)}, searches=0)")
+                pipeline_log.log_fallback(f"No interactions or interests found for user {user_id} (views={len(view_bids)}, ratings={len(rating_bids)}, statuses={len(status_bids)}, genres={len(interest_genres)})")
                 pipeline_log.set_final_count(0)
-                return get_trending(limit=limit)
+                return [] # Still no fallback to random/trending
                 
             embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(interaction_ids)).all()
             hists = [np.array(__import__("pickle").loads(e.vector) if isinstance(e.vector, bytes) else e.vector, dtype=np.float32) for e in embs if e.vector is not None]
@@ -483,7 +525,7 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             if not hists:
                 pipeline_log.log_fallback(f"User {user_id} has interactions but 0 matching embeddings")
                 pipeline_log.set_final_count(0)
-                return get_trending(limit=limit)
+                return [] # No trending fallback
                 
             # Pad or truncate history to 10
             hists = hists[-10:]
@@ -526,7 +568,7 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
                 pipeline_log.log_stage("neural", time_ms=neural_time, results=0)
                 pipeline_log.log_fallback("No candidates after filtering finished/interacted books")
                 pipeline_log.set_final_count(0)
-                return get_trending(limit=limit)
+                return [] # No trending fallback
                 
             cand_embs = BookEmbedding.query.filter(BookEmbedding.book_id.in_(candidate_ids)).all()
             cand_dict = {e.book_id: np.array(__import__("pickle").loads(e.vector) if isinstance(e.vector, bytes) else e.vector, dtype=np.float32) for e in cand_embs if e.vector is not None}
@@ -539,7 +581,7 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
                 pipeline_log.log_stage("neural", time_ms=neural_time, results=0)
                 pipeline_log.log_fallback("No candidate embeddings found")
                 pipeline_log.set_final_count(0)
-                return get_trending(limit=limit)
+                return [] # No trending fallback
                 
             with torch.no_grad():
                 item_t = torch.tensor(act_vecs, dtype=torch.float32).to(device)
@@ -553,11 +595,14 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             scored_candidates = sorted(zip(act_ids, scores), key=lambda x: x[1], reverse=True)
             top_final = scored_candidates  # iterate over ALL candidates, break when we have enough
             
-            # 5. Build output
+            # 🚀 [OPTIMIZATION] Bulk-fetch books for Behavioral
+            found_books = Book.query.filter(Book.id.in_(act_ids)).all()
+            book_map = {b.id: b for b in found_books}
+            
             recs = []
             seen_ids = set()
             for rank, (bid, score) in enumerate(top_final):
-                book = Book.query.get(bid)
+                book = book_map.get(bid)
                 if book:
                     book_id_key = book.google_id or f"local_{book.id}"
                     if book_id_key in seen_ids:
@@ -589,14 +634,12 @@ def get_deep_learning_recommendations(user_id, limit=100, randomize=False):
             
         except ImportError as e:
             pipeline_log.log_error(f"Missing dependency: {e}")
-            from .trending import get_trending
-            return get_trending(limit=limit)
+            return [] # No trending fallback
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"[DL-Rec] FAISS/DL Error: {e}", exc_info=True)
             pipeline_log.log_error(str(e))
-            from .trending import get_trending
-            return get_trending(limit=limit)
+            return [] # No trending fallback
 
 
 def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=False, salt=0):
@@ -655,17 +698,17 @@ def _fetch_behavior_hybrid_candidates(user_id, limit=12, offset=0, randomize=Fal
                 results = []
                 seen_ex = set(viewed_google_ids)
                 
-                target = search_queries[0] if search_queries else (explicit_genres[0] if explicit_genres else "Best Sellers")
+                # Target should only be from real interests
+                if not search_queries and not explicit_genres:
+                    logger.info(f"[Hybrid-Explore] No user interests found, suppressing discovery")
+                    return []
+                
+                # Default target from most recent search or genre
+                target = search_queries[0] if search_queries else explicit_genres[0]
                 
                 if randomize:
-                    discovery_pool = [
-                        "Religion & spirituality", "Politics & current events", "Sports & outdoors",
-                        "Health & fitness", "Crafts & hobbies", "Home & garden", "Education & teaching",
-                        "Cyberpunk novels", "Psychological thrillers",
-                        "History of Science", "Modern Philosophy", "Artificial Intelligence Production"
-                    ]
-                    target = random.choice(discovery_pool)
-                    logger.info(f"[Hybrid-Explore] Switched target to '{target}' for variety")
+                    target = random.choice(search_queries + explicit_genres)
+                    logger.info(f"[Hybrid-Explore] Random target constrained to user interest: '{target}'")
                     
                 try:
                     start_index = 0
@@ -733,7 +776,7 @@ def get_behavior_based_recommendations(user_id, limit=12, offset=0, randomize=Fa
         candidates = _fetch_behavior_hybrid_candidates(user_id, limit=limit*5, offset=offset, randomize=randomize, salt=salt)
         
         if not candidates:
-            return get_trending(limit=limit)
+            return [] # No trending fallback
 
         # ---------------------------------------------------------
         # Task 4 & 6: BehaviorSequenceModel + MMR Diversity

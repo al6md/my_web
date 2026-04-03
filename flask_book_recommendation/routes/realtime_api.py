@@ -87,6 +87,36 @@ def track_interaction():
         else:
             count = 1
 
+        # ── 🗑️ Cache Invalidation — force fresh recommendations ──
+        try:
+            from ..extensions import cache
+            cache.delete(f"home_full_{current_user.id}")
+            cache.delete(f"home_feed_{current_user.id}")
+        except Exception:
+            pass
+
+        # ── 🤖 Auto-trigger AI Analysis at 5+ session interactions ──
+        if count >= 5 and count % 5 == 0:
+            try:
+                import threading
+                from flask import current_app
+                app = current_app._get_current_object()
+                uid = current_user.id
+                
+                def _bg_analysis():
+                    with app.app_context():
+                        try:
+                            from ..recommender.events import analyze_user_profile_with_ai
+                            analyze_user_profile_with_ai(uid)
+                            logger.info(f"[RealtimeTrack] AI analysis triggered for user {uid} (session interaction #{count})")
+                        except Exception as e:
+                            logger.error(f"[RealtimeTrack] AI analysis error: {e}")
+                
+                thread = threading.Thread(target=_bg_analysis, daemon=True)
+                thread.start()
+            except Exception:
+                pass
+
         return jsonify(ok=True, interaction_count=count)
 
     except Exception as e:

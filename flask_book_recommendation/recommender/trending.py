@@ -31,7 +31,8 @@ def get_trending(limit=12):
         )
         
         if len(user_books) < limit:
-            more_books = Book.query.order_by(func.random()).limit(limit * 3).all()
+            # ⭐ Deterministic fallback: Recent additions instead of random
+            more_books = Book.query.order_by(Book.id.desc()).limit(limit * 3).all()
             user_books.extend(more_books)
             
         random.shuffle(user_books)
@@ -68,8 +69,9 @@ def get_trending(limit=12):
                 
         if len(books_dicts) < limit:
             try:
-                queries = ["أفضل الكتب", "روايات", "برمجة", "تاريخ", "تطوير الذات"]
-                items, _ = fetch_google_books(random.choice(queries), max_results=limit - len(books_dicts))
+                # ⭐ Deterministic fallback: High-quality curated topic
+                fallback_query = "best selling books"
+                items, _ = fetch_google_books(fallback_query, max_results=limit - len(books_dicts))
                 for item in items:
                     v = item.get("volumeInfo", {})
                     cover = v.get("imageLinks", {}).get("thumbnail")

@@ -84,19 +84,34 @@ def get_cf_similar(user_id, top_n=30, min_users=2, offset=0, randomize=False):
         else:
             top_indices = top_indices[offset:]
         
+        # 🚀 [OPTIMIZATION] Bulk-fetch books for CF
         recs = []
+        target_gids = [item_gids[idx] for idx in top_indices if scores[idx] > 0]
+        if not target_gids:
+            return []
+            
+        found_books = Book.query.filter(Book.google_id.in_(target_gids)).all()
+        book_map = {b.google_id: b for b in found_books}
+        
+        seen_ids = set()
         for idx in top_indices:
             if scores[idx] <= 0:
                 continue
             gid = item_gids[idx]
-            book = Book.query.filter_by(google_id=gid).first()
+            book = book_map.get(gid)
             if not book:
                 continue
+            
+            book_id_key = book.google_id or f"local_{book.id}"
+            if book_id_key in seen_ids:
+                continue
+            seen_ids.add(book_id_key)
+            
             recs.append(
                 _book_to_dict(
                     book,
                     source="CF",
-                    reason="✨ مختارات بناءً على تقييـماتك وتقييمات مستخدمين مشابهين لك",
+                    reason=f"✨ تقارب أذواق بنسبة {int(scores[idx]*100)}%",
                 )
             )
             if len(recs) >= top_n:

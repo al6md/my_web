@@ -85,10 +85,10 @@ def background_log_search(app, user_id, q):
             for kw in valid_kw[:3]:
                 pref = UserPreference.query.filter_by(user_id=user_id, topic=kw).first()
                 if pref:
-                    pref.weight += 10.0
+                    pref.weight += 40.0
                     pref.updated_at = datetime.utcnow()
                 else:
-                    pref = UserPreference(user_id=user_id, topic=kw, weight=50.0)
+                    pref = UserPreference(user_id=user_id, topic=kw, weight=100.0)
                     db.session.add(pref)
             
             db.session.commit()
@@ -99,6 +99,11 @@ def background_log_search(app, user_id, q):
                 cache.delete_memoized(get_homepage_sections)
                 cache.delete_memoized(get_topic_based)
                 cache.delete_memoized(get_last_search_recommendations)
+
+                # 🔥 إبطال كاش الصفحة الرئيسية لحظياً للمستخدم!
+                cache.delete(f"home_full_{user_id}")
+                cache.delete(f"home_feed_{user_id}")
+                cache.delete(f"home_recs_{user_id}")
             except: pass
         except Exception as e:
             db.session.rollback()
@@ -807,6 +812,11 @@ def book_detail(gid):
             
             db.session.commit()
             print(f"[BookView] Recorded view for user {current_user.id}, book {gid}")
+
+            # 🔥 إبطال كاش الصفحة الرئيسية لحظياً لتحديث التوصيات بناءً على المشاهدة
+            cache.delete(f"home_full_{current_user.id}")
+            cache.delete(f"home_feed_{current_user.id}")
+            cache.delete(f"home_recs_{current_user.id}")
             
             # --- 🆕 Interaction Logging (Phase 8) ---
             log_interaction(current_user.id, gid, "view", metadata={"source": book_data.get("source", "unknown")})
@@ -843,7 +853,7 @@ def book_detail(gid):
                 for cat in cats:
                     clean_cat = cat.strip()
                     if clean_cat and len(clean_cat) > 2:
-                        topics_to_boost.append((clean_cat, 5.0)) # وزن عالي للتصنيف
+                        topics_to_boost.append((clean_cat, 25.0)) # وزن عالي للتصنيف
 
                 # 2. المؤلف
                 auth = book_data.get("author", "")
@@ -852,7 +862,7 @@ def book_detail(gid):
                     for a in auth.split(","):
                         clean_auth = a.strip()
                         if clean_auth and len(clean_auth) > 2:
-                            topics_to_boost.append((clean_auth, 3.0)) # وزن متوسط للمؤلف
+                            topics_to_boost.append((clean_auth, 15.0)) # وزن متوسط للمؤلف
                 
                 # تحديث التفضيلات
                 for topic, weight_boost in topics_to_boost:
@@ -868,7 +878,7 @@ def book_detail(gid):
                         pref = UserPreference(
                             user_id=current_user.id,
                             topic=topic,
-                            weight=20.0 + weight_boost # وزن ابتدائي جيد
+                            weight=75.0 + weight_boost # وزن ابتدائي جيد
                         )
                         db.session.add(pref)
                 
